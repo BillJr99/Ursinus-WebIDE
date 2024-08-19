@@ -264,14 +264,14 @@ submitformlinkdirections: "Clicking Run below will check your work and, if it pa
                     const audio = document.getElementById('audio');
                     let ace_editor = null; // set on window load
 
-                    const courseid = '{{ page.canvascourseid | default site.canvascourseid }}';
+                    const courseid = '{% if page.canvascourseid %}{{ page.canvascourseid }}{% else %}{{ site.canvascourseid }}{% endif %}';
                     const asmtid = '{{ page.canvasasmtid }}';
                     const defaultuser = 'user';
                     let user = localStorage.getItem('userId') || `${defaultuser}`;
                     const projectName = `{{page.canvasasmtid}}`; 
                     let rootBasePath = `/${user}/${projectName}`;
                     let openFiles = {};
-                    const publicKey = `{{ layout.publickey | default: site.publickey }}`;
+                    const publicKey = `{% if layout.publickey %}{{ layout.publickey }}{% else %}{{ site.publickey }}{% endif %}`;
                     let numAttempts = 0;
                     let correctlyAnswered = false;
                     let feedbackString = "";
@@ -1438,7 +1438,7 @@ submitformlinkdirections: "Clicking Run below will check your work and, if it pa
                         const filteredFiles = allFiles.filter(file => !(file.excludeFromExport));
                         const encryptedContent = await encryptFiles(filteredFiles, halfcredit);
 
-                        let url = `{{layout.formlink | default site.formlink}}` + encryptedContent;
+                        let url = `{% if layout.formlink %}{{ layout.formlink }}{% else %}{{ site.formlink }}{% endif %}` + encryptedContent;
                         console.log("len(url)", url.length);
                         window.open(url);
                         
