@@ -26,3 +26,6 @@ include:
   - _pages
   - files
 
+assets:
+  sources:
+    - assets
