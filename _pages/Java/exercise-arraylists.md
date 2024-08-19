@@ -13,6 +13,7 @@ info:
     - "To create and manipulate an <code>ArrayList</code>"
     - "To iterate over an <code>ArrayList</code>"
   
+canvascourseid: "12345"
 canvasasmtid: "137462"
 canvaspoints: 3
   

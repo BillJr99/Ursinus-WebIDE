@@ -13,6 +13,12 @@ description: "Ursinus WebIDE"
 
 url                      : https://BillJr99.github.io # the base hostname & protocol for your site e.g. "https://mmistakes.github.io"
 baseurl                  : "/Ursinus-WebIDE" # the subpath of your site, e.g. "/blog"
+
+formlink: https://docs.google.com/forms/d/e/1FAIpQLSfqGY9ms1BY1Bo_9CpuhhRy-nKE3VNyy69S22RxXZs84FzmFg/formResponse?submit=Submit&usp=pp_url&entry.777561908=magic&entry.1138910275=
+publickey: |
+    -----BEGIN RSA PUBLIC KEY-----
+    MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAxeJX65CXu193/ZwwG3OuFpjRkfVyf194Dq6WepK7wfRrd8lwOL6PWTw2wWdrbGRSXF7bc6KG7BG+VtjslygGEjwxDZUpDQQk1hiv3Zs/lBVAdCApQSlNqXj1CnFw6Mezcr/FdLFUSohd6xJJDeJRM8v8qdTKIV/w7W1TT5DGWRzzbFhD2ZzUinoWJSPyp88xYSmIitlYHPnB8IBsqlY6OmQDwoUNJFdxDsE3hj/8aKe9kFSbyD24JoafPuaQQvFt9SLi7wRqK2QRNw6nlX0+1trQSaWtucUGlxcLno00WGECTlqRus1sqOwvLWH2hQPqTqQUUUOIArqmjGnhKVfLlwIDAQAB
+    -----END PUBLIC KEY-----
     
 # Reading Files
 include:

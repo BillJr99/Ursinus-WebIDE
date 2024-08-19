@@ -16,6 +16,7 @@ info:
     - To check the value of an imprecise floating point value
     - To explain that a floating point value is represented imprecisely with a discrete binary representation
   
+canvascourseid: "12345"
 canvasasmtid: "137425"  
 canvaspoints: 3
   

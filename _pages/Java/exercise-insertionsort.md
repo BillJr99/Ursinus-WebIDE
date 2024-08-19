@@ -12,6 +12,7 @@ info:
     - To swap two variables in memory
     - To implement the insertion sort algorithm
     
+canvascourseid: "12345"
 canvasasmtid: "137466"
 canvaspoints: 3
     

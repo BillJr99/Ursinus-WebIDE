@@ -11,6 +11,7 @@ info:
     - To use iteration to compute a discrete value
     - To use conditionals to make choices during each loop iteration
     
+canvascourseid: "12345"
 canvasasmtid: "125425"    
 canvaspoints: 3
     

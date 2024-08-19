@@ -11,6 +11,7 @@ info:
   goals:
     - To implement a recursive function call
     
+canvascourseid: "12345"
 canvasasmtid: "137468"
 canvaspoints: 3
     

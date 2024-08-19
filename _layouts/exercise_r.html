@@ -12,7 +12,8 @@ mynetid: wmongan
 ---
 
 <script type="text/javascript" src="{{site.baseurl}}/assets/js/processing.min.js"></script>
-<script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+<script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?version=4.8.0
+&features=es6"></script>
 <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
 <script src="{{site.baseurl}}/assets/js/jquery.min.js"></script>
 <script src="{{site.baseurl}}/assets/js/skel.min.js"></script>
@@ -348,6 +349,16 @@ body {
 </script> 
 
 <script>
+    let WEBR_LOCATION = "{{site.baseurl}}/assets/js/R/";
+    let WEBR_FILES = [
+        "libRblas.so",
+        "libRlapack.so",
+        "R.bin.data",
+        "R.bin.js",
+        "R.bin.wasm",
+        "webR.js"
+    ];
+    
     var term = $('#term').terminal([], {
         prompt: '',
         greetings: false,
@@ -365,7 +376,7 @@ body {
             };
             var enc = new TextEncoder("utf-8");
             return new Proxy(new xhr(), {
-                get: function(target, name) {
+                get: function(target, name) {        
                     if (url && ['response', 'responseText', 'status', 'readyState'].indexOf(name) != -1) {
                         if (name == 'response') {
                             var response = enc.encode(props.responseText);
@@ -374,9 +385,18 @@ body {
                         return props[name];
                     } else if (name == 'open') {
                         return function(method, open_url) {
+                            console.log("Opening URL:", open_url);
                             if (open_url.match(re)) {
+                                console.log("Setting url to: " + open_url);
                                 url = open_url;
+                            } else if (WEBR_FILES.includes(open_url)) {
+                                // Fix absolute path file requests
+                                console.log("Applying target with augmented url of: " + WEBR_LOCATION + open_url);
+                                var args = Array.prototype.slice.call(arguments);
+                                args[1] = WEBR_LOCATION + open_url;
+                                return target[name].apply(target, args);
                             } else {
+                                console.log("Applying target on url: " + open_url + " with url: " + url);
                                 return target[name].apply(target, arguments);
                             }
                         };
@@ -526,8 +546,8 @@ body {
     };
     var webRPromise = loadWebR({
         Rargs: [],
-        WEBR_URL: "{{site.baseurl}}/assets/js/R/",
-        PKG_URL: "https://github.com/georgestagg/webr-ports/tree/main/dist", //"https://www.mas.ncl.ac.uk/~ngs54/webR-testing/packages/",        
+        WEBR_URL: WEBR_LOCATION,
+        PKG_URL: WEBR_LOCATION + "packages/", //"https://www.mas.ncl.ac.uk/~ngs54/webR/packages/", //"https://repo.r-wasm.org/", //"https://github.com/georgestagg/webr-ports/tree/main/dist", //"https://www.mas.ncl.ac.uk/~ngs54/webR-testing/packages/",        
         runtimeInitializedCB: function(){
             FSTree.init();
             term.clear();

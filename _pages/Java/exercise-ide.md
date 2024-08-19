@@ -12,6 +12,7 @@ info:
     - To become familiar with the basic structure of a Java program
     - To write a Java statement
     
+canvascourseid: "12345"
 canvasasmtid: "137417"
 canvaspoints: 3
   
@@ -27,7 +28,10 @@ processor:
     - incorrectcheck: |
         pos.length == 1
       feedback: "Try again: try printing a space in between the word Hello and your name!"       
- 
+
+openFilesOnLoad:
+  - "MyFirstProgram.java"
+  
 files:
   - filename: "MyFirstProgram.java"
     name: myfirstprogram

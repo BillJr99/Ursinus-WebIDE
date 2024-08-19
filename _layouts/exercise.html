@@ -1,75 +1,130 @@
 ---
-layout: default-standard
-
-formprocessor: "https://mathcs.ursinus.edu:8085/"
-enctype: "application/x-www-form-urlencoded"
-facultyemail: "wmongan@ursinus.edu"
-
-formprocessordirections: "Clicking Run below will check your work and, if it passes, will submit your work automatically. <strong>You must be connected to the VPN for submission to be successful!  You will receive a copy of your code via e-mail, so you'll know that it was submitted if you receive that e-mail!</strong>  VPN access requires Multi-Factor Authentication, which sends you a code when you log into the network.  Instructions on configuring these for your account can be found <a href=\"https://www.ursinus.edu/offices/information-technology/technology-support/hardware-and-software-help/remote-connections-and-vpn/\">here</a>."
-
+layout: default-blank
 submitformlinkdirections: "Clicking Run below will check your work and, if it passes, make a page appear above that you can use to submit your work or with further instructions."
-
-mynetid: wmongan
 ---
 
-<script type="text/javascript" src="{{site.baseurl}}/assets/js/processing.min.js"></script>
-<script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
-<script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+<!-- publickey in global yaml or layout; canvascourseid in global or exercise page; formlink in global or layout -->
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<link rel="stylesheet" href="{{site.baseurl}}/assets/css/jstree/style.min.css" />
+<style>
+    body {
+        display: flex;
+        flex-direction: column;
+        height: 100vh;
+        margin: 0;
+        font-family: Arial, sans-serif;
+    }
+    header {
+        display: flex;
+        justify-content: space-between;
+        padding: 10px;
+        background: #f4f4f4;
+        border-bottom: 1px solid #ccc;
+    }
+    .left-header {
+        display: flex;
+        align-items: center;
+    }
+    .tabs {
+        display: flex;
+        margin-left: 20px;
+    }
+    .tab {
+        display: flex;
+        align-items: center;
+        padding: 10px;
+        margin-right: 5px;
+        background: #ddd;
+        border: 1px solid #ccc;
+        cursor: pointer;
+    }
+    .tab.active {
+        background: #fff;
+        border-bottom: none;
+    }
+    .tab .close {
+        margin-left: 10px;
+        color: red;
+        cursor: pointer;
+    }
+    .actions {
+        display: flex;
+        align-items: center;
+    }
+    .actions button {
+        margin-left: 5px;
+        padding: 10px;
+    }
+    main {
+        display: flex;
+        flex-grow: 1;
+        height: 85vh;
+    }
+    .left-container, .right-container {
+        display: flex;
+        flex-direction: column;
+        width: 50%;
+        height: 100%;
+    }
+    .editor-container, .output-container, .filesystem-container, .canvas-container {
+        flex: 1;
+        padding: 10px;
+        box-sizing: border-box;
+        height: 100%;
+        min-height: 50%;
+    }
+    .editor-container {
+        border-right: 1px solid #ccc;
+        border-bottom: 1px solid #ccc;
+    }
+    .output-container {
+        border-bottom: 1px solid #ccc;
+        style="overflow-y:scroll;"
+        max-height: 50vh;
+        display: flex;
+        flex-direction: column-reverse;
+    }
+    .filesystem-container {
+        border-right: 1px solid #ccc;
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    textarea, pre, canvas, audio {
+        width: 100%;
+        height: 100%;
+        box-sizing: border-box;
+    }
+    #filesystem {
+        height: 100%;
+        overflow-y: auto;
+        background: #f9f9f9;
+        border: 1px solid #ccc;
+        width: 100%;
+    }
+    body .ace_scrollbar-v {
+        overflow-y: auto;
+    }
+
+    body .ace_scrollbar-h {
+        overflow-x: auto;
+    }
+</style>
+
+<script src="{{site.baseurl}}/assets/js/jsencrypt.min.js"></script>
+<script src="{{site.baseurl}}/assets/js/jszip.min.js"></script>
 <script src="{{site.baseurl}}/assets/js/jquery.min.js"></script>
+<script src="{{site.baseurl}}/assets/js/jstree.min.js"></script>
+<script type="text/javascript" src="{{site.baseurl}}/assets/js/processing.min.js"></script>
+<script src="{{site.baseurl}}/assets/js/polyfill.min.js?features=es6"></script>
+<script id="MathJax-script" async src="{{site.baseurl}}/assets/js/mathjax/tex-mml-chtml.js"></script>
 <script src="{{site.baseurl}}/assets/js/skel.min.js"></script>
 <script src="{{site.baseurl}}/assets/js/util.js"></script>
 <script src="{{site.baseurl}}/assets/js/main.js"></script>
-
-<style>
-.image_off, #home:hover .image_on{
-   display:none
-}
-.image_on, #home:hover .image_off{
-   display:block
-}
-{% for file in page.files %}
-{% if file.ismain == false %}
-#{{ file.name }}Editor {
-    {% if file.isvisible == true %}
-    position: relative;
-    width: 700px;
-    height: 250px;
-    {% else %}
-    position: fixed;
-    bottom: 10px;
-    visibility: hidden
-    {% endif %}
-}
-{% else %}
-#mainEditor {
-    {% if file.isvisible == true %}
-    position: relative;
-    width: 700px;
-    height: 100px;
-    {% else %}
-    position: fixed;
-    bottom: 10px;
-    visibility: hidden
-    {% endif %}
-}
-{% endif %}
-{% endfor %}
-
-#compilerText {
-    position: relative;
-    width: 700px;
-    height: 100px;
-}
-
-#feedbackText {
-    position: relative;
-    width: 700px;
-    height: 100px;
-}
-</style>
-
 <script src="{{site.baseurl}}/assets/js/ace.js" type="text/javascript" charset="utf-8"></script>
-<script src="{{site.baseurl}}/assets/js/modules-common.js" type="text/javascript" charset="utf-8"></script>
 {% if page.language == "cpp" %}
 <script src = "{{site.baseurl}}/assets/js/cpp/process-manager.js"></script>
 <script src = "{{site.baseurl}}/assets/js/cpp/runtime.js"></script>
@@ -81,569 +136,1334 @@ mynetid: wmongan
 {% if page.language == "python" %}
 <script type="text/javascript" src="{{site.baseurl}}/assets/js/brython.min.js"></script>
 <script type="text/javascript" src="{{site.baseurl}}/assets/js/brython_stdlib.min.js"></script>
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    console.log('Page loaded.  Initializing brython.');
-    brython(1);
-});
-</script>
 {% endif %}
-
+    
 <div id="main" role="main">
-  <div class="archive">    
+  <div class="archive"> 
     <h1 class="page__title">{{ page.title }}{% if page.info.points %} ({{page.info.points}} Points){% endif %}</h1>
-        Developed by <a href="https://www.ursinus.edu/live/profiles/4502-christopher-tralie">Professor Tralie</a> and <a href="https://www.ursinus.edu/live/profiles/5313-william-mongan">Professor Mongan</a>.
+            Developed by <a href="https://www.ursinus.edu/live/profiles/4502-christopher-tralie">Professor Tralie</a> and <a href="https://www.ursinus.edu/live/profiles/5313-william-mongan">Professor Mongan</a>.
 
-        {% if page.info.prev or page.info.next %}
-        <p>
-        {% if page.info.prev %}
-        <button onclick="window.location.href = '{{ page.info.prev }} ';"> &lt--- Previous</button>
-        {% endif %}
-        {% if page.info.next %}
-        <button onclick="window.location.href = '{{ page.info.next }}';">Next ---&gt</button>
-        {% endif %}
-        </p>
-        <HR>
-        {% endif %}
-        
-        {% if page.info.goals %}
-        <h1>Exercise Goals</h1>
-        The goals of this exercise are:
-        <ol>
-        {% for goal in page.info.goals %}
-        <li>{{goal}}</li>
-        {% endfor %}
-        </ol>
-        {% endif %}
-        
-        {% if page.info.instructions %}
-        {{ page.info.instructions }}
-        {% endif %}
-        
-        <div id="correctArea"></div>
-        
-        <p>
-        <strong>Enter your Ursinus netid before clicking run.  This is <u>not</u> your ID number or your email.  For example, my netid is <code>{{layout.mynetid}}</code> (non Ursinus students can simply enter their name to get this to run, but they won't get an e-mail record or any form of credit).</strong> 
-        </p>
-        
-        <table>
-            <tr>
-                <td>
-                    Netid
-                </td>
-                <td>
-                    <input type="text" id="studentnetid" name="studentnetid" onchange="if(document.getElementById('studentnetid').value.length > 0) document.getElementById('runbutton').disabled = false; else document.getElementById('runbutton').disabled = true;">
-                </td>
-            </tr>
-        </table>
-        {% if layout.formprocessor and layout.formprocessor != false %}
-        {{ layout.formprocessordirections }}<br>
-        {% endif %}
-        {% if page.processor.submitformlink and page.processor.submitformlink != false %}
-        {{ layout.submitformlinkdirections }}<br>
-        {% endif %}
-        
-        {%if page.language == "cpp" %}<button type = "button" onclick = "compile()" id="compilebutton">Compile</button>&nbsp;{% endif %}<button type = "button" onclick = "if(document.getElementById('studentnetid').value.length > 0) runCode(); else correctArea.innerHTML = '<h3><font color = #AA0000>Please enter your netid first!</font></h3>';" id="runbutton" disabled>▶ Run</button>&nbsp;<button onclick="saveCode()">Save Work</button>&nbsp;<button onclick="loadCode()">Load Saved Work</button>&nbsp;<button onclick="resetCode()">Clear Saved Work</button>&nbsp;<button onclick="downloadCode()">Download Code</button>
-        </p>
-        
-        <!-- Must name main file "main" and the div tag here/css/processing code below is hardcoded to mainEditor -->
-        {% for file in page.files %}
-        {% if file.isvisible == true %}
-        <h3>{{ file.filename }}</h3>
-        {% endif %}
-        
-        {% if file.ismain == true %}<div id="mainEditor">{% else %}<div id="{{ file.name }}Editor">{% endif %}{{ file.code | strip }}</div>
-        {% endfor %}
-        
-        {% if page.language == "cpp" %}
-        <h3>Compiler Feedback</h3>
-        <div id="compilerText"></div>       
-        {% endif %}
-        <h3>Program Output</h3>
-        <div id="feedbackText"></div>
-
-        <canvas id="pscanvas" height="20px"></canvas>
-
-
-        {% if page.language == "python" %}
-        <!-- Python script runner -->
-        <script type="text/python">
-            from browser import document as doc, window
-            import tb as traceback
-            import sys
-
-            def get_formatted(*args, **kwargs):
-                """
-                My imitation of Python 3's print() function, so I can
-                return the result as a string
-                """
-                sep = ' '
-                end = '\n'
-                if 'sep' in kwargs:
-                    sep = kwargs['sep']
-                if 'end' in kwargs:
-                    end = kwargs['end']
-                ret = ''
-                for i, arg in enumerate(args):
-                    ret += "%s"%arg
-                    if i < len(args) - 1:
-                        ret += sep
-                return ret + end
-
-            def run_python_code(code):
-                result = ""
-                try:
-                    window['python_code_result'] = ''
-                    code = code.replace("print(", "window['python_code_result'] += get_formatted(")
-                    exec(code)
-                    result = window['python_code_result']
-                except Exception as exc:
-                    # Formatting exception
-                    result = traceback.format_exc()
-                return result
+            {% if page.info.prev or page.info.next %}
+            <p>
+            {% if page.info.prev %}
+            <button onclick="window.location.href = '{{ page.info.prev }} ';"> &lt--- Previous</button>
+            {% endif %}
+            {% if page.info.next %}
+            <button onclick="window.location.href = '{{ page.info.next }}';">Next ---&gt</button>
+            {% endif %}
+            </p>
+            <HR>
+            {% endif %}
             
-            window.run_python_code = run_python_code
-        </script>
-        {% endif %}
-
-        <script>
-        let canvas = document.getElementById("pscanvas");
-        let correctArea = document.getElementById("correctArea");
-        let correctlyAnswered = false;
-        let numAttempts = 0;
-
-        var feedbackString = '';
-
-        var editors = new Array();
-
-        {% for file in page.files %}
-        {% if file.ismain == true %}
-        let mainEditor = ace.edit("mainEditor");
-        mainEditor.setFontSize(16);
-        {% if page.language == "cpp" %}
-        mainEditor.session.setMode("ace/mode/c_cpp");
-        {% elsif page.language == "python" %}
-        mainEditor.session.setMode("ace/mode/python");
-        {% elsif page.language == "sql" %}
-        mainEditor.session.setMode("ace/mode/sql");
-        {% else %} <!-- Java -->
-        mainEditor.session.setMode("ace/mode/java");
-        {% endif %}        
-        {% if file.isreadonly == true %}
-        mainEditor.setReadOnly(true);            
-        {% else %}
-        mainEditor.setReadOnly(false);            
-        {% endif %}
-        {% else %}
-        let {{ file.name }}Editor = ace.edit("{{ file.name }}Editor");
-        {{ file.name }}Editor.setFontSize(16);
-        {% if page.language == "cpp" %}
-        {{ file.name }}Editor.session.setMode("ace/mode/c_cpp");
-        {% elsif page.language == "python" %}
-        {{ file.name }}Editor.session.setMode("ace/mode/python");
-        {% elsif page.language == "sql" %}
-        {{ file.name }}Editor.session.setMode("ace/mode/sql");
-        {% else %} <!-- Java -->
-        {{ file.name }}Editor.session.setMode("ace/mode/java");
-        {% endif %}
-        {% if file.isreadonly == true %}
-        {{ file.name }}Editor.setReadOnly(true);            
-        {% else %}
-        {{ file.name }}Editor.setReadOnly(false);            
-        {% endif %} 
-        editors.push({{ file.name }}Editor);
-        {% endif %}
-        {% endfor %}
-        
-        {% if page.language == "cpp" %}
-        let compiler = ace.edit("compilerText");
-        compiler.setFontSize(16);
-        compiler.renderer.setShowGutter(false);
-        {% endif %}
-
-        let feedback = ace.edit("feedbackText");
-        feedback.setFontSize(16);
-        feedback.renderer.setShowGutter(false);
-
-        <!-- https://stackoverflow.com/questions/7542586/new-formdata-application-x-www-form-urlencoded -->
-        function urlencodeFormData(fd){
-            var s = '';
-            function encode(s){ return encodeURIComponent(s).replace(/%20/g,'+'); }
-            for(var pair of fd.entries()){
-                if(typeof pair[1]=='string'){
-                    s += (s?'&':'') + encode(pair[0])+'='+encode(pair[1]);
-                }
-            }
-            return s;
-        }
-        
-        /** 
-          * Save code to the local browser
-          */
-        function saveCode() {
-            for (var i in editors) {
-                var code = editors[i].getValue();
-                localStorage.setItem('{{ page.title | md5 }}_code' + i.toString(), code);
-            }
-        }
-        
-        /**
-          * Load code from the local browser storage, if any,
-          * to continue a student's progress.
-          */ 
-        function loadCode() {
-            for (var i in editors) {
-                var code = localStorage.getItem('{{ page.title | md5 }}_code' + i.toString());
-                if(code) {
-                    editors[i].setValue(code);
-                }
-            }
-        }
-        
-        /**
-          * Clear any saved code so the student can refresh to the defaults.
-          */         
-        function resetCode() {
-            for (var i in editors) {
-                localStorage.removeItem('{{ page.title | md5 }}_code' + i.toString());
-            }
-            
-            // alert("Refresh the page to reset the code to the default.");
-        }   
-
-        //setInterval(saveCode, 10000); // save every N seconds
-        //loadCode(); // automatically load the code    
-
-        /**
-          * Download the code locally.
-          */  
-        function downloadCode() {
-            var code = '';
-            
-            for (var i in editors) {
-                code += editors[i].getValue();
-                code += "\n\n";
-            }        
-
-            var filename = 'download.txt'
-            var blob = new Blob([code], { type: 'text/plain' });
-            var url = window.URL.createObjectURL(blob);
-            
-            var downloadLink = document.createElement("a");
-            downloadLink.href = url;
-            downloadLink.download = filename;
-            document.body.appendChild(downloadLink);
-            downloadLink.click();
-            document.body.removeChild(downloadLink);
-            window.URL.revokeObjectURL(url);            
-        }
-        
-        function checkAnswer() {
-            numAttempts++;
-            {{ page.processor.feedbackprocess | strip }}
-            if ({{ page.processor.correctcheck | strip}}) {
-                correctlyAnswered = true;
-                correctArea.innerHTML = "<h3><font color = #00AA00>{{ page.processor.correctfeedback | strip}}</font></h3>";
-                <!-- Setting a page.processor.submitformlink in the markdown will pop up an iframe with a page of your choice -->
-                {% if page.processor.submitformlink and page.processor.submitformlink != false %}
-                correctArea.innerHTML += `
-                <iframe src = "{{ page.processor.submitformlink | strip }}" width=800 height=500>
-                `;
-                {% endif %}
-                
-                postCode(true, false);
-            }
-            {% if page.processor.incorrectchecks %}
-            {% for check in page.processor.incorrectchecks %}
-            else if ({{ check.incorrectcheck | strip}}) {
-                correctArea.innerHTML = "<h3><font color = red>{{ check.feedback | strip }}</font></h3>";
-            }
+            {% if page.info.goals %}
+            <h1>Exercise Goals</h1>
+            The goals of this exercise are:
+            <ol>
+            {% for goal in page.info.goals %}
+            <li>{{goal}}</li>
             {% endfor %}
+            </ol>
             {% endif %}
-            else {
-                correctArea.innerHTML = "<h3><font color = red>{{ page.processor.incorrectfeedback | strip }}</font></h3>";
-            }
+            
+            {% if page.info.instructions %}
+            {{ page.info.instructions }}
+            {% endif %}  
+            
+            <header>
+                <div class="left-header">
+                    <div class="tabs"></div>
+                </div>
+                <div class="actions">
+                    <span id="user-status"></span>
+                    <button id="login">Log In</button>
+                    <button id="logout" style="display: none;">Log Out</button>
+                    <button id="run" disabled>Save Open Files and Run</button>
+                    <button id="save" disabled>Save Open Files</button>
+                    <button id="upload" disabled>Upload</button>
+                    <button id="new" disabled>New</button>
+                    <button id="new-dir" disabled>Make Directory</button>
+                    <button id="download" disabled>Download</button>
+                    <button id="reset" disabled>Reset</button>
+                </div>
+            </header>
+            <main>
+                <div class="left-container">
+                    <div class="editor-container" id="editor-container">
+                    </div>
+                    <div class="output-container" id="output-container">
+                        <pre id="console">Console Output...</pre>
+                    </div>
+                </div>
+                <div class="right-container">
+                    <div class="filesystem-container">
+                        <div id="filesystem"></div>
+                    </div>
+                    <div class="canvas-container">
+                        <canvas id="canvas" style="display: none;">Your plots will appear here...</canvas>
+                        <audio id="audio" controls style="display: none;"></audio>
+                    </div>
+                </div>
+            </main>
+            <script type="text/python">
+                from browser import document as doc, window
+                import tb as traceback
+                import sys
 
-            {% if page.canvashalftries %}
-            if (!correctlyAnswered && numAttempts == {{ page.canvashalftries }}) {
-                postCode(false, true);
-            }
-            {% endif %}
-        }        
+                def get_formatted(*args, **kwargs):
+                    """
+                    My imitation of Python 3's print() function, so I can
+                    return the result as a string
+                    """
+                    sep = ' '
+                    end = '\n'
+                    if 'sep' in kwargs:
+                        sep = kwargs['sep']
+                    if 'end' in kwargs:
+                        end = kwargs['end']
+                    ret = ''
+                    for i, arg in enumerate(args):
+                        ret += "%s"%arg
+                        if i < len(args) - 1:
+                            ret += sep
+                    return ret + end
 
-        /**
-         * Send code to the server with a POST command
-         * @param {boolean} vpnwarn Whether to warn about connecting to a vpn
-         * @param {boolean} halfcredit Whether this is a half credit submission
-         */
-        function postCode(vpnwarn, halfcredit) {
-            <!-- Setting a layout.formprocessor will send a POST request to a form processor -->
-            {% if layout.formprocessor and layout.formprocessor != false %}
-            submitcode = '';
-            
-            for (var i in editors) {
-                submitcode += editors[i].getValue();
-                submitcode += "\n\n";
-            }
-            
-            var xhttp = new XMLHttpRequest();
-            xhttp.onerror = function(e){
-                if (vpnwarn) {
-                    alert("Unable to submit and to post your grade.  Please try to submit again while connected to the campus network or the VPN!  If you believe you are connected, please copy your code into a text file as a backup for now, and contact your instructor.");
-                }
-            };
-
-            xhttp.open("POST", "{{ layout.formprocessor | strip }}", true)
-            xhttp.setRequestHeader("Content-type", "{{ layout.enctype | strip }}");
-            
-            var formdata = new FormData();
-            formdata.append("facultyemail", "{{ layout.facultyemail | strip }}"); // required
-            formdata.append("magic", "ursinus"); // required
-            formdata.append("title", "{{ page.title | strip }}"); // required
-            formdata.append("studentnetid", document.getElementById("studentnetid").value); //required
-            formdata.append("code", submitcode);
-            {% if page.canvasasmtid %}
-            formdata.append("canvasasmtid", "{{page.canvasasmtid}}");
-            {% endif %}
-            {% if page.canvaspoints %}
-            formdata.append("canvaspoints", "{{page.canvaspoints}}");
-            {% endif %}
-            if (halfcredit) {
-                formdata.append("canvashalfcredit", true);
-            }
-            
-            xhttp.send(urlencodeFormData(formdata));                    
-            {% endif %}
-        }
-        
-        {% if page.language == "sql" %}
-        async function doSql(codeString, mainString) {
-            feedbackString = "";
-            let code = mainString + '\n';
-            code += codeString + '\n';
-            console.log(code);
-            
-            <!-- https://sql.js.org/#/?id=upgrading-from-0x-to-1x -->
-            config = {
-              locateFile: filename => "{{site.baseurl}}/assets/js/sql.js/sql.js"
-            }
-            
-            // The `initSqlJs` function is globally provided by all of the main dist files if loaded in the browser.
-            // We must specify this locateFile function if we are loading a wasm file from anywhere other than the current html page's folder.
-            await initSqlJs(config).then(function(SQL){
-              // Create the database
-              const db = new SQL.Database();
-
-              // each statement is semicolon delimited
-              stmts = code.split(';');
-              
-              // prepare each potentially multiline statement
-              for(var i = 0; i < stmts.length; i++) {
-                lines = stmts[i].split('\n');
+                def run_python_code(code):
+                    result = ""
+                    try:
+                        window['python_code_result'] = ''
+                        code = code.replace("print(", "window['python_code_result'] += get_formatted(")
+                        exec(code)
+                        result = window['python_code_result']
+                    except Exception as exc:
+                        # Formatting exception
+                        result = traceback.format_exc()
+                    return result
                 
-                stmt = '';
-                for(var j = 0; j < lines.length; j++) {
-                    if(!(lines[j].trim().startsWith("--")) && lines[j].trim().length >= 1) { // ignore comments and blank lines
-                        stmt += lines[j] + ' '; // replace newlines with a space
+                window.run_python_code = run_python_code
+            </script>
+            <script>
+                document.addEventListener('DOMContentLoaded', () => {
+                    {% if page.language == "python" %}
+                        console.log('Page loaded.  Initializing brython.');
+                        brython(1);
+                    {% endif %}        
+                    const userStatus = document.getElementById('user-status');
+                    const loginBtn = document.getElementById('login');
+                    const logoutBtn = document.getElementById('logout');
+                    const runBtn = document.getElementById('run');
+                    const saveBtn = document.getElementById('save');
+                    const consoleOutput = document.getElementById('console');
+                    const filesystem = document.getElementById('filesystem');
+                    const uploadBtn = document.getElementById('upload');
+                    const downloadBtn = document.getElementById('download');
+                    const newBtn = document.getElementById('new');
+                    const newDirBtn = document.getElementById('new-dir');
+                    const resetBtn = document.getElementById('reset');
+                    const tabs = document.querySelector('.tabs');
+                    const canvas = document.getElementById('canvas');
+                    const audio = document.getElementById('audio');
+                    let ace_editor = null; // set on window load
+
+                    const courseid = '{{ page.canvascourseid | default site.canvascourseid }}';
+                    const asmtid = '{{ page.canvasasmtid }}';
+                    const defaultuser = 'user';
+                    let user = localStorage.getItem('userId') || `${defaultuser}`;
+                    const projectName = `{{page.canvasasmtid}}`; 
+                    let rootBasePath = `/${user}/${projectName}`;
+                    let openFiles = {};
+                    const publicKey = `{{ layout.publickey | default: site.publickey }}`;
+                    let numAttempts = 0;
+                    let correctlyAnswered = false;
+                    let feedbackString = "";
+
+                    const initialFiles = [
+                        {% for file in page.files %}
+                        { fileName: '{{ file.filename }}', content: {{ file.code | strip | jsonify }}, readOnly: {% if file.isreadonly == true or file.isvisible == false %}true{% else %}false{% endif %}, excludeFromExport: {% if file.excludeFromExport == true or file.isvisible == false %}true{% else %}false{% endif %}, ismain: {% if file.ismain %}true{% else %}false{% endif %} },
+                        {% endfor %}            
+                    ];
+                    
+                    function logToConsole(message) {
+                        consoleOutput.textContent += message + '\n';
                     }
-                }
-                
-                // replace the semicolon at the end
-                stmt += ';';
-                
-                if(!(stmt.trim().startsWith("--")) && stmt.trim().length >= 1) {
-                    console.log("Executing: " + stmt);
-                    const res = db.exec(stmt);
-                    const resStr = JSON.stringify(res);
-                    feedbackString += resStr + '\n';
-                }
-              }
-              
-              feedback.setValue(feedbackString);
-            });
-            
-            return feedbackString;
-        }        
-        {% endif %}
-        
-        {% if page.language == "cpp" %}
-        let workerPath = "{{site.baseurl}}/assets/js/cpp/scripts/";
-        class ProcessUI {
-            constructor(name, feedbackElem) {
-                this.text = "";
-                this.name = name;
-                this.feedbackElem = feedbackElem;
-                this.state = '';
-                this.wasReady = false;
-                this.timesRun = 0;
+                                        
+                    const PROCESSING_CODE_BEGIN = `
+                    var feedbackString = \"\";
+                    
+                    function feedbackPrintln(s) {
+                        return s + "\\n";
+                    }
 
-                this.process = new ProcessManager(name, name, workerPath)
-                this.process.setStatus = this.setStatus.bind(this);
-                this.process.print = this.print.bind(this);
-                this.process.printErr = this.printErr.bind(this);
-            }
+                    function feedbackPrint(s) {
+                        return s;
+                    }
+                    
+                    public static boolean drawn = false;
+                            void setup() {
+                                size(1, 1);
+                                noLoop();
+                            }
+                            void draw() {
+                                background(0);
+                                fill(255);
+                                stroke(255);`;
 
-            resetText() {
-                this.text = "";
-            }
+                    const PROCESSING_CODE_END = `
+                    if (!drawn) {
+                        const consoleOutput = document.getElementById(\'console\');
+                        consoleOutput.textContent += feedbackString;
+                        console.feedbackString = feedbackString;
+                        console.log(console.feedbackString);
+                        drawn = true;
+                    }
+                    }`;
 
-            reboot() {
-                this.process.terminate();
-                this.process.start();
-            }
+                    /**
+                     * Take code from the browser and put it into a form that can be sent to processing
+                     * 
+                     * @param {*} codeString All Java code (except for the main) that should be executed, as a string
+                     * @param {*} mainString A string of the Java code that should go in main
+                     * 
+                     * @return The final code that should be executed by processing.js
+                     */
+                    function makeCodeJavaProcessing(codeString, mainString) {
+                        var feedbackString = "";
+                        let str = codeString.replace(/System.out.print/g, "feedbackString += feedbackPrint");
+                        str += '\n' + PROCESSING_CODE_BEGIN;
+                        str += '\n' + mainString.replace(/System.out.print/g, "feedbackString += feedbackPrint");
+                        str += '\n' + PROCESSING_CODE_END;
+                        // TODO: Hack for dealing with the fact that chars are cast to
+                        // ints in this transpiler
+                        str = str.replace(/'/g, "\"");
+                        console.log(str);
+                        return str;
+                    }
 
-            setStatus(state, status, doPrint) {
-                if (doPrint === undefined) {
-                    doPrint = true;
-                }
-                if (doPrint) {
-                    this.feedbackElem.setValue(state + ' ', status);
-                }
-                this.state = state;
-            };
+                    /**
+                     * Convert the whitespace in a particular string to HTML whitespace
+                     * @param {string} s The input string
+                     */
+                    function getHTMLWhitespace(s) {
+                        s = s.replace("\n", "<BR>");
+                        s = s.replace("\t", "&nbsp&nbsp&nbsp&nbsp");
+                        return s;
+                    }
 
-            print({ text }) {
-                this.text += text + "\n";
-                this.feedbackElem.setValue(this.text);
-                //this.feedbackElem.setValue(this.text.replace(/\n/g, "\n"));
-            };
+                    function removeTemplate(s) {
+                        while (s.indexOf("<Integer>") > -1) {
+                            s = s.replace("<Integer>", "");
+                        }
+                        while (s.indexOf("<String>") > -1) {
+                            s = s.replace("<String>", "");
+                        }
+                        while (s.indexOf("<String, Integer>") > -1) {
+                            s = s.replace("<String, Integer>", "");
+                        }
+                        while (s.indexOf("<Integer, Integer>") > -1) {
+                            s = s.replace("<Integer, Integer>", "");
+                        }
+                        while (s.indexOf("<>") > -1) {
+                            s = s.replace("<>", "");
+                        }
+                        return s;
+                    }
 
-            printErr({ text }) {
-                this.text += text + "\n";
-                this.feedbackElem.setValue(this.text);
-                //this.feedbackElem.setValue(this.text.replace(/\n/g, "\n"));
-            };
-        }   
+                    const DB_NAME = 'CodeIDB';
+                    const DB_VERSION = 1;
+                    const STORE_NAME = 'Files';
 
-        let clang = new ProcessUI('clang', compiler);
-        let runtime = new ProcessUI('runtime', feedback);
-        let clangOutput = null;
+                    logToConsole("Ready!");
 
-        clang.process.print({ text: 'Preparing clang...\n\n' });
-        clang.process.workerCompileDone = args => {
-            correctArea.innerHTML = "";
-            clangOutput = args.result;
-            clang.process.setStatus('ready', 'Ready', false);
-            if (args.result) {
-                let s = "Compiled successfully: wasm size: " + args.result.length + ' bytes\n';
-                compiler.setValue(s);
-            }
-        };    
+                    function initDB() {
+                        return new Promise((resolve, reject) => {
+                            const request = indexedDB.open(DB_NAME, DB_VERSION);
+                            request.onupgradeneeded = function(event) {
+                                const db = event.target.result;
+                                db.createObjectStore(STORE_NAME, { keyPath: 'path' });
+                            };
+                            request.onsuccess = function(event) {
+                                resolve(event.target.result);
+                            };
+                            request.onerror = function(event) {
+                                reject(event.target.error);
+                            };
+                        });
+                    }
 
-        runtime.process.print({ text: 'Preparing runtime...\n\n' });
-        runtime.process.workerRunDone = args => {
-            runtime.timesRun++;
-            if (runtime.timesRun < 3) {
-                // For some reason it needs to be run more than once
-                // for the text to fully update
-                runtime.resetText();
-                runtime.process.worker.postMessage({
-                    function: 'run',
-                    wasmBinary: clangOutput,
-                });
-            }
-            else {
-                runtime.process.setStatus('ready', 'Ready', false);
-                feedback.setValue(runtime.text);
-                checkAnswer();
-            }
+                    async function provideInitialFiles(files) {
+                        const db = await initDB();
+                        if (!db) {
+                            console.error('Failed to initialize DB');
+                            return;
+                        }
+                        const transaction = db.transaction(STORE_NAME, 'readwrite');
+                        const store = transaction.objectStore(STORE_NAME);
+                        for (let file of files) {
+                            store.put({ path: rootBasePath + '/' + file.fileName, content: file.content, readOnly: file.readOnly, excludeFromExport: file.excludeFromExport, ismain: file.ismain });
+                        }
+                        transaction.oncomplete = function() {
+                            console.log('Initial files provided successfully.');
+                            getFilesFromDirectory(rootBasePath);
+                        };
+                        transaction.onerror = function(event) {
+                            console.error('Error providing initial files:', event.target.error);
+                        };
+                    }
 
-        };
-        runtime.process.workerDebugReplaceBinary = args => {
-            console.log('new size:  ' + args.newBinary.length + '\n');
-            clangOutput = args.newBinary;
-        };
-        runtime.process.workerSendRun = function () {
-            runtime.process.setStatus('busy', 'Running');
-            runtime.process.postMessage({
-                function: 'run',
-                wasmBinary: clangOutput,
-            });
-        };
+                    async function getFilesFromDirectory(directory) {
+                        const db = await initDB();
+                        if (!db) {
+                            console.error('Failed to initialize DB');
+                            return;
+                        }
+                        const transaction = db.transaction(STORE_NAME, 'readonly');
+                        const store = transaction.objectStore(STORE_NAME);
+                        const request = store.getAll();
+                        request.onsuccess = function(event) {
+                            const files = event.target.result.filter(file => file.path.startsWith(directory));
+                            const treeData = [];
+                            const directories = new Set();
 
-        clang.process.start();
-        runtime.process.start(); 
+                            files.forEach(file => {
+                                const relativePath = file.path.replace(rootBasePath + '/', '');
+                                const pathParts = relativePath.split('/').filter(Boolean);
+                                let fullPath = '';
+                                pathParts.forEach((part, index) => {
+                                    fullPath += (index > 0 ? '/' : '') + part;
+                                    if (index < pathParts.length - 1) {
+                                        directories.add(fullPath);
+                                    }
+                                });
 
-        function getCodeText() {
-            let codeText = "";
-            for (var i in editors) {
-                codeText += editors[i].getValue();
-                codeText += "\n";
-            }
-            codeText += mainEditor.getValue();
-            return codeText;
-        }
+                                if (pathParts.length > 0) {
+                                    const dirPath = pathParts.slice(0, -1).join('/') || '#';
+                                    const fileName = pathParts[pathParts.length - 1];
+                                    treeData.push({
+                                        id: relativePath,
+                                        parent: dirPath === '' ? '#' : dirPath,
+                                        text: fileName,
+                                        type: file.path.endsWith('/') ? 'folder' : 'file'
+                                    });
+                                }
+                            });
 
-        let compiledCode = "";
+                            directories.forEach(dir => {
+                                const pathParts = dir.split('/').filter(Boolean);
+                                const dirPath = pathParts.slice(0, -1).join('/') || '#';
+                                const dirName = pathParts[pathParts.length - 1];
+                                treeData.push({
+                                    id: dir,
+                                    parent: dirPath === '' ? '#' : dirPath,
+                                    text: dirName,
+                                    type: 'folder'
+                                });
+                            });
 
-        function compile() {
-            correctArea.innerHTML = "<font color = blue>Compiling...</font>";
-            if (clang.state !== 'ready') {
-                alert("Compiler not finished loading yet");
-                return;
-            }
-            clangOutput = null;
-            clang.process.setStatus('busy', 'Running');
-            let codeText = getCodeText();
-            compiledCode = codeText;
-            console.log(codeText);
-            clang.process.worker.postMessage({
-                function: 'compile',
-                code: codeText,
-            });
-        }
-        {% endif %}
+                            $('#filesystem').jstree(true).settings.core.data = treeData;
+                            $('#filesystem').jstree(true).refresh();
+                        };
+                    }
 
-        {% if page.language == "sql" %}async {% endif %}function runCode() {
-            try {
-                {% if page.language == "cpp" %}
-                runtime.timesRun = 0;
-                correctArea.innerHTML = "<font color = blue>Running...</font>";
-
-                let codeText = getCodeText();
-                
-                if (!(codeText === compiledCode)) {
-                    compiler.setValue("Warning: It looks like you edited code since you last compiled\nBe sure to compile again before running!");
-                }
-                runtime.process.setStatus('busy', 'Running');
-                if (clangOutput === null) {
-                    alert("Need to compile code first!");
-                }
-                else {
-                    runtime.resetText();
-                    runtime.process.worker.postMessage({
-                        function: 'run',
-                        wasmBinary: clangOutput,
+                    // Append rootBasePath when a file is clicked
+                    $('#filesystem').on('select_node.jstree', function (e, data) {
+                        const node = data.node;
+                        const fullPath = rootBasePath + '/' + node.id;
+                        if (node.type === 'file') {
+                            openFile(fullPath, node.text);
+                        } 
                     });
-                }                
-                {% else %}
-                let editorText = "";
-                for (var i in editors) {
-                    editorText += editors[i].getValue();
-                    editorText += "\n";
-                }
-                {% if page.language == "python" %}
-                let student_code = editorText + mainEditor.getValue();
-                feedbackString = run_python_code(student_code);
-                feedback.setValue(feedbackString);    
-                {% elsif page.language == "sql" %}
-                feedbackString = await doSql(editorText, mainEditor.getValue()); 
-                console.log("Got feedback string: " + feedbackString);    
-                feedback.setValue(feedbackString);    
-                {% else %} <!-- Java -->
-                let code = makeCodeJavaProcessing(editorText, mainEditor.getValue());
-                instance = new Processing(canvas, code);
-                {% endif %}
-                {% endif %}
-                
-                checkAnswer();
-            } catch(err) {
-                correctArea.innerHTML = "<h3><font color = red>{{ page.processor.incorrectfeedback | strip }}</font></h3>";
-                feedback.setValue("Error: " + err.message);
-            }                
-        }
-        </script>        
-        
+                    
+                    async function setTabAceProperties(path) {
+                        const db = await initDB();
+                        if (!db) {
+                            console.error('Failed to initialize DB');
+                            return;
+                        }
+                        const transaction = db.transaction(STORE_NAME, 'readonly');
+                        const store = transaction.objectStore(STORE_NAME);
+                        const request = store.get(path);
+                                                
+                        request.onsuccess = function(event) {
+                            const file = event.target.result;
+                            console.log(file);
+                            if (file) {
+                                ace_editor.setFontSize(16);
+                                {% if page.language == "cpp" %}
+                                ace_editor.session.setMode("ace/mode/c_cpp");
+                                {% elsif page.language == "python" %}
+                                ace_editor.session.setMode("ace/mode/python");
+                                {% elsif page.language == "sql" %}
+                                ace_editor.session.setMode("ace/mode/sql");
+                                {% elsif page.language == "java" %}
+                                ace_editor.session.setMode("ace/mode/java");
+                                {% endif %}  
+
+                                if(file.readOnly == true) {
+                                    console.log("Read only file");
+                                    ace_editor.setReadOnly(true);            
+                                } else {
+                                    console.log("Write enabled file");
+                                    ace_editor.setReadOnly(false);            
+                                }
+                            }
+                        }
+                    }
+
+                    async function openFile(path, name) {
+                        const db = await initDB();
+                        if (!db) {
+                            console.error('Failed to initialize DB');
+                            return;
+                        }
+                        const transaction = db.transaction(STORE_NAME, 'readonly');
+                        const store = transaction.objectStore(STORE_NAME);
+                        const request = store.get(path);
+                        request.onsuccess = function(event) {
+                            const file = event.target.result;
+                            if (file) {
+                                if (openFiles[path]) {
+                                    setActiveTab(path);
+                                } else {
+                                    if (name.match(/\.(jpeg|jpg|gif|png)$/)) {
+                                        displayImage(file.content);
+                                        logToConsole(`Opened image file: ${path}`);
+                                    } else if (name.match(/\.(mp3|wav)$/)) {
+                                        displayAudio(file.content);
+                                        logToConsole(`Opened audio file: ${path}`);
+                                    } else {
+                                        openFiles[path] = { content: file.content, modified: false, readOnly: file.readOnly };
+                                        createTab(path);
+                                        if(user != `${defaultuser}` && !file.readOnly) {
+                                            saveBtn.disabled = false;
+                                        } else {
+                                            saveBtn.disabled = true;
+                                        }
+                                                                                
+                                        logToConsole(`Opened file: ${path}`);
+                                    }
+                                }
+                            }
+                        };
+                    }
+                    
+                    function openMultipleFiles(fileNames) {
+                        fileNames.forEach(fileName => {
+                            const fullPath = `${rootBasePath}/${fileName}`;
+                            openFile(fullPath, fileName);
+                        });
+                    }                    
+
+                    async function setActiveTab(path) {
+                        document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+                        document.getElementById(path).classList.add('active');
+                        ace_editor.setValue(openFiles[path].content);
+                        saveBtn.disabled = openFiles[path].readOnly;
+                        setTabAceProperties(path);
+                    }
+
+                    function createTab(path) {
+                        const tab = document.createElement('div');
+                        tab.className = 'tab active';
+                        tab.id = path;
+                        tab.innerHTML = `${path.substring(path.lastIndexOf('/') + 1)} <span class="close">&times;</span>`;
+                        tabs.appendChild(tab);
+                        tab.onclick = () => setActiveTab(path);
+                        tab.querySelector('.close').onclick = (e) => {
+                            e.stopPropagation();
+                            closeTab(path);
+                        };
+                        setActiveTab(path);
+                    }
+
+                    async function closeTab(path) {
+                        if(openFiles[path]) {
+                            if (openFiles[path].modified) {
+                                if (confirm('File has been modified. Save changes?')) {
+                                    await saveFile(path);
+                                }
+                            }
+                            delete openFiles[path];
+                        }
+                        if(document.getElementById(path)) {
+                            document.getElementById(path).remove();
+                        }
+                        if (Object.keys(openFiles).length > 0) {
+                            setActiveTab(Object.keys(openFiles)[0]);
+                        } else {
+                            ace_editor.setValue('');
+                            ace_editor.setReadOnly(true);
+                            saveBtn.disabled = true;
+                        }
+                    }
+
+                    async function saveFile(path) {
+                        const db = await initDB();
+                        if (!db) {
+                            console.error('Failed to initialize DB');
+                            return;
+                        }
+                        const transaction = db.transaction(STORE_NAME, 'readwrite');
+                        const store = transaction.objectStore(STORE_NAME);
+                        const request = store.get(path);
+                        request.onsuccess = function(event) {
+                            if(openFiles[path].readOnly == false) {
+                                const file = event.target.result;
+                                file.content = openFiles[path].content;
+                                store.put(file);
+                                openFiles[path].modified = false;
+                                logToConsole(`Saved file: ${path}`);
+                                console.log('File saved successfully!');
+                            } else {
+                                console.log("Skipping save of read-only file.");
+                            }
+                        };
+                    }
+
+                    loginBtn.addEventListener('click', async () => {
+                        const userId = prompt("Enter your user ID:");
+                        if (userId && userId != `${defaultuser}`) {
+                            localStorage.setItem('userId', userId);
+                            user = userId;
+                            rootBasePath = `/${user}/${projectName}`;
+                            clearTabsAndCanvas();
+                            updateUserStatus();
+                            const isDirectoryEmpty = await checkIfDirectoryEmpty(rootBasePath);
+                            if (isDirectoryEmpty) {
+                                await provideInitialFiles(initialFiles);
+                            } else {
+                                getFilesFromDirectory(rootBasePath);
+                            }
+                        } else {
+                            alert('Unable to log in with the given username');
+                        }
+                    });
+
+                    logoutBtn.addEventListener('click', async () => {
+                        localStorage.removeItem('userId');
+                        user = `${defaultuser}`;
+                        rootBasePath = `/${user}/${projectName}`;
+                        clearTabsAndCanvas();
+                        updateUserStatus();
+                        getFilesFromDirectory(rootBasePath);
+                    });
+
+                    runBtn.addEventListener('click', () => {
+                        saveActiveTabs();
+                        
+                        logToConsole("Running...");
+                        runCode();
+                    });
+                    
+                    function saveActiveTabs() {
+                        logToConsole("Saving open tabs...");
+                        
+                        document.querySelectorAll('.tab').forEach(tab => saveFile(tab.id));
+                    }
+                    
+                    function saveActiveTab() {
+                        logToConsole("Saving active tab...");
+                        
+                        const activeTab = document.querySelector('.tab.active');
+                        if (activeTab) {
+                            saveFile(activeTab.id);
+                        }                    
+                    }
+
+                    saveBtn.addEventListener('click', () => {
+                        saveActiveTabs();
+                    });
+
+                    uploadBtn.addEventListener('click', () => {
+                        const input = document.createElement('input');
+                        input.type = 'file';
+                        input.onchange = async function(event) {
+                            const file = event.target.files[0];
+                            const path = rootBasePath + '/' + file.name;
+                            let content = '';
+                            if (file.type.startsWith('image/') || file.type.startsWith('audio/')) {
+                                const reader = new FileReader();
+                                reader.onload = function(e) {
+                                    content = e.target.result.split(',')[1];
+                                    saveFileToDB(path, content, false, true);
+                                };
+                                reader.readAsDataURL(file);
+                            } else {
+                                content = await file.text();
+                                saveFileToDB(path, content, false, true);
+                            }
+                        };
+                        input.click();
+                    });
+
+                    async function saveFileToDB(path, content, readOnly, excludeFromExport) {
+                        const db = await initDB();
+                        if (!db) {
+                            console.error('Failed to initialize DB');
+                            return;
+                        }
+                        const transaction = db.transaction(STORE_NAME, 'readwrite');
+                        const store = transaction.objectStore(STORE_NAME);
+                        store.put({ path: path, content: content, readOnly: readOnly, excludeFromExport: excludeFromExport, ismain: false });
+                        transaction.oncomplete = function() {
+                            getFilesFromDirectory(rootBasePath);
+                            logToConsole(`Uploaded file: ${path}`);
+                        };
+                    }
+
+                    newBtn.addEventListener('click', async () => {
+                        const fileName = prompt("Enter file name:");
+                        if (fileName) {
+                            const path = rootBasePath + '/' + fileName;
+                            const db = await initDB();
+                            if (!db) {
+                                console.error('Failed to initialize DB');
+                                return;
+                            }
+                            const transaction = db.transaction(STORE_NAME, 'readwrite');
+                            const store = transaction.objectStore(STORE_NAME);
+                            store.put({ path: path, content: '', readOnly: false, excludeFromExport: false, ismain: false });
+                            transaction.oncomplete = function() {
+                                getFilesFromDirectory(rootBasePath);
+                                openFile(path, fileName);
+                                logToConsole(`Created new file: ${fileName}`);
+                            };
+                        }
+                    });
+
+                    newDirBtn.addEventListener('click', async () => {
+                        const dirName = prompt("Enter directory name:");
+                        if (dirName) {
+                            const path = rootBasePath + '/' + dirName;
+                            const db = await initDB();
+                            if (!db) {
+                                console.error('Failed to initialize DB');
+                                return;
+                            }
+                            const transaction = db.transaction(STORE_NAME, 'readwrite');
+                            const store = transaction.objectStore(STORE_NAME);
+                            store.put({ path: path + '/', content: '', readOnly: false, excludeFromExport: false, ismain: false });
+                            transaction.oncomplete = function() {
+                                getFilesFromDirectory(rootBasePath);
+                                logToConsole(`Created new directory: ${dirName}`);
+                            };
+                        }
+                    });
+
+                    downloadBtn.addEventListener('click', async () => {
+                        const zip = new JSZip();
+                        const allFiles = await getAllFilesRecursively(rootBasePath);
+                        const userId = localStorage.getItem('userId') || `${defaultuser}`;
+
+                        allFiles.forEach(file => {
+                            const relativePath = file.path.replace(rootBasePath + '/', '');
+                            if (!(file.excludeFromExport)) {
+                                if (isBase64(file.content)) {
+                                    const decodedContent = base64ToUint8Array(file.content);
+                                    zip.file(relativePath, decodedContent);
+                                } else {
+                                    zip.file(relativePath, file.content);
+                                }
+                            }
+                        });
+
+                        zip.generateAsync({ type: 'blob' }).then(function(content) {
+                            const a = document.createElement('a');
+                            a.href = URL.createObjectURL(content);
+                            a.download = `${userId}.zip`;
+                            a.click();
+                        });
+                    });
+
+                    resetBtn.addEventListener('click', async () => {
+                        if (confirm('Are you sure you want to reset the file system?')) {
+                            await clearDBPath(rootBasePath);
+                            await provideInitialFiles(initialFiles);
+                            clearTabsAndCanvas();
+                        }
+                    });
+
+                    async function clearTabsAndCanvas() {
+                        for(tab in tabs) {
+                            closeTab(tab.id);
+                        }
+                        document.querySelectorAll('.tab').forEach(tab => tab.remove());
+                        ace_editor.setValue('');
+                        ace_editor.setReadOnly(true);
+                        openFiles = {};
+                        canvas.style.display = 'none';
+                        audio.style.display = 'none';
+                    }
+                    
+                    // not main files
+                    async function getMainFileContentsRecursively(directory) {
+                        const db = await initDB();
+                        if (!db) {
+                            console.error('Failed to initialize DB');
+                            return;
+                        }
+                        const transaction = db.transaction(STORE_NAME, 'readonly');
+                        const store = transaction.objectStore(STORE_NAME);
+                        const request = store.getAll();
+
+                        return new Promise((resolve, reject) => {
+                            request.onsuccess = async function(event) {
+                                const files = event.target.result.filter(file => file.path.startsWith(directory));
+                                let combinedContent = '';
+
+                                for (const file of files) {
+                                    if(file.ismain == true) {
+                                        const fileContent = file.content; 
+                                        combinedContent += fileContent + '\n';
+                                    }
+                                }
+
+                                resolve(combinedContent.trim()); // Trim to remove the last unnecessary newline
+                            };
+
+                            request.onerror = function(event) {
+                                reject(event.target.error);
+                            };
+                        });
+                    }
+                    
+                    async function getAllFileContentsRecursively(directory) {
+                        const db = await initDB();
+                        if (!db) {
+                            console.error('Failed to initialize DB');
+                            return;
+                        }
+                        const transaction = db.transaction(STORE_NAME, 'readonly');
+                        const store = transaction.objectStore(STORE_NAME);
+                        const request = store.getAll();
+
+                        return new Promise((resolve, reject) => {
+                            request.onsuccess = async function(event) {
+                                const files = event.target.result.filter(file => file.path.startsWith(directory));
+                                let combinedContent = '';
+
+                                for (const file of files) {
+                                    if(file.ismain == false) {
+                                        const fileContent = file.content; 
+                                        combinedContent += fileContent + '\n';
+                                    }                                   
+                                }
+
+                                resolve(combinedContent.trim()); // Trim to remove the last unnecessary newline
+                            };
+
+                            request.onerror = function(event) {
+                                reject(event.target.error);
+                            };
+                        });
+                    }
+
+                    async function getAllFilesRecursively(directory) {
+                        const db = await initDB();
+                        if (!db) {
+                            console.error('Failed to initialize DB');
+                            return;
+                        }
+                        const transaction = db.transaction(STORE_NAME, 'readonly');
+                        const store = transaction.objectStore(STORE_NAME);
+                        const request = store.getAll();
+                        return new Promise((resolve, reject) => {
+                            request.onsuccess = function(event) {
+                                const files = event.target.result.filter(file => file.path.startsWith(directory));
+                                resolve(files);
+                            };
+                            request.onerror = function(event) {
+                                reject(event.target.error);
+                            };
+                        });
+                    }
+
+                    async function encryptFiles(files, halfcredit) {
+                        const aesKey = await window.crypto.subtle.generateKey(
+                            {
+                                name: 'AES-CBC',
+                                length: 256,
+                            },
+                            true,
+                            ['encrypt', 'decrypt']
+                        );
+
+                        const iv = window.crypto.getRandomValues(new Uint8Array(16));
+                        const encoder = new TextEncoder();
+
+                        const encryptedFiles = [];
+                        for (const file of files) {
+                            const encodedContent = encoder.encode(file.content);
+                            const encryptedContent = await window.crypto.subtle.encrypt(
+                                {
+                                    name: 'AES-CBC',
+                                    iv: iv,
+                                },
+                                aesKey,
+                                encodedContent
+                            );
+                            encryptedFiles.push({
+                                name: file.path.substring(rootBasePath.length + 1),
+                                content: arrayBufferToBase64(encryptedContent)
+                            });
+                        }
+
+                        const exportedAesKey = await window.crypto.subtle.exportKey('raw', aesKey);
+                        const rsaEncrypt = new JSEncrypt();
+                        rsaEncrypt.setPublicKey(publicKey);
+                        const encryptedAesKey = rsaEncrypt.encrypt(arrayBufferToBase64(exportedAesKey));
+
+                        // Encrypt the userId
+                        const userId = localStorage.getItem('userId') || `${defaultuser}`;
+                        const encodedUserId = encoder.encode(userId);
+                        const encryptedUserId = await window.crypto.subtle.encrypt(
+                            {
+                                name: 'AES-CBC',
+                                iv: iv,
+                            },
+                            aesKey,
+                            encodedUserId
+                        );
+
+                        if (encryptedAesKey) {
+                            const encryptedPackage = {
+                                iv: arrayBufferToBase64(iv.buffer),
+                                aesKey: encryptedAesKey,
+                                files: encryptedFiles,
+                                user: arrayBufferToBase64(encryptedUserId), 
+                                courseId: courseid,
+                                asmtId: asmtid,
+                                halfcredit: halfcredit
+                            };
+
+                            return window.btoa(JSON.stringify(encryptedPackage));
+                        } else {
+                            throw new Error("Encryption failed.");
+                        }
+                    }
+
+                    function isBase64(str) {
+                        try {
+                            return btoa(atob(str)) === str;
+                        } catch (err) {
+                            return false;
+                        }
+                    }
+
+                    // Utility function to convert ArrayBuffer to Base64 string
+                    function arrayBufferToBase64(buffer) {
+                        const binary = String.fromCharCode.apply(null, new Uint8Array(buffer));
+                        return window.btoa(binary);
+                    }
+
+                    function arrayBufferToBase64(buffer) {
+                        let binary = '';
+                        const bytes = new Uint8Array(buffer);
+                        const len = bytes.byteLength;
+                        for (let i = 0; i < len; i++) {
+                            binary += String.fromCharCode(bytes[i]);
+                        }
+                        return window.btoa(binary);
+                    }
+
+                    function base64ToArrayBuffer(base64) {
+                        const binaryString = window.atob(base64);
+                        const len = binaryString.length;
+                        const bytes = new Uint8Array(len);
+                        for (let i = 0; i < len; i++) {
+                            bytes[i] = binaryString.charCodeAt(i);
+                        }
+                        return bytes.buffer;
+                    }
+
+                    function displayImage(content) {
+                        canvas.style.display = 'block';
+                        audio.style.display = 'none';
+                        const img = new Image();
+                        img.src = 'data:image/jpeg;base64,' + content;
+                        img.onload = function() {
+                            canvas.width = img.width;
+                            canvas.height = img.height;
+                            const ctx = canvas.getContext('2d');
+                            ctx.drawImage(img, 0, 0);
+                        };
+                    }
+
+                    function displayAudio(content) {
+                        canvas.style.display = 'none';
+                        audio.style.display = 'block';
+                        audio.src = 'data:audio/mp3;base64,' + content;
+                        audio.load();
+                    }
+                    
+                    function waitForElement(selector, timeout = 3000) {
+                        return new Promise((resolve, reject) => {
+                            const interval = 100; // Check every 100ms
+                            const endTime = Date.now() + timeout;
+
+                            (function check() {
+                                if ($(selector).length > 0) {
+                                    resolve($(selector));
+                                } else if (Date.now() > endTime) {
+                                    reject(new Error(`Element ${selector} not found within timeout`));
+                                } else {
+                                    setTimeout(check, interval);
+                                }
+                            })();
+                        });
+                    }
+
+                    window.addEventListener('load', async () => {
+                        await waitForElement('#filesystem');
+                        await waitForElement('#editor-container');
+                        
+                        ace_editor = ace.edit("editor-container");
+                        
+                        ace_editor.session.on('change', function(delta) {
+                            // delta.start, delta.end, delta.lines, delta.action
+                            //console.log("File contents changed...");
+                            const activeTab = document.querySelector('.tab.active');
+                            if (activeTab) {
+                                openFiles[activeTab.id].content = ace_editor.getValue();
+                                openFiles[activeTab.id].modified = true;
+                            }
+                        });
+                    
+                        $('#filesystem').jstree({
+                            'core': {
+                                'data': [],
+                                'themes': {
+                                    'variant': 'large'
+                                },
+                                'check_callback': true
+                            },
+                            'types': {
+                                'file': {
+                                    'icon': 'jstree-file'
+                                },
+                                'folder': {
+                                    'icon': 'jstree-folder'
+                                }
+                            },
+                            'plugins': ['types']
+                        }).on('select_node.jstree', function (e, data) {
+                            const node = data.node;
+                            if (node.type === 'file') {
+                                openFile(node.id, node.text);
+                            } 
+                        });
+
+                        updateUserStatus();
+                        const db = await initDB();
+                        if (!db) {
+                            console.error('Failed to initialize DB');
+                            return;
+                        }
+                        
+                        const isDirectoryEmpty = await checkIfDirectoryEmpty(rootBasePath);
+                        if (isDirectoryEmpty) {
+                            await provideInitialFiles(initialFiles);
+                        } else {
+                            getFilesFromDirectory(rootBasePath);
+                        }
+                        
+                        {% if page.openFilesOnLoad %}
+                        // open initial files, if available
+                        var filesToOpen = {{ page.openFilesOnLoad | jsonify }};
+                        openMultipleFiles(filesToOpen);
+                        {% endif %}
+                    });
+
+                    async function clearDBPath(path) {
+                        const db = await initDB();
+                        if (!db) {
+                            console.error('Failed to initialize DB');
+                            return;
+                        }
+                        const transaction = db.transaction(STORE_NAME, 'readwrite');
+                        const store = transaction.objectStore(STORE_NAME);
+                        const request = store.getAll();
+
+                        return new Promise((resolve, reject) => {
+                            request.onsuccess = function(event) {
+                                const files = event.target.result;
+                                const filesToDelete = files.filter(file => file.path.startsWith(path));
+                                filesToDelete.forEach(file => store.delete(file.path));
+                                
+                                transaction.oncomplete = function() {
+                                    resolve();
+                                };
+                                transaction.onerror = function(event) {
+                                    reject(event.target.error);
+                                };
+                            };
+                            request.onerror = function(event) {
+                                reject(event.target.error);
+                            };
+                        });
+                    }
+
+                    async function clearDB() {
+                        const db = await initDB();
+                        if (!db) {
+                            console.error('Failed to initialize DB');
+                            return;
+                        }
+                        const transaction = db.transaction(STORE_NAME, 'readwrite');
+                        const store = transaction.objectStore(STORE_NAME);
+                        store.clear();
+                        return new Promise((resolve, reject) => {
+                            transaction.oncomplete = function() {
+                                resolve();
+                            };
+                            transaction.onerror = function(event) {
+                                reject(event.target.error);
+                            };
+                        });
+                    }
+
+                    function updateUserStatus() {
+                        const userId = localStorage.getItem('userId');
+                        if (userId) {
+                            userStatus.textContent = `Logged in as ${userId}`;
+                            loginBtn.style.display = 'none';
+                            logoutBtn.style.display = 'block';
+                            runBtn.disabled = false;
+                            uploadBtn.disabled = false;
+                            newBtn.disabled = false;
+                            newDirBtn.disabled = false;
+                            downloadBtn.disabled = false;
+                            resetBtn.disabled = false;
+                        } else {
+                            userStatus.textContent = '';
+                            loginBtn.style.display = 'block';
+                            logoutBtn.style.display = 'none';
+                            runBtn.disabled = true;
+                            saveBtn.disabled = true;
+                            uploadBtn.disabled = true;
+                            newBtn.disabled = true;
+                            newDirBtn.disabled = true;
+                            downloadBtn.disabled = true;
+                            resetBtn.disabled = true;
+                        }
+                    }
+
+                    async function checkIfDirectoryEmpty(directory) {
+                        const db = await initDB();
+                        if (!db) {
+                            console.error('Failed to initialize DB');
+                            return;
+                        }
+                        const transaction = db.transaction(STORE_NAME, 'readonly');
+                        const store = transaction.objectStore(STORE_NAME);
+                        const request = store.getAll();
+                        return new Promise((resolve, reject) => {
+                            request.onsuccess = function(event) {
+                                const files = event.target.result.filter(file => file.path.startsWith(directory));
+                                resolve(files.length === 0);
+                            };
+                            request.onerror = function(event) {
+                                reject(event.target.error);
+                            };
+                        });
+                    }
+                    
+                    async function getCodeText() {
+                        let codeText = await getAllFileContentsRecursively(rootBasePath);
+                        
+                        return codeText;
+                    }
+                    
+                    async function getMainCodeText() {
+                        let codeText = await getMainFileContentsRecursively(rootBasePath);
+                        
+                        return codeText;
+                    }
+
+                    {% if page.processor.submitformlink and page.processor.submitformlink != false %}
+                    logToConsole("{{ layout.submitformlinkdirections }}");
+                    {% endif %}
+
+                    {% if page.language == "cpp" %}
+                    const compileButton = document.createElement('button');
+                    compileButton.type = 'button';
+                    compileButton.id = 'compilebutton';
+                    compileButton.onclick = saveAndCompile;
+                    compileButton.innerText = 'Save Open Files and Compile';
+                    document.querySelector('.actions').appendChild(compileButton);
+                    {% endif %}
+
+                    {% if page.language == "cpp" %}
+                    let workerPath = "{{site.baseurl}}/assets/js/cpp/scripts/";
+                    class ProcessUI {
+                        constructor(name) {
+                            this.text = "";
+                            this.name = name;
+                            this.state = '';
+                            this.wasReady = false;
+                            this.timesRun = 0;
+
+                            this.process = new ProcessManager(name, name, workerPath)
+                            this.process.setStatus = this.setStatus.bind(this);
+                            this.process.print = this.print.bind(this);
+                            this.process.printErr = this.printErr.bind(this);
+                        }
+
+                        resetText() {
+                            this.text = "";
+                        }
+
+                        reboot() {
+                            this.process.terminate();
+                            this.process.start();
+                        }
+
+                        setStatus(state, status, doPrint) {
+                            if (doPrint === undefined) {
+                                doPrint = true;
+                            }
+                            if (doPrint) {
+                                logToConsole(state + ' ' + status);
+                            }
+                            this.state = state;
+                        };
+
+                        print({ text }) {
+                            this.text += text + "\n";
+                            logToConsole(this.text);
+                        };
+
+                        printErr({ text }) {
+                            this.text += text + "\n";
+                            logToConsole(this.text);
+                        };
+                    }   
+
+                    let clang = new ProcessUI('clang');
+                    let runtime = new ProcessUI('runtime');
+                    let clangOutput = null;
+
+                    clang.process.print({ text: 'Preparing clang...\n\n' });
+                    clang.process.workerCompileDone = args => {
+                        clangOutput = args.result;
+                        clang.process.setStatus('ready', 'Ready', false);
+                        if (args.result) {
+                            let s = "Compiled successfully: wasm size: " + args.result.length + ' bytes\n';
+                            logToConsole(s);
+                        }
+                    };    
+
+                    runtime.process.print({ text: 'Preparing runtime...\n\n' });
+                    runtime.process.workerRunDone = args => {
+                        runtime.timesRun++;
+                        if (runtime.timesRun < 3) {
+                            // For some reason it needs to be run more than once
+                            // for the text to fully update
+                            runtime.resetText();
+                            runtime.process.worker.postMessage({
+                                function: 'run',
+                                wasmBinary: clangOutput,
+                            });
+                        }
+                        else {
+                            runtime.process.setStatus('ready', 'Ready', false);
+                            logToConsole(runtime.text);
+                            checkAnswer();
+                        }
+
+                    };
+                    runtime.process.workerDebugReplaceBinary = args => {
+                        console.log('new size:  ' + args.newBinary.length + '\n');
+                        clangOutput = args.newBinary;
+                    };
+                    runtime.process.workerSendRun = function () {
+                        runtime.process.setStatus('busy', 'Running');
+                        runtime.process.postMessage({
+                            function: 'run',
+                            wasmBinary: clangOutput,
+                        });
+                    };
+
+                    clang.process.start();
+                    runtime.process.start(); 
+
+                    let compiledCode = "";
+                    
+                    async function saveAndCompile() {
+                        saveActiveTabs();
+                        compile();
+                    }
+
+                    async function compile() {
+                        logToConsole("Compiling...");
+                        if (clang.state !== 'ready') {
+                            alert("Compiler not finished loading yet");
+                            return;
+                        }
+                        clangOutput = null;
+                        clang.process.setStatus('busy', 'Running');
+                        let codeText = await getCodeText();
+                        let mainText = await getMainCodeText();
+                        compiledCode = codeText + '\n\n' + mainText;
+                        console.log(compiledCode);
+                        clang.process.worker.postMessage({
+                            function: 'compile',
+                            code: compiledCode,
+                        });
+                    }
+                    {% endif %}
+
+                    {% if page.language == "sql" %}
+                    async function doSql(codeString, mainString) {
+                        feedbackString = "";
+                        let code = mainString + '\n';
+                        code += codeString + '\n';
+                        console.log(code);
+                        
+                        config = {
+                          locateFile: filename => "{{site.baseurl}}/assets/js/sql.js/sql.js"
+                        }
+                        
+                        await initSqlJs(config).then(function(SQL){
+                          const db = new SQL.Database();
+
+                          stmts = code.split(';');
+                          
+                          for(var i = 0; i < stmts.length; i++) {
+                            lines = stmts[i].split('\n');
+                            
+                            stmt = '';
+                            for(var j = 0; j < lines.length; j++) {
+                                if(!(lines[j].trim().startsWith("--")) && lines[j].trim().length >= 1) {
+                                    stmt += lines[j] + ' ';
+                                }
+                            }
+                            
+                            stmt += ';';
+                            
+                            if(!(stmt.trim().startsWith("--")) && stmt.trim().length >= 1) {
+                                console.log("Executing: " + stmt);
+                                const res = db.exec(stmt);
+                                const resStr = JSON.stringify(res);
+                                feedbackString += resStr + '\n';
+                            }
+                          }
+                          
+                          logToConsole(feedbackString);
+                        });
+                        
+                        return feedbackString;
+                    }        
+                    {% endif %}
+
+                    async function runCode() {
+                        try {
+                            let editorText = await getCodeText();
+                            let mainText = await getMainCodeText();
+                            
+                            {% if page.language == "cpp" %}
+                            runtime.timesRun = 0;
+                            logToConsole("Running...");
+
+                            let codeText = editorText + '\n\n' + mainText;
+                            
+                            if (!(codeText === compiledCode)) {
+                                logToConsole("Warning: It looks like you edited code since you last compiled\nBe sure to compile again before running!");
+                            }
+                            runtime.process.setStatus('busy', 'Running');
+                            if (clangOutput === null) {
+                                alert("Need to compile code first!");
+                            }
+                            else {
+                                runtime.resetText();
+                                runtime.process.worker.postMessage({
+                                    function: 'run',
+                                    wasmBinary: clangOutput,
+                                });
+                            }              
+                            {% elsif page.language == "python" %}                            
+                            let student_code = editorText + '\n\n' + mainText;
+                            console.log(student_code);
+                            feedbackString = run_python_code(student_code);
+                            logToConsole(feedbackString);    
+                            {% elsif page.language == "sql" %}
+                            feedbackString = await doSql(editorText, mainText); 
+                            logToConsole(feedbackString);    
+                            {% elsif page.language == "java" %}                             
+                            let code = makeCodeJavaProcessing(editorText, mainText);
+                            console.log(code);
+                            console.feedbackString = null;
+                            instance = new Processing(canvas, code);
+                            while(console.feedbackString == null); // await processing
+                            feedbackString = console.feedbackString; // passing globals from anonymous scope via console in processing boilerplate code
+                            console.log(console.feedbackString);
+                            {% endif %}
+                            
+                            checkAnswer();
+                        } catch(err) {
+                            logToConsole("{{ page.processor.incorrectfeedback | strip }}");
+                            console.log("Exception in runCode");
+                            logToConsole("Error: " + err.message);
+                        }                
+                    }
+
+                    function checkAnswer() {
+                        console.log("Got feedback string: " + feedbackString);
+                        
+                        numAttempts++;
+                        {{ page.processor.feedbackprocess | strip }}
+                        if ({{ page.processor.correctcheck | strip}}) {
+                            correctlyAnswered = true;
+                            logToConsole("{{ page.processor.correctfeedback | strip}}");
+                            postCode(true);
+                        }
+                        {% if page.processor.incorrectchecks %}
+                        {% for check in page.processor.incorrectchecks %}
+                        else if ({{ check.incorrectcheck | strip}}) {
+                            logToConsole("{{ check.feedback | strip }}");
+                        }
+                        {% endfor %}
+                        {% endif %}
+                        else {
+                            logToConsole("{{ page.processor.incorrectfeedback | strip }}");
+                        }
+                        {% if page.canvashalftries %}
+                        if (!correctlyAnswered && numAttempts == {{ page.canvashalftries }}) {
+                            postCode(false);
+                        }
+                        {% endif %}
+                    }
+                    
+                    async function postCode(halfcredit) {
+                        // download encrypted submission version
+                        const allFiles = await getAllFilesRecursively(rootBasePath);
+                        const filteredFiles = allFiles.filter(file => !(file.excludeFromExport));
+                        const encryptedContent = await encryptFiles(filteredFiles, halfcredit);
+
+                        let url = `{{layout.formlink | default site.formlink}}` + encryptedContent;
+                        console.log("len(url)", url.length);
+                        window.open(url);
+                        
+                        // download encrypted submission version, if desired
+                        const userId = localStorage.getItem('userId') || `${defaultuser}`;
+                        const blob = new Blob([encryptedContent], { type: 'text/plain' });
+                        const a = document.createElement('a');
+                        a.href = URL.createObjectURL(blob);
+                        a.download = `${userId}.txt`;
+                        a.click();
+                    }
+
+                    function urlencodeFormData(fd){
+                        var s = '';
+                        function encode(s){ return encodeURIComponent(s).replace(/%20/g,'+'); }
+                        for(var pair of fd.entries()){
+                            if(typeof pair[1]=='string'){
+                                s += (s?'&':'') + encode(pair[0])+'='+encode(pair[1]);
+                            }
+                        }
+                        return s;
+                    }
+                });
+            </script>
+
     {{ content }} 
   </div>
 </div>

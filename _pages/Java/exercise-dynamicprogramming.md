@@ -11,6 +11,7 @@ info:
   goals:
     - To improve performance of a recursive algorithm by cacheing values via a Dynamic Program 
 
+canvascourseid: "12345"
 canvasasmtid: ""      
 canvaspoints: 3
   

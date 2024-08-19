@@ -10,6 +10,7 @@ info:
   goals:
     - To iterate over a 2-dimensional array
     
+canvascourseid: "12345"
 canvasasmtid: "137457"
 canvaspoints: 3
     

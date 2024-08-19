@@ -10,6 +10,7 @@ info:
   goals:
     - To perform arithmetic using the Java programming language
   
+canvascourseid: "12345"
 canvasasmtid: "137429"
 canvaspoints: 3
   

@@ -11,6 +11,7 @@ info:
     - To iterate over an array
     - To conditionally identify a specific array element by its index
   
+canvascourseid: "12345"
 canvasasmtid: "137454"
 canvaspoints: 3
   

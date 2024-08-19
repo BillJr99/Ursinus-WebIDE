@@ -13,6 +13,7 @@ info:
     - To write a function that computes an expression and returns its result
     - To call a function from <code>main()</code> and use its return value
     
+canvascourseid: "12345"
 canvasasmtid: "137430"
 canvaspoints: 3
     

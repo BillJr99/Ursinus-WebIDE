@@ -11,6 +11,7 @@ info:
     - To become familiar with the basic structure of a database
     - To write a SQL statement
     
+canvascourseid: "12345"
 canvasasmtid: "181953"   
 canvaspoints: 3
   

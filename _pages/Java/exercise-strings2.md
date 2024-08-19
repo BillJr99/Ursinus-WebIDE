@@ -10,6 +10,7 @@ info:
   goals:
     - To iterate over <code>String</code> variables and return part-way through the string iteration.
     
+canvascourseid: "12345"
 canvasasmtid: "137450"
 canvaspoints: 3
       
