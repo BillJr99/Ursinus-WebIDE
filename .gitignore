@@ -6,3 +6,4 @@ _site/**
 Gemfile.lock
 .text2qti.bespon
 Thumbs.db
+private/**
