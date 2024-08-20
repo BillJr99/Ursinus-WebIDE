@@ -82,10 +82,10 @@ submitformlinkdirections: "Clicking Run below will check your work and, if it pa
     }
     .output-container {
         border-bottom: 1px solid #ccc;
-        style="overflow-y:scroll;"
         max-height: 50vh;
+        overflow-y: auto;
         display: flex;
-        flex-direction: column-reverse;
+        flex-direction: column;
     }
     .filesystem-container {
         border-right: 1px solid #ccc;
@@ -192,6 +192,7 @@ submitformlinkdirections: "Clicking Run below will check your work and, if it pa
                     </div>
                     <div class="output-container" id="output-container">
                         <pre id="console">Console Output...</pre>
+                        <button id="clear-console">Clear Console</button>
                     </div>
                 </div>
                 <div class="right-container">
@@ -253,6 +254,8 @@ submitformlinkdirections: "Clicking Run below will check your work and, if it pa
                     const runBtn = document.getElementById('run');
                     const saveBtn = document.getElementById('save');
                     const consoleOutput = document.getElementById('console');
+                    const outputContainer = document.getElementById('output-container');
+                    const clearButton = document.getElementById('clear-console');
                     const filesystem = document.getElementById('filesystem');
                     const uploadBtn = document.getElementById('upload');
                     const downloadBtn = document.getElementById('download');
@@ -284,6 +287,9 @@ submitformlinkdirections: "Clicking Run below will check your work and, if it pa
                     
                     function logToConsole(message) {
                         consoleOutput.textContent += message + '\n';
+                        
+                        // Scroll to the bottom
+                        outputContainer.scrollTop = outputContainer.scrollHeight;
                     }
                                         
                     const PROCESSING_CODE_BEGIN = `
@@ -617,6 +623,11 @@ submitformlinkdirections: "Clicking Run below will check your work and, if it pa
                             }
                         };
                     }
+                    
+                    clearButton.addEventListener('click', () => {
+                        consoleOutput.textContent = '';
+                        outputContainer.scrollTop = outputContainer.scrollHeight;
+                    });                    
 
                     loginBtn.addEventListener('click', async () => {
                         const userId = prompt("Enter your user ID:");
@@ -1413,7 +1424,7 @@ submitformlinkdirections: "Clicking Run below will check your work and, if it pa
                         if ({{ page.processor.correctcheck | strip}}) {
                             correctlyAnswered = true;
                             logToConsole("{{ page.processor.correctfeedback | strip}}");
-                            postCode(true);
+                            postCode(false, false);
                         }
                         {% if page.processor.incorrectchecks %}
                         {% for check in page.processor.incorrectchecks %}
@@ -1427,12 +1438,12 @@ submitformlinkdirections: "Clicking Run below will check your work and, if it pa
                         }
                         {% if page.canvashalftries %}
                         if (!correctlyAnswered && numAttempts == {{ page.canvashalftries }}) {
-                            postCode(false);
+                            postCode(true, false);
                         }
                         {% endif %}
                     }
                     
-                    async function postCode(halfcredit) {
+                    async function postCode(halfcredit, downloadblob) {
                         // download encrypted submission version
                         const allFiles = await getAllFilesRecursively(rootBasePath);
                         const filteredFiles = allFiles.filter(file => !(file.excludeFromExport));
@@ -1443,12 +1454,14 @@ submitformlinkdirections: "Clicking Run below will check your work and, if it pa
                         window.open(url);
                         
                         // download encrypted submission version, if desired
-                        const userId = localStorage.getItem('userId') || `${defaultuser}`;
-                        const blob = new Blob([encryptedContent], { type: 'text/plain' });
-                        const a = document.createElement('a');
-                        a.href = URL.createObjectURL(blob);
-                        a.download = `${userId}.txt`;
-                        a.click();
+                        if(downloadblob) {
+                            const userId = localStorage.getItem('userId') || `${defaultuser}`;
+                            const blob = new Blob([encryptedContent], { type: 'text/plain' });
+                            const a = document.createElement('a');
+                            a.href = URL.createObjectURL(blob);
+                            a.download = `${userId}.txt`;
+                            a.click();
+                        }
                     }
 
                     function urlencodeFormData(fd){
