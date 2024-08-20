@@ -286,10 +286,14 @@ submitformlinkdirections: "Clicking Run below will check your work and, if it pa
                     ];
                     
                     function scrollConsoleToBottom() {
-                        setTimeout(() => {
-                            outputContainer.scrollTop = outputContainer.scrollHeight;
-                        }, 0);                    
+                        outputContainer.scrollTop = outputContainer.scrollHeight;
                     }
+                    
+                    const consoleScrollobserver = new MutationObserver(() => {
+                        scrollConsoleToBottom();
+                    });
+
+                    consoleScrollobserver.observe(consoleOutput, { childList: true });
                     
                     function logToConsole(message) {
                         consoleOutput.textContent += message + '\n';
