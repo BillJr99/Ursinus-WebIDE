@@ -183,6 +183,7 @@ submitformlinkdirections: "Clicking Run below will check your work and, if it pa
                     <button id="new" disabled>New</button>
                     <button id="new-dir" disabled>Make Directory</button>
                     <button id="download" disabled>Download</button>
+                    <button id="clear-console">Clear Console</button>
                     <button id="reset" disabled>Reset</button>
                 </div>
             </header>
@@ -192,7 +193,6 @@ submitformlinkdirections: "Clicking Run below will check your work and, if it pa
                     </div>
                     <div class="output-container" id="output-container">
                         <pre id="console">Console Output...</pre>
-                        <button id="clear-console">Clear Console</button>
                     </div>
                 </div>
                 <div class="right-container">
@@ -285,11 +285,16 @@ submitformlinkdirections: "Clicking Run below will check your work and, if it pa
                         {% endfor %}            
                     ];
                     
+                    function scrollConsoleToBottom() {
+                        setTimeout(() => {
+                            outputContainer.scrollTop = outputContainer.scrollHeight;
+                        }, 0);                    
+                    }
+                    
                     function logToConsole(message) {
                         consoleOutput.textContent += message + '\n';
                         
-                        // Scroll to the bottom
-                        outputContainer.scrollTop = outputContainer.scrollHeight;
+                        scrollConsoleToBottom();
                     }
                                         
                     const PROCESSING_CODE_BEGIN = `
@@ -626,7 +631,8 @@ submitformlinkdirections: "Clicking Run below will check your work and, if it pa
                     
                     clearButton.addEventListener('click', () => {
                         consoleOutput.textContent = '';
-                        outputContainer.scrollTop = outputContainer.scrollHeight;
+                        
+                        scrollConsoleToBottom();
                     });                    
 
                     loginBtn.addEventListener('click', async () => {
@@ -887,7 +893,7 @@ submitformlinkdirections: "Clicking Run below will check your work and, if it pa
                         });
                     }
 
-                    async function encryptFiles(files, halfcredit) {
+                    async function encryptFiles(files, halfcredit, points) {
                         const aesKey = await window.crypto.subtle.generateKey(
                             {
                                 name: 'AES-CBC',
@@ -942,7 +948,8 @@ submitformlinkdirections: "Clicking Run below will check your work and, if it pa
                                 user: arrayBufferToBase64(encryptedUserId), 
                                 courseId: courseid,
                                 asmtId: asmtid,
-                                halfcredit: halfcredit
+                                halfcredit: halfcredit,
+                                points: points
                             };
 
                             return window.btoa(JSON.stringify(encryptedPackage));
@@ -1419,12 +1426,14 @@ submitformlinkdirections: "Clicking Run below will check your work and, if it pa
                     function checkAnswer() {
                         console.log("Got feedback string: " + feedbackString);
                         
+                        const points = {% if page.info.points %}{{page.info.points}}{% else %}0{% endif %};
+                        
                         numAttempts++;
                         {{ page.processor.feedbackprocess | strip }}
                         if ({{ page.processor.correctcheck | strip}}) {
                             correctlyAnswered = true;
                             logToConsole("{{ page.processor.correctfeedback | strip}}");
-                            postCode(false, false);
+                            postCode(false, false, points);
                         }
                         {% if page.processor.incorrectchecks %}
                         {% for check in page.processor.incorrectchecks %}
@@ -1438,16 +1447,16 @@ submitformlinkdirections: "Clicking Run below will check your work and, if it pa
                         }
                         {% if page.canvashalftries %}
                         if (!correctlyAnswered && numAttempts == {{ page.canvashalftries }}) {
-                            postCode(true, false);
+                            postCode(true, false, points);
                         }
                         {% endif %}
                     }
                     
-                    async function postCode(halfcredit, downloadblob) {
+                    async function postCode(halfcredit, downloadblob, points) {
                         // download encrypted submission version
                         const allFiles = await getAllFilesRecursively(rootBasePath);
                         const filteredFiles = allFiles.filter(file => !(file.excludeFromExport));
-                        const encryptedContent = await encryptFiles(filteredFiles, halfcredit);
+                        const encryptedContent = await encryptFiles(filteredFiles, halfcredit, points);
 
                         let url = `{% if layout.formlink %}{{ layout.formlink }}{% else %}{{ site.formlink }}{% endif %}` + encryptedContent;
                         console.log("len(url)", url.length);
