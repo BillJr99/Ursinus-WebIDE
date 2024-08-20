@@ -192,7 +192,7 @@ submitformlinkdirections: "Clicking Run below will check your work and, if it pa
                     <div class="editor-container" id="editor-container">
                     </div>
                     <div class="output-container" id="output-container">
-                        <pre id="console">Console Output...</pre>
+                        <pre id="console"></pre>
                     </div>
                 </div>
                 <div class="right-container">
@@ -291,6 +291,8 @@ submitformlinkdirections: "Clicking Run below will check your work and, if it pa
                         consoleOutput.appendChild(newLine);
                         newLine.scrollIntoView({ behavior: "smooth" });
                     }
+                    
+                    logToConsole("Console output...");
                                         
                     const PROCESSING_CODE_BEGIN = `
                     var feedbackString = \"\";
