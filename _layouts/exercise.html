@@ -70,13 +70,16 @@ submitformlinkdirections: "Clicking Run below will check your work and, if it pa
         height: 100%;
     }
     .editor-container, .output-container, .filesystem-container, .canvas-container {
-        flex: 1;
         padding: 10px;
         box-sizing: border-box;
         height: 100%;
         min-height: 50%;
     }
+    .canvas-container {
+        flex: 1;
+    }
     .editor-container {
+        flex: 1;
         border-right: 1px solid #ccc;
         border-bottom: 1px solid #ccc;
     }
@@ -88,6 +91,7 @@ submitformlinkdirections: "Clicking Run below will check your work and, if it pa
         flex-direction: column;
     }
     .filesystem-container {
+        flex: 1;
         border-right: 1px solid #ccc;
         display: flex;
         flex-direction: column;
