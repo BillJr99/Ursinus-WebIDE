@@ -2,12 +2,14 @@ Ursinus WebIDE
 
 In `config.yml`, set:
 
-publickey: |
+```
+publickey: |  
   YOUR PUBLIC KEY HERE
-  
-canvascourseid: courseid1, courseid2, courseid3
+```
 
-formlink: LINK TO GOOGLE SHEET FOR FORM PROCESSING HERE
+`canvascourseid: courseid1, courseid2, courseid3`  
+
+`formlink: LINK TO GOOGLE SHEET FOR FORM PROCESSING HERE`  
 
 publickey can be overridden in the layout 
 canvascourseid can be overridden in the exercise page
