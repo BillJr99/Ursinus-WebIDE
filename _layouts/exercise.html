@@ -70,16 +70,13 @@ submitformlinkdirections: "Clicking Run below will check your work and, if it pa
         height: 100%;
     }
     .editor-container, .output-container, .filesystem-container, .canvas-container {
+        flex: 1;
         padding: 10px;
         box-sizing: border-box;
         height: 100%;
         min-height: 50%;
     }
-    .canvas-container {
-        flex: 1;
-    }
     .editor-container {
-        flex: 1;
         border-right: 1px solid #ccc;
         border-bottom: 1px solid #ccc;
     }
@@ -91,7 +88,6 @@ submitformlinkdirections: "Clicking Run below will check your work and, if it pa
         flex-direction: column;
     }
     .filesystem-container {
-        flex: 1;
         border-right: 1px solid #ccc;
         display: flex;
         flex-direction: column;
@@ -289,20 +285,11 @@ submitformlinkdirections: "Clicking Run below will check your work and, if it pa
                         {% endfor %}            
                     ];
                     
-                    function scrollConsoleToBottom() {
-                        outputContainer.scrollTop = outputContainer.scrollHeight;
-                    }
-                    
-                    const consoleScrollobserver = new MutationObserver(() => {
-                        scrollConsoleToBottom();
-                    });
-
-                    consoleScrollobserver.observe(consoleOutput, { childList: true });
-                    
                     function logToConsole(message) {
-                        consoleOutput.textContent += message + '\n';
-                        
-                        scrollConsoleToBottom();
+                        const newLine = document.createElement('div');
+                        newLine.textContent = message + '\n';
+                        consoleOutput.appendChild(newLine);
+                        newLine.scrollIntoView({ behavior: "smooth" });
                     }
                                         
                     const PROCESSING_CODE_BEGIN = `
@@ -638,9 +625,7 @@ submitformlinkdirections: "Clicking Run below will check your work and, if it pa
                     }
                     
                     clearButton.addEventListener('click', () => {
-                        consoleOutput.textContent = '';
-                        
-                        scrollConsoleToBottom();
+                        consoleOutput.innerHTML = '';
                     });                    
 
                     loginBtn.addEventListener('click', async () => {
