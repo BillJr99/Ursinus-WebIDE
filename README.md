@@ -1,6 +1,6 @@
 Ursinus WebIDE
 
-In `config.yal`, set:
+In `config.yml`, set:
 
 publickey: |
   YOUR PUBLIC KEY HERE
