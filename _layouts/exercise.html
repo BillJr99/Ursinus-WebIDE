@@ -137,6 +137,9 @@ submitformlinkdirections: "Clicking Run below will check your work and, if it pa
 <script type="text/javascript" src="{{site.baseurl}}/assets/js/brython.min.js"></script>
 <script type="text/javascript" src="{{site.baseurl}}/assets/js/brython_stdlib.min.js"></script>
 {% endif %}
+{% if page.language == "pyodide" %}
+<script type="text/javascript" src="https://cdn.jsdelivr.net/pyodide/v0.26.2/full/pyodide.js"></script>
+{% endif %}
     
 <div id="main" role="main">
   <div class="archive"> 
@@ -497,7 +500,7 @@ submitformlinkdirections: "Clicking Run below will check your work and, if it pa
                                 ace_editor.setFontSize(16);
                                 {% if page.language == "cpp" %}
                                 ace_editor.session.setMode("ace/mode/c_cpp");
-                                {% elsif page.language == "python" %}
+                                {% elsif page.language == "python" or page.language == "pyodide"%}
                                 ace_editor.session.setMode("ace/mode/python");
                                 {% elsif page.language == "sql" %}
                                 ace_editor.session.setMode("ace/mode/sql");
@@ -1367,6 +1370,31 @@ submitformlinkdirections: "Clicking Run below will check your work and, if it pa
                     }        
                     {% endif %}
 
+                    {% if page.language == "pyodide" %}
+                        // Load the required packages
+                        let packages = "{{page.info.packages}}".split(",");
+                        let pyodide = null;
+                        let pyodideLoaded = false;
+
+                        async function setupPyodide() {
+                            pyodide = await loadPyodide();
+                            logToConsole("Importing modules {{page.info.packages}}...");
+                            for (let i = 0; i < packages.length; i++) {
+                                await pyodide.loadPackage(packages[i]);
+                            }
+                            logToConsole("Finished loading modules.  You can run your code now.");
+                            pyodideLoaded = true;
+                        }
+
+                        let pyodidePromise = new Promise((resolve) => {
+                            setupPyodide().then(()=>{
+                                resolve();
+                            });
+                        });
+
+                        
+                    {% endif %}
+
                     async function runCode() {
                         try {
                             let editorText = await getCodeText();
@@ -1397,6 +1425,13 @@ submitformlinkdirections: "Clicking Run below will check your work and, if it pa
                             console.log(student_code);
                             feedbackString = run_python_code(student_code);
                             logToConsole(feedbackString);    
+                            {% elsif page.language == "pyodide" %}
+                            if (!pyodideLoaded) {
+                                await pyodidePromise;
+                            }
+                            let student_code = editorText + '\n\n' + mainText;
+                            console.log(student_code);
+                            pyodide.runPython(student_code);
                             {% elsif page.language == "sql" %}
                             feedbackString = await doSql(editorText, mainText); 
                             logToConsole(feedbackString);    
