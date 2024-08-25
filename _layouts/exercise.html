@@ -1708,6 +1708,8 @@ def pyodide_print(s):
                             {% elsif page.language == "sql" %}
                             feedbackString = await doSql(editorText, mainText); 
                             logToConsole(feedbackString);    
+
+
                             {% elsif page.language == "java" %}                             
                             let code = makeCodeJavaProcessing(editorText, mainText);
                             console.log(code);
@@ -1715,7 +1717,18 @@ def pyodide_print(s):
                             instance = new Processing(canvas, code);
                             while(console.feedbackString == null); // await processing
                             feedbackString = console.feedbackString; // passing globals from anonymous scope via console in processing boilerplate code
-                            console.log(console.feedbackString);
+                            logToConsole(console.feedbackString);
+
+
+
+                            {% elsif page.language == "javascript" %}
+                            function feedbackPrintlnJSConsole(s) {
+                                logToConsole(s);
+                                return s + "\n";
+                            }
+                            let code = editorText + "\n\n" + mainText;
+                            code = code.replace(/console.log/g, "feedbackString += feedbackPrintlnJSConsole");
+                            eval(code);
                             {% endif %}
                             
                             await checkAnswer();
