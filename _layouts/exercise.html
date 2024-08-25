@@ -227,6 +227,12 @@ def save_audio_js(arr, sr):
     global audio_sav_sr
     audio_sav_arr = np.array(arr).tolist()
     audio_sav_sr = sr
+
+PYODIDE_COUT = ""
+def pyodide_print(s):
+    global PYODIDE_COUT
+    PYODIDE_COUT += s
+    
             </div>
             {% endif %}
 
@@ -409,7 +415,11 @@ def save_audio_js(arr, sr):
                     const DB_VERSION = 1;
                     const STORE_NAME = 'Files';
 
-                    logToConsole("Ready!");
+
+                    {% if page.language != "pyodide" %}
+                        logToConsole("Ready!");
+                    {% endif %}
+                    
 
                     function initDB() {
                         return new Promise((resolve, reject) => {
@@ -1430,17 +1440,22 @@ def save_audio_js(arr, sr):
 
                     {% if page.language == "pyodide" %}
                         // Load the required packages
-                        let packages = "{{page.info.packages}}".split(",");
+                        let packages = [];
+                        {% if page.info.packages %}
+                        if ("{{page.info.packages}}".length > 0) {
+                            packages = "{{page.info.packages}}".split(",");
+                        }
+                        {% endif %}
                         let pyodide = null;
                         let pyodideLoaded = false;
 
                         async function setupPyodide() {
                             pyodide = await loadPyodide();
-                            logToConsole("Importing modules {{page.info.packages}}...");
+                            logToConsole("Importing packages {{page.info.packages}}...");
                             for (let i = 0; i < packages.length; i++) {
                                 await pyodide.loadPackage(packages[i]);
                             }
-                            logToConsole("Finished loading modules.  You can run your code now.");
+                            logToConsole("Finished loading packages.  You can run your code now.");
                             pyodideLoaded = true;
                         }
 
@@ -1531,7 +1546,7 @@ def save_audio_js(arr, sr):
                             logToConsole("{{ page.processor.incorrectfeedback | strip }}");
                             console.log("Exception in runCode");
                             logToConsole("Error: " + err.message);
-                        }               
+                        }              
                     }
 
                     function checkAnswer() {

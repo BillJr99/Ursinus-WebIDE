@@ -20,7 +20,7 @@ Use with formprocessor backend to pull from google sheets
 
 ## Pyodide Modules
 
-In the markdown files for the modules you're creating, be sure to specify the <code>packages</code> field to load the packages that are necessary for the module.  For instance, for a module that creates a plot in matplotlib, you'd say
+In the markdown files for the modules you're creating, be sure to specify the <code>packages</code> field nested under <code>info</code> to load the packages that are necessary for the module.  For instance, for a module that creates a plot in matplotlib, you'd say
 
 <code>
 packages: "numpy,matplotlib"
