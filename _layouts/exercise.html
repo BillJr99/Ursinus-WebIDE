@@ -301,6 +301,9 @@ def pyodide_print(s):
                 var imgStr = "";
                 var audioStr = "";
                 {% endif %}
+                {% if page.language == "javascript" or page.language == "graphics_view" or page.language == "graphics_shader" %}
+                var canvasStr = "";
+                {% endif %}
 
                 document.addEventListener('DOMContentLoaded', () => {
                     {% if page.language == "python" %}
@@ -865,6 +868,11 @@ def pyodide_print(s):
                             await clearDBPath(rootBasePath);
                             await provideInitialFiles(initialFiles);
                             clearTabsAndCanvas();
+                            {% if page.openFilesOnLoad %}
+                            // open initial files, if available
+                            var filesToOpen = {{ page.openFilesOnLoad | jsonify }};
+                            openMultipleFiles(filesToOpen);
+                            {% endif %}
                         }
                     });
 
@@ -1371,7 +1379,7 @@ def pyodide_print(s):
                     };    
 
                     runtime.process.print({ text: 'Preparing runtime...\n\n' });
-                    runtime.process.workerRunDone = args => {
+                    runtime.process.workerRunDone = async function(args) {
                         runtime.timesRun++;
                         if (runtime.timesRun < 3) {
                             // For some reason it needs to be run more than once
@@ -1385,7 +1393,7 @@ def pyodide_print(s):
                         else {
                             runtime.process.setStatus('ready', 'Ready', false);
                             logToConsole(runtime.text);
-                            checkAnswer();
+                            await checkAnswer();
                         }
 
                     };
@@ -1687,9 +1695,10 @@ def pyodide_print(s):
 
                             ////////////////////////  GRAPHICS ///////////////////////////////
                             {% elsif page.language == "graphics_view" or page.language == "graphics_shader" %}
+                            console.log("editorText\n", editorText);
+                            eval(editorText);
                             await updateScene();
-
-
+                            canvasStr = glcanvas.toDataURL();
 
                             //////////////////////////////////////////////////////////////////
 
@@ -1708,7 +1717,7 @@ def pyodide_print(s):
                             console.log(console.feedbackString);
                             {% endif %}
                             
-                            checkAnswer();
+                            await checkAnswer();
                         } catch(err) {
                             logToConsole("{{ page.processor.incorrectfeedback | strip }}");
                             console.log("Exception in runCode");
@@ -1716,7 +1725,7 @@ def pyodide_print(s):
                         }              
                     }
 
-                    function checkAnswer() {
+                    async function checkAnswer() {
                         console.log("Got feedback string: " + feedbackString);
                         
                         const points = {% if page.info.points %}{{page.info.points}}{% else %}0{% endif %};
