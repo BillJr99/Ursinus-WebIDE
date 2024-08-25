@@ -143,7 +143,10 @@ submitformlinkdirections: "Clicking Run below will check your work and, if it pa
 <script src="{{site.baseurl}}/assets/js/wav.js"></script>
 {% endif %}
 {% if page.language == "graphics_view" or page.language == "graphics_shader" %}
+
 <script type="text/javascript" src = "{{site.baseurl}}/assets/js/ggslac/jslibs/dat.gui.min.js"></script>
+<script type="text/javascript" src = "{{site.baseurl}}/assets/js/ggslac/jslibs/webgl-utils.js"></script>
+<script type="text/javascript" src = "{{site.baseurl}}/assets/js/ggslac/jslibs/webgl-debug.js"></script>
 
 <script src="{{site.baseurl}}/assets/js/ggslac/geometry/polymesh.js"></script>
 <script src="{{site.baseurl}}/assets/js/ggslac/geometry/basicmesh.js"></script>
@@ -202,7 +205,6 @@ submitformlinkdirections: "Clicking Run below will check your work and, if it pa
                     <button id="new" disabled>New</button>
                     <button id="new-dir" disabled>Make Directory</button>
                     <button id="download" disabled>Download</button>
-                    <button id="clear-console">Clear Console</button>
                     <button id="reset" disabled>Reset</button>
                 </div>
             </header>
@@ -211,6 +213,7 @@ submitformlinkdirections: "Clicking Run below will check your work and, if it pa
                     <div class="editor-container" id="editor-container">
                     </div>
                     <div class="output-container" id="output-container">
+                        <button id="clear-console">Clear Console</button>
                         <pre id="console"></pre>
                     </div>
                 </div>
@@ -221,7 +224,11 @@ submitformlinkdirections: "Clicking Run below will check your work and, if it pa
                     <div class="canvas-container">
                         <div id="imageArea"></div>
                         <div id="audioArea"></div>
-                        <canvas id="GLCanvas1" style="border: none; display:none;" width="800" height="600"></canvas>
+                        <div id="graphicsArea" style="display:none;">
+                            <button id="updateScene">Update Scene</button>
+                            <canvas id="GLCanvas1" style="border: none" width="800" height="600"></canvas>
+                        </div>
+
                     </div>
                 </div>
             </main>
@@ -1498,6 +1505,7 @@ def pyodide_print(s):
 
 
                     {% if page.language == "graphics_view" or page.language == "graphics_shader" %}
+                        document.getElementById("graphicsArea").style.display = "block";
                         let shaderPath = "{{site.baseurl}}/assets/js/ggslac/shaders/";
                         let meshesPath = "{{site.baseurl}}/assets/js/ggslac/meshes/";
                         let glcanvas = document.getElementById("GLCanvas1");
@@ -1505,27 +1513,59 @@ def pyodide_print(s):
                         let scene = new SceneCanvas(glcanvas, shaderPath, meshesPath, true, true, true);
                         scene.gui.close();
 
+                        function updateSceneFromContent(content) {
+                            scene.setupScene(JSON.parse(content), glcanvas.clientWidth, glcanvas.clientHeight);
+                            scene.drawEdges = false;
+                            scene.updateMeshDrawings();
+                            scene.repaint();
+                        }
 
-                        async function updateScene() {
-                            console.log("Updating scene");
+                        /**
+                         * Pull out the text from the file scene.json and update the
+                         * scene in ggslac
+                         * 
+                         * @param {event} evt Button click event (if applicable)
+                         * @param {boolean} firstTime If true, use scene.json in initialFiles.
+                         * Otherwise, query the database and find the most recent version
+                         */
+                        async function updateScene(evt, firstTime) {
+                            if (firstTime === undefined) {
+                                firstTime = false;
+                            }
+                            let files = initialFiles;
+                            if (!firstTime) {
+                                files = await getAllFilesRecursively(rootBasePath);
+                            }
                             try {
-                                let files = await getAllFilesRecursively();
-                                files.forEach(file => {
-                                    if (file.name.split(rootBasePath)[1] == "scene.json") {
-                                        console.log(file.content);
-                                        scene.setupScene(JSON.parse(file.content), glcanvas.clientWidth, glcanvas.clientHeight);
-                                        scene.drawEdges = false;
-                                        scene.updateMeshDrawings();
+                                let foundScene = false;
+                                for (let i = 0; i < files.length; i++) {
+                                    let file = files[i];
+                                    let path = file.fileName;
+                                    let name = file.fileName;
+                                    if (!firstTime) {
+                                        path = file.path;
+                                        name = path.split(rootBasePath)[1];
                                     }
-                                })
-
+                                    if (name.match(/(scene.json)$/)) {
+                                        if (!firstTime) {
+                                            console.log("openFiles", openFiles);
+                                            await saveFile(path);
+                                        }
+                                        updateSceneFromContent(file.content);
+                                        foundScene = true;
+                                    }
+                                }
+                                if (!foundScene) {
+                                    alert("No scene.json file found!");
+                                }
                             }
                             catch(err) {
-                                feedback.setValue("Error Parsing Scene: " + err.message);
+                                logToConsole("Error Parsing Scene: " + err.message);
                             }
 
                         }
-                        updateScene();
+                        updateScene(null, true);
+                        document.getElementById("updateScene").onclick = updateScene;
 
 
 
