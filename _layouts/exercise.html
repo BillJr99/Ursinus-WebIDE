@@ -125,6 +125,7 @@ submitformlinkdirections: "Clicking Run below will check your work and, if it pa
 <script src="{{site.baseurl}}/assets/js/util.js"></script>
 <script src="{{site.baseurl}}/assets/js/main.js"></script>
 <script src="{{site.baseurl}}/assets/js/ace.js" type="text/javascript" charset="utf-8"></script>
+<script src="{{site.baseurl}}/assets/js/gl-matrix-min.js"></script>
 {% if page.language == "cpp" %}
 <script src = "{{site.baseurl}}/assets/js/cpp/process-manager.js"></script>
 <script src = "{{site.baseurl}}/assets/js/cpp/runtime.js"></script>
@@ -140,6 +141,20 @@ submitformlinkdirections: "Clicking Run below will check your work and, if it pa
 {% if page.language == "pyodide" %}
 <script type="text/javascript" src="https://cdn.jsdelivr.net/pyodide/v0.26.2/full/pyodide.js"></script>
 <script src="{{site.baseurl}}/assets/js/wav.js"></script>
+{% endif %}
+{% if page.language == "graphics_view" or page.language == "graphics_shader" %}
+<script type="text/javascript" src = "{{site.baseurl}}/assets/js/ggslac/jslibs/dat.gui.min.js"></script>
+
+<script src="{{site.baseurl}}/assets/js/ggslac/geometry/polymesh.js"></script>
+<script src="{{site.baseurl}}/assets/js/ggslac/geometry/basicmesh.js"></script>
+<script src="{{site.baseurl}}/assets/js/ggslac/geometry/primitives3d.js"></script>
+<script src="{{site.baseurl}}/assets/js/ggslac/geometry/cameras3d.js"></script>
+<script src="{{site.baseurl}}/assets/js/ggslac/shaders/shaders.js"></script>
+<script src="{{site.baseurl}}/assets/js/ggslac/utils/simpledraw.js"></script>
+
+<script src="{{site.baseurl}}/assets/js/ggslac/viewers/basecanvas.js"></script>
+<script src="{{site.baseurl}}/assets/js/ggslac/viewers/scenecanvas.js"></script>
+<script src="{{site.baseurl}}/assets/js/ggslac/viewers/matrixanim.js"></script>
 {% endif %}
     
 <div id="main" role="main">
@@ -206,6 +221,7 @@ submitformlinkdirections: "Clicking Run below will check your work and, if it pa
                     <div class="canvas-container">
                         <div id="imageArea"></div>
                         <div id="audioArea"></div>
+                        <canvas id="GLCanvas1" style="border: none; display:none;" width="800" height="600"></canvas>
                     </div>
                 </div>
             </main>
@@ -532,9 +548,9 @@ def pyodide_print(s):
                                                 
                         request.onsuccess = function(event) {
                             const file = event.target.result;
-                            console.log(file);
                             if (file) {
                                 ace_editor.setFontSize(16);
+                                // Default language settings
                                 {% if page.language == "cpp" %}
                                 ace_editor.session.setMode("ace/mode/c_cpp");
                                 {% elsif page.language == "python" or page.language == "pyodide"%}
@@ -543,7 +559,19 @@ def pyodide_print(s):
                                 ace_editor.session.setMode("ace/mode/sql");
                                 {% elsif page.language == "java" %}
                                 ace_editor.session.setMode("ace/mode/java");
+                                {% elsif page.language == "javascript" or page.language == "graphics_view" or page.language == "graphics_shader" %}
+                                ace_editor.session.setMode("ace/mode/javascript");
                                 {% endif %}  
+                                // Override based on file extension
+                                if (path.match(/\.(frag|vert|cpp)$/)) {
+                                    ace_editor.session.setMode("ace/mode/c_cpp");
+                                }
+                                else if (path.match(/\.(py)$/)) {
+                                    ace_editor.session.setMode("ace/mode/python");
+                                }
+                                else if (path.match(/\.(json|javascript)$/)) {
+                                    ace_editor.session.setMode("ace/mode/javascript");
+                                }
 
                                 if(file.readOnly == true) {
                                     console.log("Read only file");
@@ -1466,7 +1494,92 @@ def pyodide_print(s):
                         });
 
                         
-                    {% endif %}
+                    {% endif %} // End of pyodide-specific code
+
+
+                    {% if page.language == "graphics_view" or page.language == "graphics_shader" %}
+                        let shaderPath = "{{site.baseurl}}/assets/js/ggslac/shaders/";
+                        let meshesPath = "{{site.baseurl}}/assets/js/ggslac/meshes/";
+                        let glcanvas = document.getElementById("GLCanvas1");
+                        glcanvas.addEventListener("contextmenu", function(e){ e.stopPropagation(); e.preventDefault(); return false; }); //Need this to disable the menu that pops up on right clicking
+                        let scene = new SceneCanvas(glcanvas, shaderPath, meshesPath, true, true, true);
+                        scene.gui.close();
+
+
+                        async function updateScene() {
+                            console.log("Updating scene");
+                            try {
+                                let files = await getAllFilesRecursively();
+                                files.forEach(file => {
+                                    if (file.name.split(rootBasePath)[1] == "scene.json") {
+                                        console.log(file.content);
+                                        scene.setupScene(JSON.parse(file.content), glcanvas.clientWidth, glcanvas.clientHeight);
+                                        scene.drawEdges = false;
+                                        scene.updateMeshDrawings();
+                                    }
+                                })
+
+                            }
+                            catch(err) {
+                                feedback.setValue("Error Parsing Scene: " + err.message);
+                            }
+
+                        }
+                        updateScene();
+
+
+
+                        let offscreenCanvas = document.createElement("canvas");
+                        offscreenCanvas.width = glcanvas.width;
+                        offscreenCanvas.height = glcanvas.height;
+                        offscreenCanvas.ctx = offscreenCanvas.getContext("2d");
+
+                        /**
+                         * Decode a PNG image using an offscreen canvas
+                         * @param pngSrc A base64 representation of the image in PNG format
+                         * @return A promise for the decoded image
+                         */
+                        function decodeImage(pngSrc) {
+                            return new Promise((resolve, reject) => {
+                                let image = new Image();
+                                image.src = pngSrc;
+                                image.onload = function() {
+                                    offscreenCanvas.ctx.drawImage(image, 0, 0);
+                                    resolve(offscreenCanvas.ctx.getImageData(0, 0, glcanvas.width, glcanvas.height));
+                                }
+                            });
+
+                        }
+
+                        const DEFAULT_TOL = 2*255*500;
+                        /**
+                         * Decode two PNG images and compare them pixel by pixel
+                         * @param pngSrc1 A base64 representation of the first image in PNG format
+                         * @param pngSrc2 A base64 representation of the second image in PNG format
+                         * @return A promise for the equality check
+                         */
+                        function pngImagesEqualTol(pngSrc1, pngSrc2, tol, name) {
+                            if (tol === undefined) {
+                                tol = DEFAULT_TOL;
+                            }
+                            if (name == undefined) {
+                                name = "";
+                            }
+                            return new Promise((resolve, reject) => {
+                                decodeImage(pngSrc1).then(function(I1) {
+                                    decodeImage(pngSrc2).then(function(I2) {
+                                        let diff = 0;
+                                        for (let i = 0; i < I1.data.length; i++) {
+                                            diff += Math.abs(I1.data[i] - I2.data[i]);
+                                        }
+                                        console.log(name + ": " + diff);
+                                        resolve(diff < tol);
+                                    });
+                                });
+                            });
+                        }
+                    {% endif %} // End of graphics-specific code
+
 
                     async function runCode() {
                         try {
@@ -1506,6 +1619,9 @@ def pyodide_print(s):
                             logToConsole(feedbackString);    
 
 
+
+                            ////////////////////////  PYODIDE ////////////////////////////////
+
                             {% elsif page.language == "pyodide" %}
                             if (!pyodideLoaded) {
                                 await pyodidePromise;
@@ -1524,7 +1640,18 @@ def pyodide_print(s):
                             if (samples.length > 0) {
                                 let sr = pyodide.globals.get("audio_sav_sr");
                                 audioStr = await writeWavAudioSource(audioArea, samples, sr);
-                            }
+
+                            //////////////////////////////////////////////////////////////////
+
+
+
+                            ////////////////////////  GRAPHICS ///////////////////////////////
+                            {% elsif page.language == "graphics_view" or page.language == "graphics_shader" %}
+                            await updateScene();
+
+
+
+                            //////////////////////////////////////////////////////////////////
 
 
 
