@@ -1696,8 +1696,9 @@ def pyodide_print(s):
                             ////////////////////////  GRAPHICS ///////////////////////////////
                             {% elsif page.language == "graphics_view" or page.language == "graphics_shader" %}
                             console.log("editorText\n", editorText);
-                            eval(editorText);
                             await updateScene();
+                            eval(editorText);
+                            scene.repaint();
                             canvasStr = glcanvas.toDataURL();
 
                             //////////////////////////////////////////////////////////////////
