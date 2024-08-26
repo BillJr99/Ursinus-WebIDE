@@ -722,6 +722,12 @@ def pyodide_print(s):
                             } else {
                                 getFilesFromDirectory(rootBasePath);
                             }
+                            {% if page.openFilesOnLoad %}
+                            // open initial files, if available
+                            var filesToOpen = {{ page.openFilesOnLoad | jsonify }};
+                            openMultipleFiles(filesToOpen);
+                            {% endif %}
+
                         } else {
                             alert('Unable to log in with the given username');
                         }
@@ -1668,9 +1674,10 @@ def pyodide_print(s):
 
 
 
-                            ////////////////////////  PYODIDE ////////////////////////////////
+                            
 
                             {% elsif page.language == "pyodide" %}
+                            ////////////////////////  PYODIDE ////////////////////////////////
                             if (!pyodideLoaded) {
                                 await pyodidePromise;
                             }
@@ -1688,19 +1695,19 @@ def pyodide_print(s):
                             if (samples.length > 0) {
                                 let sr = pyodide.globals.get("audio_sav_sr");
                                 audioStr = await writeWavAudioSource(audioArea, samples, sr);
-
+                            }
                             //////////////////////////////////////////////////////////////////
 
 
 
-                            ////////////////////////  GRAPHICS ///////////////////////////////
+                            
                             {% elsif page.language == "graphics_view" or page.language == "graphics_shader" %}
+                            ////////////////////////  GRAPHICS ///////////////////////////////
                             console.log("editorText\n", editorText);
                             await updateScene();
                             eval(editorText);
                             scene.repaint();
                             canvasStr = glcanvas.toDataURL();
-
                             //////////////////////////////////////////////////////////////////
 
 
