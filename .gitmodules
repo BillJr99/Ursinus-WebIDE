@@ -1,3 +1,6 @@
 [submodule "_pages/Ursinus-Exercises"]
 	path = _pages/Ursinus-Exercises
 	url = https://github.com/BillJr99/Ursinus-Exercises.git
+[submodule "assets/js/ggslac"]
+	path = assets/js/ggslac
+	url = https://github.com/ctralie/ggslac.git

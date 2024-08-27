@@ -137,6 +137,27 @@ submitformlinkdirections: "Clicking Run below will check your work and, if it pa
 <script type="text/javascript" src="{{site.baseurl}}/assets/js/brython.min.js"></script>
 <script type="text/javascript" src="{{site.baseurl}}/assets/js/brython_stdlib.min.js"></script>
 {% endif %}
+{% if page.language == "pyodide" %}
+<script type="text/javascript" src="https://cdn.jsdelivr.net/pyodide/v0.26.2/full/pyodide.js"></script>
+<script src="{{site.baseurl}}/assets/js/wav.js"></script>
+{% endif %}
+{% if page.language == "graphics_view" or page.language == "graphics_shader" %}
+<script type="text/javascript" src = "{{site.baseurl}}/assets/js/ggslac/jslibs/gl-matrix-min.js"></script>
+<script type="text/javascript" src = "{{site.baseurl}}/assets/js/ggslac/jslibs/dat.gui.min.js"></script>
+<script type="text/javascript" src = "{{site.baseurl}}/assets/js/ggslac/jslibs/webgl-utils.js"></script>
+<script type="text/javascript" src = "{{site.baseurl}}/assets/js/ggslac/jslibs/webgl-debug.js"></script>
+
+<script src="{{site.baseurl}}/assets/js/ggslac/geometry/polymesh.js"></script>
+<script src="{{site.baseurl}}/assets/js/ggslac/geometry/basicmesh.js"></script>
+<script src="{{site.baseurl}}/assets/js/ggslac/geometry/primitives3d.js"></script>
+<script src="{{site.baseurl}}/assets/js/ggslac/geometry/cameras3d.js"></script>
+<script src="{{site.baseurl}}/assets/js/ggslac/shaders/shaders.js"></script>
+<script src="{{site.baseurl}}/assets/js/ggslac/utils/simpledraw.js"></script>
+
+<script src="{{site.baseurl}}/assets/js/ggslac/viewers/basecanvas.js"></script>
+<script src="{{site.baseurl}}/assets/js/ggslac/viewers/scenecanvas.js"></script>
+<script src="{{site.baseurl}}/assets/js/ggslac/viewers/matrixanim.js"></script>
+{% endif %}
     
 <div id="main" role="main">
   <div class="archive"> 
@@ -183,15 +204,21 @@ submitformlinkdirections: "Clicking Run below will check your work and, if it pa
                     <button id="new" disabled>New</button>
                     <button id="new-dir" disabled>Make Directory</button>
                     <button id="download" disabled>Download</button>
-                    <button id="clear-console">Clear Console</button>
                     <button id="reset" disabled>Reset</button>
                 </div>
             </header>
             <main>
                 <div class="left-container">
-                    <div class="editor-container" id="editor-container">
-                    </div>
+                    <div class="editor-container" id="editor-container">Welcome to our online modules system!
+Be sure to log in with your Urinus ID
+before you proceed.  
+For example, Professor Tralie's ID is ctralie.
+
+If you are not an Ursinus student, that's fine!
+Just make something up, and you can still run everything</div>
+                    <button id="clear-console">Clear Console</button>
                     <div class="output-container" id="output-container">
+                        
                         <pre id="console"></pre>
                     </div>
                 </div>
@@ -200,11 +227,46 @@ submitformlinkdirections: "Clicking Run below will check your work and, if it pa
                         <div id="filesystem"></div>
                     </div>
                     <div class="canvas-container">
-                        <canvas id="canvas" style="display: none;">Your plots will appear here...</canvas>
-                        <audio id="audio" controls style="display: none;"></audio>
+                        <div id="imageArea"></div>
+                        <div id="audioArea"></div>
+                        <div id="graphicsArea" style="display:none;">
+                            <button id="updateScene">Update Scene</button>
+                            {% if page.language == "graphics_shader" %}
+                            <button id="updateShaders">Update Shaders</button>
+                            {% endif %}
+                            <canvas id="GLCanvas1" style="border: none" width="800" height="600"></canvas>
+                        </div>
+
                     </div>
                 </div>
             </main>
+
+            {% if page.language == "pyodide" %}
+            <div id="pyodideBoilerplate" style="display:none;">
+import io, base64
+img_str = ""
+def save_figure_js():
+    global img_str
+    buf = io.BytesIO()
+    plt.savefig(buf, format='png')
+    buf.seek(0)
+    img_str = "data:image/png;base64,{}".format(base64.b64encode(buf.read()).decode('UTF-8'))
+audio_sav_arr = []
+audio_sav_sr = 44100
+def save_audio_js(arr, sr):
+    global audio_sav_arr
+    global audio_sav_sr
+    audio_sav_arr = np.array(arr).tolist()
+    audio_sav_sr = sr
+
+PYODIDE_COUT = ""
+def pyodide_print(s):
+    global PYODIDE_COUT
+    PYODIDE_COUT += s
+    
+            </div>
+            {% endif %}
+
             <script type="text/python">
                 from browser import document as doc, window
                 import tb as traceback
@@ -243,6 +305,14 @@ submitformlinkdirections: "Clicking Run below will check your work and, if it pa
                 window.run_python_code = run_python_code
             </script>
             <script>
+                {% if page.language == "pyodide" %}
+                var imgStr = "";
+                var audioStr = "";
+                {% endif %}
+                {% if page.language == "javascript" or page.language == "graphics_view" or page.language == "graphics_shader" %}
+                var canvasStr = "";
+                {% endif %}
+
                 document.addEventListener('DOMContentLoaded', () => {
                     {% if page.language == "python" %}
                         console.log('Page loaded.  Initializing brython.');
@@ -263,8 +333,8 @@ submitformlinkdirections: "Clicking Run below will check your work and, if it pa
                     const newDirBtn = document.getElementById('new-dir');
                     const resetBtn = document.getElementById('reset');
                     const tabs = document.querySelector('.tabs');
-                    const canvas = document.getElementById('canvas');
-                    const audio = document.getElementById('audio');
+                    const imageArea = document.getElementById('imageArea');
+                    const audioArea = document.getElementById('audioArea');
                     let ace_editor = null; // set on window load
 
                     const courseid = '{% if page.canvascourseid %}{{ page.canvascourseid }}{% else %}{{ site.canvascourseid }}{% endif %}';
@@ -379,7 +449,11 @@ submitformlinkdirections: "Clicking Run below will check your work and, if it pa
                     const DB_VERSION = 1;
                     const STORE_NAME = 'Files';
 
-                    logToConsole("Ready!");
+
+                    {% if page.language != "pyodide" %}
+                        logToConsole("Ready!");
+                    {% endif %}
+                    
 
                     function initDB() {
                         return new Promise((resolve, reject) => {
@@ -492,18 +566,33 @@ submitformlinkdirections: "Clicking Run below will check your work and, if it pa
                                                 
                         request.onsuccess = function(event) {
                             const file = event.target.result;
-                            console.log(file);
                             if (file) {
                                 ace_editor.setFontSize(16);
+                                // Default language settings
                                 {% if page.language == "cpp" %}
                                 ace_editor.session.setMode("ace/mode/c_cpp");
-                                {% elsif page.language == "python" %}
+                                {% elsif page.language == "python" or page.language == "pyodide"%}
                                 ace_editor.session.setMode("ace/mode/python");
                                 {% elsif page.language == "sql" %}
                                 ace_editor.session.setMode("ace/mode/sql");
                                 {% elsif page.language == "java" %}
                                 ace_editor.session.setMode("ace/mode/java");
+                                {% elsif page.language == "javascript" or page.language == "graphics_view" or page.language == "graphics_shader" %}
+                                ace_editor.session.setMode("ace/mode/javascript");
                                 {% endif %}  
+                                // Override based on file extension
+                                if (path.match(/\.(cpp)$/)) {
+                                    ace_editor.session.setMode("ace/mode/c_cpp");
+                                }
+                                else if (path.match(/\.(frag|vert)$/)) {
+                                    ace_editor.session.setMode("ace/mode/glsl");
+                                }
+                                else if (path.match(/\.(py)$/)) {
+                                    ace_editor.session.setMode("ace/mode/python");
+                                }
+                                else if (path.match(/\.(json|javascript)$/)) {
+                                    ace_editor.session.setMode("ace/mode/javascript");
+                                }
 
                                 if(file.readOnly == true) {
                                     console.log("Read only file");
@@ -644,6 +733,12 @@ submitformlinkdirections: "Clicking Run below will check your work and, if it pa
                             } else {
                                 getFilesFromDirectory(rootBasePath);
                             }
+                            {% if page.openFilesOnLoad %}
+                            // open initial files, if available
+                            var filesToOpen = {{ page.openFilesOnLoad | jsonify }};
+                            openMultipleFiles(filesToOpen);
+                            {% endif %}
+
                         } else {
                             alert('Unable to log in with the given username');
                         }
@@ -790,6 +885,11 @@ submitformlinkdirections: "Clicking Run below will check your work and, if it pa
                             await clearDBPath(rootBasePath);
                             await provideInitialFiles(initialFiles);
                             clearTabsAndCanvas();
+                            {% if page.openFilesOnLoad %}
+                            // open initial files, if available
+                            var filesToOpen = {{ page.openFilesOnLoad | jsonify }};
+                            openMultipleFiles(filesToOpen);
+                            {% endif %}
                         }
                     });
 
@@ -801,12 +901,21 @@ submitformlinkdirections: "Clicking Run below will check your work and, if it pa
                         ace_editor.setValue('');
                         ace_editor.setReadOnly(true);
                         openFiles = {};
-                        canvas.style.display = 'none';
-                        audio.style.display = 'none';
+                        imageArea.innerHTML = "";
+                        audioArea.innerHTML = "";
                     }
                     
-                    // not main files
-                    async function getMainFileContentsRecursively(directory) {
+                    /**
+                     * Get the main files that match a particular filter function
+                     * 
+                     * @param {String} directory Directory to search in
+                     * @param {function} filterFn Function to run on each file to determine whether to include it.  If not specified, returns true always
+                     * 
+                     */
+                    async function getMainFileContentsRecursively(directory, filterFn) {
+                        if (filterFn === undefined) {
+                            filterFn = () => true;
+                        }
                         const db = await initDB();
                         if (!db) {
                             console.error('Failed to initialize DB');
@@ -818,7 +927,8 @@ submitformlinkdirections: "Clicking Run below will check your work and, if it pa
 
                         return new Promise((resolve, reject) => {
                             request.onsuccess = async function(event) {
-                                const files = event.target.result.filter(file => file.path.startsWith(directory));
+                                let files = event.target.result.filter(file => file.path.startsWith(directory));
+                                files = files.filter(file => filterFn(file));
                                 let combinedContent = '';
 
                                 for (const file of files) {
@@ -837,7 +947,17 @@ submitformlinkdirections: "Clicking Run below will check your work and, if it pa
                         });
                     }
                     
-                    async function getAllFileContentsRecursively(directory) {
+                    /**
+                     * Get all but the main files that match a particular filter function
+                     * 
+                     * @param {String} directory Directory to search in
+                     * @param {function} filterFn Function to run on each file to determine whether to include it.  If not specified, returns true always
+                     * 
+                     */
+                    async function getAllFileContentsRecursively(directory, filterFn) {
+                        if (filterFn === undefined) {
+                            filterFn = () => true;
+                        }
                         const db = await initDB();
                         if (!db) {
                             console.error('Failed to initialize DB');
@@ -849,11 +969,12 @@ submitformlinkdirections: "Clicking Run below will check your work and, if it pa
 
                         return new Promise((resolve, reject) => {
                             request.onsuccess = async function(event) {
-                                const files = event.target.result.filter(file => file.path.startsWith(directory));
+                                let files = event.target.result.filter(file => file.path.startsWith(directory));
+                                files = files.filter(file => filterFn(file));
                                 let combinedContent = '';
 
                                 for (const file of files) {
-                                    if(file.ismain == false) {
+                                    if(!file.ismain) {
                                         const fileContent = file.content; 
                                         combinedContent += fileContent + '\n';
                                     }                                   
@@ -987,24 +1108,34 @@ submitformlinkdirections: "Clicking Run below will check your work and, if it pa
                         return bytes.buffer;
                     }
 
-                    function displayImage(content) {
-                        canvas.style.display = 'block';
-                        audio.style.display = 'none';
-                        const img = new Image();
-                        img.src = 'data:image/jpeg;base64,' + content;
-                        img.onload = function() {
-                            canvas.width = img.width;
-                            canvas.height = img.height;
-                            const ctx = canvas.getContext('2d');
-                            ctx.drawImage(img, 0, 0);
-                        };
+                    /**
+                     * Create an image tag in the image area with the base64 binary code of the image, and
+                     * scale the image to fit into the area
+                     * 
+                     * @param {String} content Base64 binary of the image
+                     * @param {String} hasHeader If it has a header, no need to prepend anything.  Default false
+                     */
+                    function displayImage(content, hasHeader) {
+                        if (!hasHeader || hasHeader === undefined) {
+                            content = 'data:image/jpeg;base64,' + content;
+                        }
+                        let html = "<img src = \"" + content + "\" width=\"100%;\">";
+                        imageArea.innerHTML = html;
                     }
 
-                    function displayAudio(content) {
-                        canvas.style.display = 'none';
-                        audio.style.display = 'block';
-                        audio.src = 'data:audio/mp3;base64,' + content;
-                        audio.load();
+                    /**
+                     * Create an image tag in the image area with the base64 binary code of the image, and
+                     * scale the image to fit into the area
+                     * 
+                     * @param {String} content Base64 binary of the image
+                     * @param {String} hasHeader If it has a header, no need to prepend anything.  Default false
+                     */
+                    function displayAudio(content, hasHeader) {
+                        if (!hasHeader || hasHeader === undefined) {
+                            content = 'data:audio/mp3;base64,' + content;
+                        }
+                        let html = "<audio controls><source src=\"" + content + "\" type=\"audio/wav\">Your browser does not support the audio element</audio>";
+                        audioArea.innerHTML = html;
                     }
                     
                     function waitForElement(selector, timeout = 3000) {
@@ -1079,9 +1210,11 @@ submitformlinkdirections: "Clicking Run below will check your work and, if it pa
                         }
                         
                         {% if page.openFilesOnLoad %}
-                        // open initial files, if available
-                        var filesToOpen = {{ page.openFilesOnLoad | jsonify }};
-                        openMultipleFiles(filesToOpen);
+                        if (!(user === defaultuser)) {
+                            // open initial files, if available
+                            var filesToOpen = {{ page.openFilesOnLoad | jsonify }};
+                            openMultipleFiles(filesToOpen);
+                        }
                         {% endif %}
                     });
 
@@ -1179,14 +1312,14 @@ submitformlinkdirections: "Clicking Run below will check your work and, if it pa
                         });
                     }
                     
-                    async function getCodeText() {
-                        let codeText = await getAllFileContentsRecursively(rootBasePath);
+                    async function getCodeText(filterFn) {
+                        let codeText = await getAllFileContentsRecursively(rootBasePath, filterFn);
                         
                         return codeText;
                     }
                     
-                    async function getMainCodeText() {
-                        let codeText = await getMainFileContentsRecursively(rootBasePath);
+                    async function getMainCodeText(filterFn) {
+                        let codeText = await getMainFileContentsRecursively(rootBasePath, filterFn);
                         
                         return codeText;
                     }
@@ -1265,7 +1398,7 @@ submitformlinkdirections: "Clicking Run below will check your work and, if it pa
                     };    
 
                     runtime.process.print({ text: 'Preparing runtime...\n\n' });
-                    runtime.process.workerRunDone = args => {
+                    runtime.process.workerRunDone = async function(args) {
                         runtime.timesRun++;
                         if (runtime.timesRun < 3) {
                             // For some reason it needs to be run more than once
@@ -1279,7 +1412,7 @@ submitformlinkdirections: "Clicking Run below will check your work and, if it pa
                         else {
                             runtime.process.setStatus('ready', 'Ready', false);
                             logToConsole(runtime.text);
-                            checkAnswer();
+                            await checkAnswer();
                         }
 
                     };
@@ -1367,10 +1500,275 @@ submitformlinkdirections: "Clicking Run below will check your work and, if it pa
                     }        
                     {% endif %}
 
+                    {% if page.language == "pyodide" %}
+                        // Load the required packages
+                        let packages = [];
+                        {% if page.info.packages %}
+                        if ("{{page.info.packages}}".length > 0) {
+                            packages = "{{page.info.packages}}".split(",");
+                        }
+                        {% endif %}
+                        let pyodide = null;
+                        let pyodideLoaded = false;
+
+                        async function setupPyodide() {
+                            pyodide = await loadPyodide();
+                            logToConsole("Importing packages {{page.info.packages}}...");
+                            for (let i = 0; i < packages.length; i++) {
+                                await pyodide.loadPackage(packages[i]);
+                            }
+                            logToConsole("Finished loading packages.  You can run your code now.");
+                            pyodideLoaded = true;
+                        }
+
+                        let pyodidePromise = new Promise((resolve) => {
+                            setupPyodide().then(()=>{
+                                resolve();
+                            });
+                        });
+
+                        
+                    {% endif %} // End of pyodide-specific code
+
+
+                    {% if page.language == "graphics_view" or page.language == "graphics_shader" %}
+                        document.getElementById("graphicsArea").style.display = "block";
+                        let shaderPath = "{{site.baseurl}}/assets/js/ggslac/shaders/";
+                        let meshesPath = "{{site.baseurl}}/assets/js/ggslac/meshes/";
+                        let glcanvas = document.getElementById("GLCanvas1");
+                        glcanvas.addEventListener("contextmenu", function(e){ e.stopPropagation(); e.preventDefault(); return false; }); //Need this to disable the menu that pops up on right clicking
+                        let scene = new SceneCanvas(glcanvas, shaderPath, meshesPath, true, true, true);
+                        scene.gui.close();
+                        
+                        /**
+                         * Helper method for updateScene
+                         * 
+                         * @param {String} content The JSON code describing a scene
+                         */
+                        function updateSceneFromContent(content) {
+                            scene.setupScene(JSON.parse(content), glcanvas.clientWidth, glcanvas.clientHeight);
+                            scene.drawEdges = false;
+                            scene.updateMeshDrawings();
+                            scene.repaint();
+                        }
+
+                        /**
+                         * Pull out the text from the file scene.json and update the
+                         * scene in ggslac
+                         * 
+                         * @param {event} evt Button click event (if applicable)
+                         * @param {boolean} firstTime If true, use scene.json in initialFiles.
+                         * Otherwise, query the database and find the most recent version
+                         */
+                        async function updateScene(evt, firstTime) {
+                            if (firstTime === undefined) {
+                                firstTime = false;
+                            }
+                            let files = initialFiles;
+                            if (!firstTime) {
+                                files = await getAllFilesRecursively(rootBasePath);
+                            }
+                            try {
+                                let foundScene = false;
+                                for (let i = 0; i < files.length; i++) {
+                                    let file = files[i];
+                                    let path = file.fileName;
+                                    let name = file.fileName;
+                                    if (!firstTime) {
+                                        path = file.path;
+                                        name = path.split(rootBasePath)[1];
+                                    }
+                                    if (name.match(/(scene.json)$/)) {
+                                        if (!firstTime) {
+                                            await saveFile(path);
+                                        }
+                                        updateSceneFromContent(file.content);
+                                        foundScene = true;
+                                    }
+                                }
+                                if (!foundScene) {
+                                    alert("No scene.json file found!");
+                                }
+                            }
+                            catch(err) {
+                                logToConsole("Error Parsing Scene: " + err.message);
+                            }
+
+                        }
+                        updateScene(null, true);
+                        document.getElementById("updateScene").onclick = updateScene;
+
+
+
+                        let offscreenCanvas = document.createElement("canvas");
+                        offscreenCanvas.width = glcanvas.width;
+                        offscreenCanvas.height = glcanvas.height;
+                        offscreenCanvas.ctx = offscreenCanvas.getContext("2d");
+
+                        /**
+                         * Decode a PNG image using an offscreen canvas
+                         * @param pngSrc A base64 representation of the image in PNG format
+                         * @return A promise for the decoded image
+                         */
+                        function decodeImage(pngSrc) {
+                            return new Promise((resolve, reject) => {
+                                let image = new Image();
+                                image.src = pngSrc;
+                                image.onload = function() {
+                                    offscreenCanvas.ctx.drawImage(image, 0, 0);
+                                    resolve(offscreenCanvas.ctx.getImageData(0, 0, glcanvas.width, glcanvas.height));
+                                }
+                            });
+
+                        }
+
+                        const DEFAULT_TOL = 2*255*500;
+                        /**
+                         * Decode two PNG images and compare them pixel by pixel
+                         * @param pngSrc1 A base64 representation of the first image in PNG format
+                         * @param pngSrc2 A base64 representation of the second image in PNG format
+                         * @return A promise for the equality check
+                         */
+                        function pngImagesEqualTol(pngSrc1, pngSrc2, tol, name) {
+                            if (tol === undefined) {
+                                tol = DEFAULT_TOL;
+                            }
+                            if (name == undefined) {
+                                name = "";
+                            }
+                            return new Promise((resolve, reject) => {
+                                decodeImage(pngSrc1).then(function(I1) {
+                                    decodeImage(pngSrc2).then(function(I2) {
+                                        let diff = 0;
+                                        for (let i = 0; i < I1.data.length; i++) {
+                                            diff += Math.abs(I1.data[i] - I2.data[i]);
+                                        }
+                                        console.log(name + ": " + diff);
+                                        resolve(diff < tol);
+                                    });
+                                });
+                            });
+                        }
+                    {% endif %} // End of graphics-specific code
+
+
+                    {% if page.language == "graphics_shader" %}
+                        async function finalizeShader(vertexSrc, fragmentSrc) {
+                            // This is a hack since the default shader is blinnPhong
+                            if ("shaderReady" in scene.shaders.blinnPhong) {
+                                await scene.shaders.blinnPhong;
+                            }
+                            let gl = scene.gl;
+                            let shader = getShaderProgram(gl, "studentShader", vertexSrc, fragmentSrc);
+                            shader.shaderReady = true;
+                            shader.description = 'Student shader';
+                            shader.vPosAttrib = gl.getAttribLocation(shader, "vPos");
+                            gl.enableVertexAttribArray(shader.vPosAttrib);
+                            shader.vNormalAttrib = gl.getAttribLocation(shader, "vNormal");
+                            gl.enableVertexAttribArray(shader.vNormalAttrib);
+                            shader.vColorAttrib = gl.getAttribLocation(shader, "vColor");
+                            gl.enableVertexAttribArray(shader.vColorAttrib);
+                            shader.pMatrixUniform = gl.getUniformLocation(shader, "uPMatrix");
+                            shader.mvMatrixUniform = gl.getUniformLocation(shader, "uMVMatrix");
+                            shader.tMatrixUniform = gl.getUniformLocation(shader, "tMatrix");
+                            shader.nMatrixUniform = gl.getUniformLocation(shader, "uNMatrix");
+                            shader.ambientColorUniform = gl.getUniformLocation(shader, "uAmbientColor");
+                            shader.uKaUniform = gl.getUniformLocation(shader, "uKa");
+                            shader.uKdUniform = gl.getUniformLocation(shader, "uKd");
+                            shader.uKsUniform = gl.getUniformLocation(shader, "uKs");
+                            shader.uShininessUniform = gl.getUniformLocation(shader, "uShininess");
+                            shader.uEyeUniform = gl.getUniformLocation(shader, "uEye");
+                            shader.u_lights = [];
+                            shader.u_numLights = gl.getUniformLocation(shader, "numLights");
+                            for (let i = 0; i < MAX_LIGHTS; i++) {
+                                let light = {
+                                    pos: gl.getUniformLocation(shader, "lights["+i+"].pos"),
+                                    color: gl.getUniformLocation(shader, "lights["+i+"].color"),
+                                    atten: gl.getUniformLocation(shader, "lights["+i+"].atten")
+                                };
+                                shader.u_lights.push(light);
+                            }
+                            scene.shaderToUse = shader;
+                            requestAnimationFrame(scene.repaint.bind(scene));
+                        }
+
+
+                        /**
+                         * Pull out the text from the first vertex shader and the first
+                         * fragment shader that are found
+                         * 
+                         * @param {event} evt Button click event (if applicable)
+                         * @param {boolean} firstTime If true, use shaders in initialFiles.
+                         * Otherwise, query the database and find the most recent version
+                         */
+                         async function updateShaders(evt, firstTime) {
+                            if (firstTime === undefined) {
+                                firstTime = false;
+                            }
+                            let files = initialFiles;
+                            if (!firstTime) {
+                                files = await getAllFilesRecursively(rootBasePath);
+                            }
+                            try {
+                                let foundVert = false;
+                                let foundFrag = false;
+                                let vertexSrc = "";
+                                let fragmentSrc = "";
+                                for (let i = 0; i < files.length; i++) {
+                                    let file = files[i];
+                                    let path = file.fileName;
+                                    let name = file.fileName;
+                                    if (!firstTime) {
+                                        path = file.path;
+                                        name = path.split(rootBasePath)[1];
+                                    }
+                                    if (name.match(/(.vert)$/)) {
+                                        if (!firstTime) {
+                                            await saveFile(path);
+                                        }
+                                        vertexSrc = file.content;
+                                        foundVert = true;
+                                    }
+                                    else if (name.match(/(.frag)$/)) {
+                                        if (!firstTime) {
+                                            await saveFile(path);
+                                        }
+                                        fragmentSrc = file.content;
+                                        foundFrag = true;
+                                    }
+                                }
+                                if (!foundVert) {
+                                    alert("No vertex shader file found!");
+                                }
+                                if (!foundFrag) {
+                                    alert("No fragment shader file found!");
+                                }
+                                if (foundVert && foundFrag) {
+                                    await finalizeShader(vertexSrc, fragmentSrc);
+                                }
+                                scene.repaint();
+                            }
+                            catch(err) {
+                                logToConsole("Error Compiling Shader: check Javscript console");
+                            }
+
+                        }
+                        updateShaders(null, true);
+                        document.getElementById("updateShaders").onclick = updateShaders;
+
+                    {% endif %} // End of graphics shader-specific code
+
+
                     async function runCode() {
                         try {
-                            let editorText = await getCodeText();
-                            let mainText = await getMainCodeText();
+                            let filterFn = undefined;
+                            {% if page.language == "pyodide" %}
+                            filterFn = (file) => file.path.slice(-3) === ".py"
+                            {% endif %}
+
+                            let editorText = await getCodeText(filterFn);
+                            let mainText = await getMainCodeText(filterFn);
+
                             
                             {% if page.language == "cpp" %}
                             runtime.timesRun = 0;
@@ -1397,9 +1795,61 @@ submitformlinkdirections: "Clicking Run below will check your work and, if it pa
                             console.log(student_code);
                             feedbackString = run_python_code(student_code);
                             logToConsole(feedbackString);    
+
+
+
+                            
+
+                            {% elsif page.language == "pyodide" %}
+                            ////////////////////////  PYODIDE ////////////////////////////////
+                            if (!pyodideLoaded) {
+                                await pyodidePromise;
+                            }
+                            let student_code = editorText + "\n\n" + document.getElementById("pyodideBoilerplate").innerHTML + "\n\n" + mainText;
+                            console.log(student_code);
+                            pyodide.runPython(student_code);
+                            // Process images if necessary
+                            imgStr = pyodide.globals.get("img_str");
+                            if (imgStr.length > 0) {
+                                displayImage(imgStr, true);
+                            }
+                            // Process audio if necessary
+                            audioStr = "";
+                            let samples = pyodide.globals.get("audio_sav_arr");
+                            if (samples.length > 0) {
+                                let sr = pyodide.globals.get("audio_sav_sr");
+                                audioStr = await writeWavAudioSource(audioArea, samples, sr);
+                            }
+                            //////////////////////////////////////////////////////////////////
+
+
+
+                            
+                            {% elsif page.language == "graphics_view" %}
+                            /////////////////////  GRAPHICS VIEW /////////////////////////////
+                            console.log("editorText\n", editorText);
+                            await updateScene();
+                            eval(editorText);
+                            scene.repaint();
+                            canvasStr = glcanvas.toDataURL();
+                            //////////////////////////////////////////////////////////////////
+
+                            {% elsif page.language == "graphics_shader"%}
+                            ////////////////////  GRAPHICS SHADER ////////////////////////////
+                            console.log("editorText\n", editorText);
+                            await updateShaders();
+                            await updateScene();
+                            scene.repaint();
+                            canvasStr = glcanvas.toDataURL();
+                            //////////////////////////////////////////////////////////////////
+
+
+
                             {% elsif page.language == "sql" %}
                             feedbackString = await doSql(editorText, mainText); 
                             logToConsole(feedbackString);    
+
+
                             {% elsif page.language == "java" %}                             
                             let code = makeCodeJavaProcessing(editorText, mainText);
                             console.log(code);
@@ -1407,18 +1857,29 @@ submitformlinkdirections: "Clicking Run below will check your work and, if it pa
                             instance = new Processing(canvas, code);
                             while(console.feedbackString == null); // await processing
                             feedbackString = console.feedbackString; // passing globals from anonymous scope via console in processing boilerplate code
-                            console.log(console.feedbackString);
+                            logToConsole(console.feedbackString);
+
+
+
+                            {% elsif page.language == "javascript" %}
+                            function feedbackPrintlnJSConsole(s) {
+                                logToConsole(s);
+                                return s + "\n";
+                            }
+                            let code = editorText + "\n\n" + mainText;
+                            code = code.replace(/console.log/g, "feedbackString += feedbackPrintlnJSConsole");
+                            eval(code);
                             {% endif %}
                             
-                            checkAnswer();
+                            await checkAnswer();
                         } catch(err) {
                             logToConsole("{{ page.processor.incorrectfeedback | strip }}");
                             console.log("Exception in runCode");
                             logToConsole("Error: " + err.message);
-                        }                
+                        }              
                     }
 
-                    function checkAnswer() {
+                    async function checkAnswer() {
                         console.log("Got feedback string: " + feedbackString);
                         
                         const points = {% if page.info.points %}{{page.info.points}}{% else %}0{% endif %};
