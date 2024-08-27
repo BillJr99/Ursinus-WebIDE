@@ -170,6 +170,7 @@ submitformlinkdirections: "Clicking Run below will check your work and, if it pa
 {% endif %}
 
 <!-- Resizing elements -->
+<script>
 $(function() {
     $('.editor-container, .filesystem-container, .canvas-container, .output-container').resizable({
         handles: 'n, e, s, w, ne, nw, se, sw',
@@ -193,6 +194,7 @@ $(function() {
         }
     });
 });
+</script>
     
 <div id="main" role="main">
   <div class="archive"> 
@@ -257,7 +259,6 @@ Just make something up, and you can still run everything</div>
                     <input type="checkbox" id="wrap-text">
                     <br />
                     <pre id="console" style="white-space: pre; overflow-x: auto;"></pre>
-                        <pre id="console" style="white-space: pre-wrap;"></pre>
                     </div>
                 </div>
                 <div class="right-container">
