@@ -140,6 +140,15 @@ submitformlinkdirections: "Clicking Run below will check your work and, if it pa
         max-height: 100%; 
         margin: 0; 
     }
+    .wrap-text-container {
+        display: flex;
+        align-items: center;
+        margin-bottom: 10px; /* Add some space below the checkbox */
+    }
+
+    .wrap-text-container label {
+        margin-right: 5px; /* Space between label and checkbox */
+    }    
 </style>
 
 <script src="{{site.baseurl}}/assets/js/jsencrypt.min.js"></script>
@@ -244,12 +253,13 @@ For example, Professor Tralie's ID is ctralie.
 
 If you are not an Ursinus student, that's fine!
 Just make something up, and you can still run everything</div>
+                    <div class="wrap-text-container">
+                        <label for="wrap-text">Wrap Text</label>
+                        <input type="checkbox" id="wrap-text">
+                    </div>
                     <button id="clear-console">Clear Console</button>
                     <div class="output-container" id="output-container"> 
-                    <label for="wrap-text">Wrap Text</label>
-                    <input type="checkbox" id="wrap-text">
-                    <br />
-                    <pre id="console" style="white-space: pre; overflow-x: auto;"></pre>
+                        <pre id="console" style="white-space: pre; overflow-x: auto;"></pre>
                     </div>
                 </div>
                 <div class="right-container">
