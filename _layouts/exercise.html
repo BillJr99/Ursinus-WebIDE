@@ -373,6 +373,7 @@ def pyodide_print(s):
                     const tabs = document.querySelector('.tabs');
                     const imageArea = document.getElementById('imageArea');
                     const audioArea = document.getElementById('audioArea');
+                    const canvas = document.getElementById('GLCanvas1');
                     let ace_editor = null; // set on window load
                     
                     const courseid = '{% if page.canvascourseid %}{{ page.canvascourseid }}{% else %}{{ site.canvascourseid }}{% endif %}';
