@@ -172,25 +172,75 @@ submitformlinkdirections: "Clicking Run below will check your work and, if it pa
 <!-- Resizing elements -->
 <script>
 $(function() {
-    $('.editor-container, .filesystem-container, .canvas-container, .output-container').resizable({
-        handles: 'n, e, s, w, ne, nw, se, sw',
+    function adjustSizes() {
+        let editorWidth = $('.editor-container').width();
+        let editorHeight = $('.editor-container').height();
+
+        let outputHeight = $('.output-container').height();
+        
+        $('.filesystem-container').width(`calc(100% - ${editorWidth}px)`);
+        $('.filesystem-container').height(editorHeight);
+
+        $('.canvas-container').width(`calc(100% - ${editorWidth}px)`);
+        $('.canvas-container').height(`calc(100% - ${editorHeight}px)`);
+
+        $('.output-container').width(editorWidth);
+        $('.output-container').height(`calc(100% - ${editorHeight}px)`);
+    }
+
+    $('.editor-container').resizable({
+        handles: 'e, s, se',
         containment: 'parent',
-        animate: true, // Enables smooth animation
-        ghost: true, // Shows a "ghost" element to represent the resize
-        helper: 'ui-resizable-helper', // Visual helper during resize
+        animate: true,
+        ghost: true,
+        helper: 'ui-resizable-helper',
+        resize: function(event, ui) {
+            adjustSizes();
+        },
         stop: function(event, ui) {
-            // Recalculate and set the sizes of other elements after resizing
-            let editorWidth = $('.editor-container').width();
-            let editorHeight = $('.editor-container').height();
-            
-            $('.filesystem-container').width(`calc(100% - ${editorWidth}px)`);
-            $('.filesystem-container').height(editorHeight);
-            
-            $('.canvas-container').width(`calc(100% - ${editorWidth}px)`);
-            $('.canvas-container').height(`calc(100% - ${editorHeight}px)`);
-            
-            $('.output-container').width(editorWidth);
-            $('.output-container').height(`calc(100% - ${editorHeight}px)`);
+            adjustSizes();
+        }
+    });
+
+    $('.filesystem-container').resizable({
+        handles: 'w, s, sw',
+        containment: 'parent',
+        animate: true,
+        ghost: true,
+        helper: 'ui-resizable-helper',
+        resize: function(event, ui) {
+            adjustSizes();
+        },
+        stop: function(event, ui) {
+            adjustSizes();
+        }
+    });
+
+    $('.canvas-container').resizable({
+        handles: 'n, w, nw',
+        containment: 'parent',
+        animate: true,
+        ghost: true,
+        helper: 'ui-resizable-helper',
+        resize: function(event, ui) {
+            adjustSizes();
+        },
+        stop: function(event, ui) {
+            adjustSizes();
+        }
+    });
+
+    $('.output-container').resizable({
+        handles: 'n, e, ne',
+        containment: 'parent',
+        animate: true,
+        ghost: true,
+        helper: 'ui-resizable-helper',
+        resize: function(event, ui) {
+            adjustSizes();
+        },
+        stop: function(event, ui) {
+            adjustSizes();
         }
     });
 });
