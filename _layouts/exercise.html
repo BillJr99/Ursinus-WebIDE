@@ -210,8 +210,13 @@ submitformlinkdirections: "Clicking Run below will check your work and, if it pa
             </header>
             <main>
                 <div class="left-container">
-                    <div class="editor-container" id="editor-container">
-                    </div>
+                    <div class="editor-container" id="editor-container">Welcome to our online modules system!
+Be sure to log in with your Urinus ID
+before you proceed.  
+For example, Professor Tralie's ID is ctralie.
+
+If you are not an Ursinus student, that's fine!
+Just make something up, and you can still run everything</div>
                     <button id="clear-console">Clear Console</button>
                     <div class="output-container" id="output-container">
                         
@@ -1206,9 +1211,11 @@ def pyodide_print(s):
                         }
                         
                         {% if page.openFilesOnLoad %}
-                        // open initial files, if available
-                        var filesToOpen = {{ page.openFilesOnLoad | jsonify }};
-                        openMultipleFiles(filesToOpen);
+                        if (!(user === defaultuser)) {
+                            // open initial files, if available
+                            var filesToOpen = {{ page.openFilesOnLoad | jsonify }};
+                            openMultipleFiles(filesToOpen);
+                        }
                         {% endif %}
                     });
 
