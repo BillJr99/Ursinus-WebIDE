@@ -19,48 +19,98 @@ submitformlinkdirections: "Clicking Run below will check your work and, if it pa
         font-family: Arial, sans-serif;
     }
 
+    header {
+        display: flex;
+        justify-content: space-between;
+        padding: 10px;
+        background: #f4f4f4;
+        border-bottom: 1px solid #ccc;
+    }
+
+    .left-header {
+        display: flex;
+        align-items: center;
+    }
+
+    .tabs {
+        display: flex;
+        margin-left: 20px;
+    }
+
+    .tab {
+        display: flex;
+        align-items: center;
+        padding: 10px;
+        margin-right: 5px;
+        background: #ddd;
+        border: 1px solid #ccc;
+        cursor: pointer;
+    }
+
+    .tab.active {
+        background: #fff;
+        border-bottom: none;
+    }
+
+    .tab .close {
+        margin-left: 10px;
+        color: red;
+        cursor: pointer;
+    }
+
+    .actions {
+        display: flex;
+        align-items: center;
+    }
+
+    .actions button {
+        margin-left: 5px;
+        padding: 10px;
+    }
+
     main {
         display: flex;
         flex-grow: 1;
-        height: 100%;
+        height: 85vh;
     }
 
     .left-container, .right-container {
         display: flex;
         flex-direction: column;
-        height: 100%;
         width: 100%;
+    }    
+
+    .editor-container, .output-container, .filesystem-container, .canvas-container {
+        flex: 1;
+        padding: 10px;
+        box-sizing: border-box;
     }
 
     .editor-container {
-        height: 75%;
         border-right: 1px solid #ccc;
         border-bottom: 1px solid #ccc;
-        padding: 10px;
-        box-sizing: border-box;
+        height: 75%; 
     }
 
     .output-container {
-        height: 25%;
-        border-right: 1px solid #ccc;
-        padding: 10px;
-        box-sizing: border-box;
+        border-bottom: 1px solid #ccc;
+        overflow-y: hidden;
+        overflow-x: hidden;
         display: flex;
         flex-direction: column;
-        overflow-y: hidden;
-    }
-
-    .filesystem-container {
-        height: 25%;
-        padding: 10px;
-        box-sizing: border-box;
-        border-right: 1px solid #ccc;
+        height: 25%; 
     }
 
     .canvas-container {
-        height: 75%;
-        padding: 10px;
-        box-sizing: border-box;
+        height: 75%; 
+    }
+
+    .filesystem-container {
+        border-right: 1px solid #ccc;
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        height: 25%; 
     }
 
     textarea, pre, canvas, audio {
@@ -77,84 +127,21 @@ submitformlinkdirections: "Clicking Run below will check your work and, if it pa
         width: 100%;
     }
 
-    pre#console {
-        white-space: pre;
-        overflow-x: auto;
+    body .ace_scrollbar-v {
         overflow-y: auto;
-        flex: 1;
-        margin: 0;
-        padding: 10px;
-        box-sizing: border-box;
     }
 
-    body, html {
-        height: 100%;
-        margin: 0;
-        padding: 0;
-        font-family: Arial, sans-serif;
-    }
-
-    header {
-        height: 15vh;
-        text-align: center;
-        font-size: 2rem;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-    }
-
-    .left-container {
-        width: 75vw;
-        border-right: 1px solid #ccc;
-        overflow: hidden;
-    }
-
-    .right-container {
-        width: 25vw;
-        overflow: hidden;
-    }
-
-    #GLCanvas1 {
-        width: 100%;
-        height: 100%;
-    }
-
-    #wrap-text {
-        margin-left: 5px;
-    }
-
-    label[for="wrap-text"] {
-        font-size: 0.875rem;
-        vertical-align: middle;
+    body .ace_scrollbar-h {
+        overflow-x: auto;
     }
 
     pre {
-        padding: 10px;
-        background: #f9f9f9;
-        border: 1px solid #ccc;
+        white-space: pre; 
+        overflow-x: auto; 
+        overflow-y: auto; 
+        max-height: 100%; 
+        margin: 0; 
     }
-
-    button {
-        padding: 5px 10px;
-        background-color: #007bff;
-        color: white;
-        border: none;
-        border-radius: 5px;
-        cursor: pointer;
-    }
-
-    button:hover {
-        background-color: #0056b3;
-    }
-
-    #updateScene {
-        display: block;
-        margin: 10px auto;
-    }
-
-    .hidden {
-        display: none;
-    }  
 </style>
 
 <script src="{{site.baseurl}}/assets/js/jsencrypt.min.js"></script>
