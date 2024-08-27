@@ -9,7 +9,6 @@ submitformlinkdirections: "Clicking Run below will check your work and, if it pa
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <link rel="stylesheet" href="{{site.baseurl}}/assets/css/jstree/style.min.css" />
-<link rel="stylesheet" href="{{site.baseurl}}/assets/js/jquery-ui/jquery-ui.min.css">
 
 <style>
     body {
@@ -68,19 +67,18 @@ submitformlinkdirections: "Clicking Run below will check your work and, if it pa
     .left-container, .right-container {
         display: flex;
         flex-direction: column;
-        width: 50%;
-        height: 100%;
-    }
+        width: 100%;
+    }    
     .editor-container, .output-container, .filesystem-container, .canvas-container {
         flex: 1;
         padding: 10px;
         box-sizing: border-box;
-        height: 100%;
         min-height: 50%;
     }
     .editor-container {
         border-right: 1px solid #ccc;
         border-bottom: 1px solid #ccc;
+        height: 75%;
     }
     .output-container {
         border-bottom: 1px solid #ccc;
@@ -89,12 +87,17 @@ submitformlinkdirections: "Clicking Run below will check your work and, if it pa
         overflow-x: hidden;
         display: flex;
         flex-direction: column;
+        height: 25%;
+    }
+    .canvas-container {
+        height: 75%;
     }
     .filesystem-container {
         border-right: 1px solid #ccc;
         display: flex;
         flex-direction: column;
         align-items: flex-start;
+        height: 25%;
     }
     textarea, pre, canvas, audio {
         width: 100%;
@@ -127,7 +130,6 @@ submitformlinkdirections: "Clicking Run below will check your work and, if it pa
 <script src="{{site.baseurl}}/assets/js/jsencrypt.min.js"></script>
 <script src="{{site.baseurl}}/assets/js/jszip.min.js"></script>
 <script src="{{site.baseurl}}/assets/js/jquery.min.js"></script>
-<script src="{{site.baseurl}}/assets/js/jquery-ui/jquery-ui.min.js"></script>
 <script src="{{site.baseurl}}/assets/js/jstree.min.js"></script>
 <script type="text/javascript" src="{{site.baseurl}}/assets/js/processing.min.js"></script>
 <script src="{{site.baseurl}}/assets/js/polyfill.min.js?features=es6"></script>
@@ -170,137 +172,6 @@ submitformlinkdirections: "Clicking Run below will check your work and, if it pa
 <script src="{{site.baseurl}}/assets/js/ggslac/viewers/matrixanim.js"></script>
 {% endif %}
 
-<!-- Resizing elements -->
-<script>
-$(function() {
-    let previousSizes = {
-        editorWidth: $('.editor-container').width(),
-        editorHeight: $('.editor-container').height(),
-        filesystemWidth: $('.filesystem-container').width(),
-        filesystemHeight: $('.filesystem-container').height(),
-        canvasWidth: $('.canvas-container').width(),
-        canvasHeight: $('.canvas-container').height(),
-        outputWidth: $('.output-container').width(),
-        outputHeight: $('.output-container').height()
-    };
-
-    function adjustSizes() {
-        let currentSizes = {
-            editorWidth: $('.editor-container').width(),
-            editorHeight: $('.editor-container').height(),
-            filesystemWidth: $('.filesystem-container').width(),
-            filesystemHeight: $('.filesystem-container').height(),
-            canvasWidth: $('.canvas-container').width(),
-            canvasHeight: $('.canvas-container').height(),
-            outputWidth: $('.output-container').width(),
-            outputHeight: $('.output-container').height()
-        };
-
-        // Determine which element changed by comparing the current sizes with the previous sizes
-        if (currentSizes.editorWidth !== previousSizes.editorWidth || currentSizes.editorHeight !== previousSizes.editorHeight) {
-            // Editor container changed
-            $('.filesystem-container').width(`calc(100% - ${currentSizes.editorWidth}px)`);
-            $('.filesystem-container').height(currentSizes.editorHeight);
-
-            $('.canvas-container').width(`calc(100% - ${currentSizes.editorWidth}px)`);
-            $('.canvas-container').height(`calc(100% - ${currentSizes.editorHeight}px)`);
-
-            $('.output-container').width(currentSizes.editorWidth);
-            $('.output-container').height(`calc(100% - ${currentSizes.editorHeight}px)`);
-        } else if (currentSizes.filesystemWidth !== previousSizes.filesystemWidth || currentSizes.filesystemHeight !== previousSizes.filesystemHeight) {
-            // Filesystem container changed
-            $('.editor-container').width(`calc(100% - ${currentSizes.filesystemWidth}px)`);
-            $('.editor-container').height(currentSizes.filesystemHeight);
-
-            $('.canvas-container').width(currentSizes.filesystemWidth);
-            $('.canvas-container').height(`calc(100% - ${currentSizes.filesystemHeight}px)`);
-
-            $('.output-container').width(`calc(100% - ${currentSizes.filesystemWidth}px)`);
-            $('.output-container').height(currentSizes.filesystemHeight);
-        } else if (currentSizes.canvasWidth !== previousSizes.canvasWidth || currentSizes.canvasHeight !== previousSizes.canvasHeight) {
-            // Canvas container changed
-            $('.editor-container').width(`calc(100% - ${currentSizes.canvasWidth}px)`);
-            $('.editor-container').height(`calc(100% - ${currentSizes.canvasHeight}px)`);
-
-            $('.filesystem-container').width(currentSizes.canvasWidth);
-            $('.filesystem-container').height(`calc(100% - ${currentSizes.canvasHeight}px)`);
-
-            $('.output-container').width(currentSizes.canvasWidth);
-            $('.output-container').height(currentSizes.canvasHeight);
-        } else if (currentSizes.outputWidth !== previousSizes.outputWidth || currentSizes.outputHeight !== previousSizes.outputHeight) {
-            // Output container changed
-            $('.editor-container').width(currentSizes.outputWidth);
-            $('.editor-container').height(`calc(100% - ${currentSizes.outputHeight}px)`);
-
-            $('.filesystem-container').width(`calc(100% - ${currentSizes.outputWidth}px)`);
-            $('.filesystem-container').height(currentSizes.outputHeight);
-
-            $('.canvas-container').width(`calc(100% - ${currentSizes.outputWidth}px)`);
-            $('.canvas-container').height(`calc(100% - ${currentSizes.outputHeight}px)`);
-        }
-
-        // Update previous sizes
-        previousSizes = currentSizes;
-    }
-
-    $('.editor-container').resizable({
-        handles: 'e, s, se',
-        containment: 'parent',
-        animate: true,
-        ghost: true,
-        helper: 'ui-resizable-helper',
-        resize: function(event, ui) {
-            adjustSizes();
-        },
-        stop: function(event, ui) {
-            adjustSizes();
-        }
-    });
-
-    $('.filesystem-container').resizable({
-        handles: 'w, s, sw',
-        containment: 'parent',
-        animate: true,
-        ghost: true,
-        helper: 'ui-resizable-helper',
-        resize: function(event, ui) {
-            adjustSizes();
-        },
-        stop: function(event, ui) {
-            adjustSizes();
-        }
-    });
-
-    $('.canvas-container').resizable({
-        handles: 'n, w, nw',
-        containment: 'parent',
-        animate: true,
-        ghost: true,
-        helper: 'ui-resizable-helper',
-        resize: function(event, ui) {
-            adjustSizes();
-        },
-        stop: function(event, ui) {
-            adjustSizes();
-        }
-    });
-
-    $('.output-container').resizable({
-        handles: 'n, e, ne',
-        containment: 'parent',
-        animate: true,
-        ghost: true,
-        helper: 'ui-resizable-helper',
-        resize: function(event, ui) {
-            adjustSizes();
-        },
-        stop: function(event, ui) {
-            adjustSizes();
-        }
-    });
-});
-</script>
-    
 <div id="main" role="main">
   <div class="archive"> 
     <h1 class="page__title">{{ page.title }}{% if page.info.points %} ({{page.info.points}} Points){% endif %}</h1>
