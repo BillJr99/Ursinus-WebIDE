@@ -33,3 +33,12 @@ When creating an audio module, use the built-in method
 <code>save_audio_js(y, sr)</code>
 
 which takes in an array of samples and a sample rate.  Then check the global string <code>audioStr</code> for the base64 binary to create reference solutions
+
+
+## Graphics Modules
+
+Be sure that the relative paths for all meshes in assets/js/ggslac/meshes are correct based on how deep the module is.  For example, in the homer mesh in exercise1-orthographic, we say
+
+"filename":"../../assets/js/ggslac/meshes/homer.off"
+
+since that module is in /Modules/Graphics/OrthographicView
