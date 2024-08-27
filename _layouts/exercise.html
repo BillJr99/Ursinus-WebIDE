@@ -80,16 +80,11 @@ submitformlinkdirections: "Clicking Run below will check your work and, if it pa
         width: 100%;
     }    
 
-    .editor-container, .output-container, .filesystem-container, .canvas-container {
-        flex: 1;
-        padding: 10px;
-        box-sizing: border-box;
-    }
-
     .editor-container {
         border-right: 1px solid #ccc;
         border-bottom: 1px solid #ccc;
         height: 75%; 
+        flex: none; 
     }
 
     .output-container {
@@ -99,10 +94,12 @@ submitformlinkdirections: "Clicking Run below will check your work and, if it pa
         display: flex;
         flex-direction: column;
         height: 25%; 
+        flex: none; 
     }
 
     .canvas-container {
         height: 75%; 
+        flex: none; 
     }
 
     .filesystem-container {
@@ -110,7 +107,8 @@ submitformlinkdirections: "Clicking Run below will check your work and, if it pa
         display: flex;
         flex-direction: column;
         align-items: flex-start;
-        height: 25%; 
+        height: 25%;
+        flex: none; 
     }
 
     textarea, pre, canvas, audio {
