@@ -9,6 +9,8 @@ submitformlinkdirections: "Clicking Run below will check your work and, if it pa
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <link rel="stylesheet" href="{{site.baseurl}}/assets/css/jstree/style.min.css" />
+<link rel="stylesheet" href="{{site.baseurl}}/assets/css/jquery-ui.css">
+
 <style>
     body {
         display: flex;
@@ -117,6 +119,7 @@ submitformlinkdirections: "Clicking Run below will check your work and, if it pa
 <script src="{{site.baseurl}}/assets/js/jsencrypt.min.js"></script>
 <script src="{{site.baseurl}}/assets/js/jszip.min.js"></script>
 <script src="{{site.baseurl}}/assets/js/jquery.min.js"></script>
+<script src="{{site.baseurl}}/assets/js/jquery-ui.min.js"></script>
 <script src="{{site.baseurl}}/assets/js/jstree.min.js"></script>
 <script type="text/javascript" src="{{site.baseurl}}/assets/js/processing.min.js"></script>
 <script src="{{site.baseurl}}/assets/js/polyfill.min.js?features=es6"></script>
@@ -158,6 +161,31 @@ submitformlinkdirections: "Clicking Run below will check your work and, if it pa
 <script src="{{site.baseurl}}/assets/js/ggslac/viewers/scenecanvas.js"></script>
 <script src="{{site.baseurl}}/assets/js/ggslac/viewers/matrixanim.js"></script>
 {% endif %}
+
+<!-- Resizing elements -->
+<script>
+  $(function() {
+    $('.editor-container').resizable({
+      handles: 'se', // southeast corner only
+      containment: 'parent'
+    });
+
+    $('.filesystem-container').resizable({
+      handles: 'se', 
+      containment: 'parent'
+    });
+
+    $('.canvas-container').resizable({
+      handles: 'se', 
+      containment: 'parent'
+    });
+
+    $('.output-container').resizable({
+      handles: 'se', 
+      containment: 'parent'
+    });
+  });
+</script>
     
 <div id="main" role="main">
   <div class="archive"> 
@@ -217,9 +245,9 @@ For example, Professor Tralie's ID is ctralie.
 If you are not an Ursinus student, that's fine!
 Just make something up, and you can still run everything</div>
                     <button id="clear-console">Clear Console</button>
-                    <div class="output-container" id="output-container">
-                        
-                        <pre id="console"></pre>
+                    <div class="output-container" id="output-container"> 
+                        <label for="wrap-text">Wrap Text</label> <input type="checkbox" id="wrap-text"><br />
+                        <pre id="console" style="white-space: pre-wrap;"></pre>
                     </div>
                 </div>
                 <div class="right-container">
@@ -336,7 +364,7 @@ def pyodide_print(s):
                     const imageArea = document.getElementById('imageArea');
                     const audioArea = document.getElementById('audioArea');
                     let ace_editor = null; // set on window load
-
+                    
                     const courseid = '{% if page.canvascourseid %}{{ page.canvascourseid }}{% else %}{{ site.canvascourseid }}{% endif %}';
                     const asmtid = '{{ page.canvasasmtid }}';
                     const defaultuser = 'user';
@@ -714,6 +742,17 @@ def pyodide_print(s):
                             }
                         };
                     }
+                    
+                    document.getElementById('wrap-text').addEventListener('change', function() {
+                        const consoleOutput = document.getElementById('console');
+                        if (this.checked) {
+                            consoleOutput.style.whiteSpace = 'pre-wrap'; 
+                            consoleOutput.style.width = '40ch'; 
+                        } else {
+                            consoleOutput.style.whiteSpace = 'pre'; 
+                            consoleOutput.style.width = ''; 
+                        }
+                    });                    
                     
                     clearButton.addEventListener('click', () => {
                         consoleOutput.innerHTML = '';
@@ -1916,7 +1955,7 @@ def pyodide_print(s):
 
                         let url = `{% if layout.formlink %}{{ layout.formlink }}{% else %}{{ site.formlink }}{% endif %}` + encryptedContent;
                         console.log("len(url)", url.length);
-                        window.open(url);
+                        window.location.href = url; // window.open(url);                     
                         
                         // download encrypted submission version, if desired
                         if(downloadblob) {
