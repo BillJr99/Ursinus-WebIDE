@@ -125,7 +125,6 @@ submitformlinkdirections: "Clicking Run below will check your work and, if it pa
 <script src="{{site.baseurl}}/assets/js/util.js"></script>
 <script src="{{site.baseurl}}/assets/js/main.js"></script>
 <script src="{{site.baseurl}}/assets/js/ace.js" type="text/javascript" charset="utf-8"></script>
-<script src="{{site.baseurl}}/assets/js/gl-matrix-min.js"></script>
 {% if page.language == "cpp" %}
 <script src = "{{site.baseurl}}/assets/js/cpp/process-manager.js"></script>
 <script src = "{{site.baseurl}}/assets/js/cpp/runtime.js"></script>
@@ -143,7 +142,7 @@ submitformlinkdirections: "Clicking Run below will check your work and, if it pa
 <script src="{{site.baseurl}}/assets/js/wav.js"></script>
 {% endif %}
 {% if page.language == "graphics_view" or page.language == "graphics_shader" %}
-
+<script type="text/javascript" src = "{{site.baseurl}}/assets/js/ggslac/jslibs/gl-matrix-min.js"></script>
 <script type="text/javascript" src = "{{site.baseurl}}/assets/js/ggslac/jslibs/dat.gui.min.js"></script>
 <script type="text/javascript" src = "{{site.baseurl}}/assets/js/ggslac/jslibs/webgl-utils.js"></script>
 <script type="text/javascript" src = "{{site.baseurl}}/assets/js/ggslac/jslibs/webgl-debug.js"></script>
