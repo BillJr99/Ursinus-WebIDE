@@ -9,7 +9,7 @@ submitformlinkdirections: "Clicking Run below will check your work and, if it pa
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <link rel="stylesheet" href="{{site.baseurl}}/assets/css/jstree/style.min.css" />
-<link rel="stylesheet" href="{{site.baseurl}}/assets/css/jquery-ui.css">
+<link rel="stylesheet" href="{{site.baseurl}}/assets/js/jquery-ui/jquery-ui.min.css">
 
 <style>
     body {
@@ -114,12 +114,19 @@ submitformlinkdirections: "Clicking Run below will check your work and, if it pa
     body .ace_scrollbar-h {
         overflow-x: auto;
     }
+    pre {
+        white-space: pre; 
+        overflow-x: auto; 
+        overflow-y: auto; 
+        max-height: 100%; 
+        margin: 0; 
+    }    
 </style>
 
 <script src="{{site.baseurl}}/assets/js/jsencrypt.min.js"></script>
 <script src="{{site.baseurl}}/assets/js/jszip.min.js"></script>
 <script src="{{site.baseurl}}/assets/js/jquery.min.js"></script>
-<script src="{{site.baseurl}}/assets/js/jquery-ui.min.js"></script>
+<script src="{{site.baseurl}}/assets/js/jquery-ui/jquery-ui.min.js"></script>
 <script src="{{site.baseurl}}/assets/js/jstree.min.js"></script>
 <script type="text/javascript" src="{{site.baseurl}}/assets/js/processing.min.js"></script>
 <script src="{{site.baseurl}}/assets/js/polyfill.min.js?features=es6"></script>
@@ -166,22 +173,22 @@ submitformlinkdirections: "Clicking Run below will check your work and, if it pa
 <script>
   $(function() {
     $('.editor-container').resizable({
-      handles: 'se', // southeast corner only
+      handles: 'n, e, s, w, ne, nw, se, sw', 
       containment: 'parent' // prevent overlapping resizes
     });
 
     $('.filesystem-container').resizable({
-      handles: 'se', 
+      handles: 'n, e, s, w, ne, nw, se, sw', 
       containment: 'parent'
     });
 
     $('.canvas-container').resizable({
-      handles: 'se', 
+      handles: 'n, e, s, w, ne, nw, se, sw', 
       containment: 'parent'
     });
 
     $('.output-container').resizable({
-      handles: 'se', 
+      handles: 'n, e, s, w, ne, nw, se, sw', 
       containment: 'parent'
     });
   });
@@ -246,7 +253,10 @@ If you are not an Ursinus student, that's fine!
 Just make something up, and you can still run everything</div>
                     <button id="clear-console">Clear Console</button>
                     <div class="output-container" id="output-container"> 
-                        <label for="wrap-text">Wrap Text</label> <input type="checkbox" id="wrap-text"><br />
+                    <label for="wrap-text">Wrap Text</label>
+                    <input type="checkbox" id="wrap-text">
+                    <br />
+                    <pre id="console" style="white-space: pre; overflow-x: auto;"></pre>
                         <pre id="console" style="white-space: pre-wrap;"></pre>
                     </div>
                 </div>
@@ -747,10 +757,10 @@ def pyodide_print(s):
                         const consoleOutput = document.getElementById('console');
                         if (this.checked) {
                             consoleOutput.style.whiteSpace = 'pre-wrap'; 
-                            consoleOutput.style.width = '40ch'; 
+                            consoleOutput.style.overflowX = 'hidden'; 
                         } else {
                             consoleOutput.style.whiteSpace = 'pre'; 
-                            consoleOutput.style.width = ''; 
+                            consoleOutput.style.overflowX = 'auto'; 
                         }
                     });                    
                     
