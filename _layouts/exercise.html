@@ -85,7 +85,8 @@ submitformlinkdirections: "Clicking Run below will check your work and, if it pa
     .output-container {
         border-bottom: 1px solid #ccc;
         max-height: 50vh;
-        overflow-y: auto;
+        overflow-y: hidden;
+        overflow-x: hidden;
         display: flex;
         flex-direction: column;
     }
@@ -172,20 +173,74 @@ submitformlinkdirections: "Clicking Run below will check your work and, if it pa
 <!-- Resizing elements -->
 <script>
 $(function() {
+    let previousSizes = {
+        editorWidth: $('.editor-container').width(),
+        editorHeight: $('.editor-container').height(),
+        filesystemWidth: $('.filesystem-container').width(),
+        filesystemHeight: $('.filesystem-container').height(),
+        canvasWidth: $('.canvas-container').width(),
+        canvasHeight: $('.canvas-container').height(),
+        outputWidth: $('.output-container').width(),
+        outputHeight: $('.output-container').height()
+    };
+
     function adjustSizes() {
-        let editorWidth = $('.editor-container').width();
-        let editorHeight = $('.editor-container').height();
+        let currentSizes = {
+            editorWidth: $('.editor-container').width(),
+            editorHeight: $('.editor-container').height(),
+            filesystemWidth: $('.filesystem-container').width(),
+            filesystemHeight: $('.filesystem-container').height(),
+            canvasWidth: $('.canvas-container').width(),
+            canvasHeight: $('.canvas-container').height(),
+            outputWidth: $('.output-container').width(),
+            outputHeight: $('.output-container').height()
+        };
 
-        let outputHeight = $('.output-container').height();
-        
-        $('.filesystem-container').width(`calc(100% - ${editorWidth}px)`);
-        $('.filesystem-container').height(editorHeight);
+        // Determine which element changed by comparing the current sizes with the previous sizes
+        if (currentSizes.editorWidth !== previousSizes.editorWidth || currentSizes.editorHeight !== previousSizes.editorHeight) {
+            // Editor container changed
+            $('.filesystem-container').width(`calc(100% - ${currentSizes.editorWidth}px)`);
+            $('.filesystem-container').height(currentSizes.editorHeight);
 
-        $('.canvas-container').width(`calc(100% - ${editorWidth}px)`);
-        $('.canvas-container').height(`calc(100% - ${editorHeight}px)`);
+            $('.canvas-container').width(`calc(100% - ${currentSizes.editorWidth}px)`);
+            $('.canvas-container').height(`calc(100% - ${currentSizes.editorHeight}px)`);
 
-        $('.output-container').width(editorWidth);
-        $('.output-container').height(`calc(100% - ${editorHeight}px)`);
+            $('.output-container').width(currentSizes.editorWidth);
+            $('.output-container').height(`calc(100% - ${currentSizes.editorHeight}px)`);
+        } else if (currentSizes.filesystemWidth !== previousSizes.filesystemWidth || currentSizes.filesystemHeight !== previousSizes.filesystemHeight) {
+            // Filesystem container changed
+            $('.editor-container').width(`calc(100% - ${currentSizes.filesystemWidth}px)`);
+            $('.editor-container').height(currentSizes.filesystemHeight);
+
+            $('.canvas-container').width(currentSizes.filesystemWidth);
+            $('.canvas-container').height(`calc(100% - ${currentSizes.filesystemHeight}px)`);
+
+            $('.output-container').width(`calc(100% - ${currentSizes.filesystemWidth}px)`);
+            $('.output-container').height(currentSizes.filesystemHeight);
+        } else if (currentSizes.canvasWidth !== previousSizes.canvasWidth || currentSizes.canvasHeight !== previousSizes.canvasHeight) {
+            // Canvas container changed
+            $('.editor-container').width(`calc(100% - ${currentSizes.canvasWidth}px)`);
+            $('.editor-container').height(`calc(100% - ${currentSizes.canvasHeight}px)`);
+
+            $('.filesystem-container').width(currentSizes.canvasWidth);
+            $('.filesystem-container').height(`calc(100% - ${currentSizes.canvasHeight}px)`);
+
+            $('.output-container').width(currentSizes.canvasWidth);
+            $('.output-container').height(currentSizes.canvasHeight);
+        } else if (currentSizes.outputWidth !== previousSizes.outputWidth || currentSizes.outputHeight !== previousSizes.outputHeight) {
+            // Output container changed
+            $('.editor-container').width(currentSizes.outputWidth);
+            $('.editor-container').height(`calc(100% - ${currentSizes.outputHeight}px)`);
+
+            $('.filesystem-container').width(`calc(100% - ${currentSizes.outputWidth}px)`);
+            $('.filesystem-container').height(currentSizes.outputHeight);
+
+            $('.canvas-container').width(`calc(100% - ${currentSizes.outputWidth}px)`);
+            $('.canvas-container').height(`calc(100% - ${currentSizes.outputHeight}px)`);
+        }
+
+        // Update previous sizes
+        previousSizes = currentSizes;
     }
 
     $('.editor-container').resizable({
