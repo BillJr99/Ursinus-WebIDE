@@ -86,6 +86,15 @@ submitformlinkdirections: "Clicking Run below will check your work and, if it pa
         height: 75%; 
         flex: none; 
     }
+    
+    #console {
+        width: 100%; 
+        box-sizing: border-box; 
+        white-space: pre-wrap; 
+        overflow-x: hidden;
+        overflow-y: auto;
+        height: 100%; 
+    }    
 
     .output-container {
         border-bottom: 1px solid #ccc;
@@ -255,11 +264,11 @@ If you are not an Ursinus student, that's fine!
 Just make something up, and you can still run everything</div>
                     <div class="wrap-text-container">
                         <label for="wrap-text">Wrap Text</label>
-                        <input type="checkbox" id="wrap-text">
+                        <input type="checkbox" id="wrap-text" checked>
                     </div>
                     <button id="clear-console">Clear Console</button>
                     <div class="output-container" id="output-container"> 
-                        <pre id="console" style="white-space: pre; overflow-x: auto;"></pre>
+                        <pre id="console" style="white-space: pre-wrap; overflow-x: hidden;"></pre>
                     </div>
                 </div>
                 <div class="right-container">
@@ -376,6 +385,7 @@ def pyodide_print(s):
                     const imageArea = document.getElementById('imageArea');
                     const audioArea = document.getElementById('audioArea');
                     const canvas = document.getElementById('GLCanvas1');
+                    const wrapTextCheckbox = document.getElementById('wrap-text');
                     let ace_editor = null; // set on window load
                     
                     const courseid = '{% if page.canvascourseid %}{{ page.canvascourseid }}{% else %}{{ site.canvascourseid }}{% endif %}';
@@ -756,7 +766,7 @@ def pyodide_print(s):
                         };
                     }
                     
-                    document.getElementById('wrap-text').addEventListener('change', function() {
+                    wrapTextCheckbox.addEventListener('change', function() {
                         const consoleOutput = document.getElementById('console');
                         if (this.checked) {
                             consoleOutput.style.whiteSpace = 'pre-wrap'; 
@@ -765,7 +775,16 @@ def pyodide_print(s):
                             consoleOutput.style.whiteSpace = 'pre'; 
                             consoleOutput.style.overflowX = 'auto'; 
                         }
-                    });                    
+                    });  
+
+                    // Set initial text wrap state based on the checkbox
+                    if (wrapTextCheckbox.checked) {
+                        consoleOutput.style.whiteSpace = 'pre-wrap';
+                        consoleOutput.style.overflowX = 'hidden';
+                    } else {
+                        consoleOutput.style.whiteSpace = 'pre';
+                        consoleOutput.style.overflowX = 'auto';
+                    }                    
                     
                     clearButton.addEventListener('click', () => {
                         consoleOutput.innerHTML = '';
