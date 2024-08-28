@@ -77,7 +77,11 @@ submitformlinkdirections: "Clicking Run below will check your work and, if it pa
     .left-container, .right-container {
         display: flex;
         flex-direction: column;
-        width: 100%;
+        width: 50%;
+        flex: none;
+        flex-wrap: nowrap;
+        flex-shrink: 0;
+        flex-grow: 0;         
     }    
 
     .editor-container {
@@ -98,6 +102,7 @@ submitformlinkdirections: "Clicking Run below will check your work and, if it pa
         flex-shrink: 0;
         flex-grow: 0; 
         flex: none;
+        flex-wrap: nowrap;
     }    
 
     .output-container {
