@@ -1168,12 +1168,6 @@ def pyodide_print(s):
                         }
                     }
 
-                    // Utility function to convert ArrayBuffer to Base64 string
-                    function arrayBufferToBase64(buffer) {
-                        const binary = String.fromCharCode.apply(null, new Uint8Array(buffer));
-                        return window.btoa(binary);
-                    }
-
                     function arrayBufferToBase64(buffer) {
                         let binary = '';
                         const bytes = new Uint8Array(buffer);
