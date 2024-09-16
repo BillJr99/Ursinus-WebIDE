@@ -561,6 +561,8 @@ def pyodide_print(s):
                     }
 
                     async function getFilesFromDirectory(directory) {
+                        await waitForElement('#filesystem');
+                        
                         const db = await initDB();
                         if (!db) {
                             console.error('Failed to initialize DB');
@@ -608,8 +610,6 @@ def pyodide_print(s):
                                     type: 'folder'
                                 });
                             });
-
-                            await waitForElement('#filesystem');
                             
                             $('#filesystem').jstree(true).settings.core.data = treeData;
                             $('#filesystem').jstree(true).refresh();
