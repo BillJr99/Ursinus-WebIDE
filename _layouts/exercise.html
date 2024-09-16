@@ -1574,11 +1574,8 @@ def pyodide_print(s):
                                 }                                
                             }
                         }
-                        biwa = new BiwaScheme.Interpreter(onSchemeError)
-                        scheme_evaluate = function(code) {
-                            editor_insert("\n\n");
-                            return biwa.evaluate(code,onSchemeResult);
-                        }
+                        biwa = new BiwaScheme.Interpreter(onSchemeError);
+                        return biwa.evaluate(code,onSchemeResult);
 
                         return feedbackString;
                     }        
