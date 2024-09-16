@@ -1552,8 +1552,8 @@ def pyodide_print(s):
                     {% if page.language == "scheme" %}
                     async function doScheme(codeString, mainString) {
                         feedbackString = "";
-                        let code = mainString + '\n';
-                        code += codeString + '\n';
+                        let code = codeString + '\n';
+                        code += mainString + '\n'; // main should go last in scheme
                         console.log(code);
 
                         // https://github.com/sipavlovic/scheme_experiment/blob/master/scheme.html
