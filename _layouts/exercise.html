@@ -1543,7 +1543,7 @@ def pyodide_print(s):
 
                     {% if page.language == "scheme" %}
                     async function doScheme(codeString, mainString) {
-                        feedbackString = "";
+                        feedbackString = ""; 
                         let code = mainString + '\n';
                         code += codeString + '\n';
                         console.log(code);
