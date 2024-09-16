@@ -175,6 +175,10 @@ submitformlinkdirections: "Clicking Run below will check your work and, if it pa
     }    
 </style>
 
+{% if page.language == "scheme" %}
+<!-- load biwascheme first so it is overridden by jquery and jstree loads later -->
+<script src="{{site.baseurl}}/assets/js/biwascheme.js"></script>
+{% endif %}
 <script src="{{site.baseurl}}/assets/js/jsencrypt.min.js"></script>
 <script src="{{site.baseurl}}/assets/js/jszip.min.js"></script>
 <script src="{{site.baseurl}}/assets/js/jquery.min.js"></script>
@@ -193,9 +197,6 @@ submitformlinkdirections: "Clicking Run below will check your work and, if it pa
 {% endif %}
 {% if page.language == "sql" %}
 <script src="{{site.baseurl}}/assets/js/sql.js/sql.js"></script>
-{% endif %}
-{% if page.language == "scheme" %}
-<script src="{{site.baseurl}}/assets/js/biwascheme.js"></script>
 {% endif %}
 {% if page.language == "python" %}
 <script type="text/javascript" src="{{site.baseurl}}/assets/js/brython.min.js"></script>
