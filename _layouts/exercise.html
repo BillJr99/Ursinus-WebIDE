@@ -615,8 +615,6 @@ def pyodide_print(s):
                             $('#filesystem').jstree(true).refresh();
                         };
                     }
-
-                    await waitForElement('#filesystem');
                     
                     // Append rootBasePath when a file is clicked
                     $('#filesystem').on('select_node.jstree', function (e, data) {
