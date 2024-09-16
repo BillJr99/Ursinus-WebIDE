@@ -1562,27 +1562,24 @@ def pyodide_print(s):
                         }
                         onSchemeResult = function(result) {
                             if (result == BiwaScheme.undef || result == null || result == undefined) {
-                                editor.insert("-> nil");    
+                                feedbackString += "nil" + "\n";
+                                logToConsole("nil");   
                             } else {
-                                editor.insert("-> "+result);
+                                if (typeof result == "string") {
+                                    feedbackString += result + "\n";
+                                    logToConsole(result);
+                                } else {
+                                    feedbackString += JSON.stringify(result) + "\n";
+                                    logToConsole(JSON.stringify(result));
+                                }                                
                             }
                         }
                         biwa = new BiwaScheme.Interpreter(onSchemeError)
                         scheme_evaluate = function(code) {
-                            editor.insert("\n\n");
+                            editor_insert("\n\n");
                             return biwa.evaluate(code,onSchemeResult);
                         }
 
-                        editor_insert = function(value) {
-                            if (typeof value == "string") {
-                                feedbackString += value + "\n";
-                                logToConsole(value);
-                            } else {
-                                feedbackString += JSON.stringify(value) + "\n";
-                                logToConsole(JSON.stringify(value));
-                            }
-                        }                        
-                        
                         return feedbackString;
                     }        
                     {% endif %}                    
