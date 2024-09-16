@@ -194,6 +194,9 @@ submitformlinkdirections: "Clicking Run below will check your work and, if it pa
 {% if page.language == "sql" %}
 <script src="{{site.baseurl}}/assets/js/sql.js/sql.js"></script>
 {% endif %}
+{% if page.language == "scheme" %}
+<script src="{{site.baseurl}}/assets/js/biwascheme.js"></script>
+{% endif %}
 {% if page.language == "python" %}
 <script type="text/javascript" src="{{site.baseurl}}/assets/js/brython.min.js"></script>
 <script type="text/javascript" src="{{site.baseurl}}/assets/js/brython_stdlib.min.js"></script>
@@ -1536,6 +1539,48 @@ def pyodide_print(s):
                         });
                     }
                     {% endif %}
+                    
+
+                    {% if page.language == "scheme" %}
+                    async function doScheme(codeString, mainString) {
+                        feedbackString = "";
+                        let code = mainString + '\n';
+                        code += codeString + '\n';
+                        console.log(code);
+
+                        // https://github.com/sipavlovic/scheme_experiment/blob/master/scheme.html
+                        onSchemeError = function(e) { 
+                            logToConsole(e.message);
+                        }
+                        onSchemeResult = function(result) {
+                            if (result == BiwaScheme.undef || result == null || result == undefined) {
+                                editor.insert("-> nil");    
+                            } else {
+                                editor.insert("-> "+result);
+                            }
+                        }
+                        biwa = new BiwaScheme.Interpreter(onSchemeError)
+                        scheme_evaluate = function(code) {
+                            editor.insert("\n\n");
+                            return biwa.evaluate(code,onSchemeResult);
+                        }
+
+                        editor_insert = function(value) {
+                            if (typeof value == "string") {
+                                feedbackString += value + "\n";
+                                logToConsole(value);
+                            } else {
+                                feedbackString += JSON.stringify(value) + "\n";
+                                logToConsole(JSON.stringify(value));
+                            }
+                        }                        
+                        
+                        return feedbackString;
+                    }        
+                    {% endif %}                    
+                    
+                    
+                    
 
                     {% if page.language == "sql" %}
                     async function doSql(codeString, mainString) {
@@ -1579,6 +1624,8 @@ def pyodide_print(s):
                         return feedbackString;
                     }        
                     {% endif %}
+                    
+                    
 
                     {% if page.language == "pyodide" %}
                         // Load the required packages
@@ -1923,6 +1970,10 @@ def pyodide_print(s):
                             canvasStr = glcanvas.toDataURL();
                             //////////////////////////////////////////////////////////////////
 
+
+                            {% elsif page.language == "scheme" %}
+                            feedbackString = await doScheme(editorText, mainText); 
+                            logToConsole(feedbackString);                              
 
 
                             {% elsif page.language == "sql" %}
