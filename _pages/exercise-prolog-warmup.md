@@ -48,5 +48,6 @@ files:
       assert(prereq(CS174, CS173)).
       assert(prereq(CS374, CS174)).
              
-      assert(take_before(X, Y) :- prereq(Z, Y), take_before(X, Z)). 
+      assertz((take_before(X, Y) :- prereq(Z, Y), take_before(X, Z))).
+
 ---
