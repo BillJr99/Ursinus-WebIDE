@@ -1999,11 +1999,17 @@ def pyodide_print(s):
 								  Module = module;
 								  Prolog = Module.prolog;
 								  await Prolog.load_scripts();
-								  const code = editorText + "\n\n" + mainText;
-								  for(const r of Prolog.query(code)) {
-								    console.log(r.X);
+								  const code = mainText + "\n\n" + editorText;
+								  const tokens = code.split(/\r?\n/).filter(line => line.trim() !== "");
+								  for (let i = 0; i < tokens.length; i++) {
+									console.log(tokens[i]);
+								    for(const r of Prolog.query(tokens[i])) {
+								      logToConsole(r.X);
+								    }									
 								  }
-								});							
+								});		
+
+								
                             {% elsif page.language == "java" %}                             
                             let code = makeCodeJavaProcessing(editorText, mainText);
                             console.log(code);
