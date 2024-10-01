@@ -2000,7 +2000,9 @@ def pyodide_print(s):
 								  Prolog = Module.prolog;
 								  await Prolog.load_scripts();
 								  const code = editorText + "\n\n" + mainText;
-								  Prolog.call(code);
+								  for(const r of Prolog.query(code)) {
+								    console.log(r.X);
+								  }
 								});							
                             {% elsif page.language == "java" %}                             
                             let code = makeCodeJavaProcessing(editorText, mainText);
