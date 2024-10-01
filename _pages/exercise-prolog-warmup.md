@@ -57,7 +57,7 @@ files:
       assertz((take_before(X, Y) :- take_before_recursive(X, Y, []))).
 
       % Helper predicate with accumulator to avoid cycles
-	  % Z must not be in the list of already visited courses
+      % Z must not be in the list of already visited courses
       assertz((take_before_recursive(X, Y, Visited) :- prereq(Z, Y), \+ member(Z, Visited), take_before_recursive(X, Z, [Y | Visited]))).
 
       % Base case for the recursive helper
