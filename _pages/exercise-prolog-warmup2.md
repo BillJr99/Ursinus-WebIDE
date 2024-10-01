@@ -43,28 +43,29 @@ files:
     isvisible: true
     code: |
       % Enter facts
-      assert(male(john)).
-      assert(male(david)).
-      assert(male(michael)).
-      assert(male(james)).
+      assertz(male(john)).
+      assertz(male(david)).
+      assertz(male(michael)).
+      assertz(male(james)).
 
-      assert(female(susan)).
-      assert(female(linda)).
-      assert(female(elizabeth)).
-      assert(female(anna)).
+      assertz(female(susan)).
+      assertz(female(linda)).
+      assertz(female(elizabeth)).
+      assertz(female(anna)).
 
-      assert(parent(john, michael)).
-      assert(parent(john, linda)).
-      assert(parent(susan, michael)).
-      assert(parent(susan, linda)).
-      assert(parent(david, james)).
-      assert(parent(elizabeth, james)).
-      assert(parent(michael, anna)).
+      assertz(parent(john, michael)).
+      assertz(parent(john, linda)).
+      assertz(parent(susan, michael)).
+      assertz(parent(susan, linda)).
+      assertz(parent(david, james)).
+      assertz(parent(elizabeth, james)).
+      assertz(parent(michael, anna)).
 
       % Enter rules
-      assert((father(X, Y) :- male(X), parent(X, Y))).
-      assert((mother(X, Y) :- female(X), parent(X, Y))).
-      assert((sibling(X, Y) :- parent(Z, X), parent(Z, Y), X \= Y)).
-      assert((grandparent(X, Y) :- parent(X, Z), parent(Z, Y))).
+      assertz((father(X, Y) :- male(X), parent(X, Y))).
+      assertz((mother(X, Y) :- female(X), parent(X, Y))).
+      assertz((sibling(X, Y) :- parent(Z, X), parent(Z, Y), X \= Y)).
+      assertz((grandparent(X, Y) :- parent(X, Z), parent(Z, Y))).
+
 
 ---
