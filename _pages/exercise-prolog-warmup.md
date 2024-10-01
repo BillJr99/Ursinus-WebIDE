@@ -47,13 +47,13 @@ files:
       assertz(course(cs475)).
 
       % Prerequisite relationships
-      assertz(prereq(cs174, cs173)).
-      assertz(prereq(cs374, cs174)).
+      assertz(prereq(cs173, cs174)).
+      assertz(prereq(cs174, cs374)).
 
       % Base case: Direct prerequisite relationship
       assertz((take_before(X, Y) :- prereq(X, Y))).
 
-      % Recursive case: Find an intermediate course Z such that X must be taken before Y
-      assertz((take_before(X, Y) :- prereq(Y, Z), take_before(X, Z))).
+      % Recursive case: X must be taken before Y if X is a prerequisite of Z and Z must be taken before Y
+      assertz((take_before(X, Y) :- prereq(X, Z), take_before(Z, Y))).
 
 ---
