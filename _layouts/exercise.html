@@ -2004,6 +2004,7 @@ def pyodide_print(s):
 								  for (let i = 0; i < tokens.length; i++) {
 									const line = tokens[i];
 								    if (!(line.trim().startsWith('%'))) {
+										logToConsole(line);
 										console.log(line);
 										let iterator = Prolog.query(line);
 										let done = false;
