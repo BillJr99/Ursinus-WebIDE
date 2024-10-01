@@ -2007,9 +2007,12 @@ def pyodide_print(s):
 										logToConsole("?- " + line);
 										console.log(line);
 										let iterator = Prolog.query(line);
+										console.log(JSON.stringify(iterator));
+										
 										let done = false;
 										while(!done) {
 									      let result = iterator.next();
+										  console.log(JSON.stringify(result));
 										  console.log(JSON.stringify(result.value));
 										  
 										  if (typeof result.value === 'undefined') {
