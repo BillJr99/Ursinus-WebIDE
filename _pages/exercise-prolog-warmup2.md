@@ -30,11 +30,11 @@ files:
     isvisible: true
     code: | 
       father(john, michael).
-	  father(david, james).
-	  mother(susan, linda).
-	  sibling(michael, linda).
-	  grandparent(john, anna).
-	  grandparent(susan, anna).
+      father(david, james).
+      mother(susan, linda).
+      sibling(michael, linda).
+      grandparent(john, anna).
+      grandparent(susan, anna).
       
   - filename: "main.pl"
     ismain: true
