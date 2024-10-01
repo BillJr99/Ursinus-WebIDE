@@ -2009,13 +2009,17 @@ def pyodide_print(s):
 										let iterator = Prolog.query(line);
 										
 										let done = false;
+										let alreadyLogged = true;
 										while(!done) {
 									      let result = iterator.next();
 										  console.log(JSON.stringify(result));
 										  console.log(JSON.stringify(result.value));
 										  
 										  if (typeof result.value === 'undefined') {
-											logToConsole("false");
+											if(!alreadyLogged) {
+												logToConsole("false");
+												alreadyLogged = true;
+											}
 											
 											if (typeof result.done === 'undefined') {
 												done = true;
@@ -2023,7 +2027,10 @@ def pyodide_print(s):
 												done = result.done;
 											}
 										  } else if (Object.keys(result.value).length === 1 && result.value.hasOwnProperty('$tag') && result.value['$tag'] === 'bindings') {
-											logToConsole("true");
+											if(!alreadyLogged) {
+												logToConsole("true");
+												alreadyLogged = true;
+											}
 											
 											if (typeof result.done === 'undefined') {
 												done = true;
@@ -2045,6 +2052,7 @@ def pyodide_print(s):
 											  
 											  console_log_line = console_log_line.substring(0, console_log_line.length - 2); // remove last comma and space
 											  logToConsole(console_log_line);
+											  alreadyLogged = true;
 											  
 									      	  done = result.done;
 										  }
