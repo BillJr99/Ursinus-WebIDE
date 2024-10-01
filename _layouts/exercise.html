@@ -195,6 +195,9 @@ submitformlinkdirections: "Clicking Run below will check your work and, if it pa
 <script src = "{{site.baseurl}}/assets/js/cpp/runtime.js"></script>
 <script src = "{{site.baseurl}}/assets/js/cpp/wasm-tools.js"></script>
 {% endif %}
+{% if page.language == "scheme" %}
+<script src = "{{site.baseurl}}/assets/js/swipl-bundle.js"></script>
+{% endif %}
 {% if page.language == "sql" %}
 <script src="{{site.baseurl}}/assets/js/sql.js/sql.js"></script>
 {% endif %}
@@ -1981,7 +1984,33 @@ def pyodide_print(s):
                             {% elsif page.language == "sql" %}
                             feedbackString = await doSql(editorText, mainText); 
                             logToConsole(feedbackString);    
+							
+							
+							{% elsif page.language == "prolog" %}
+							const swipl = await SWIPL(); // Assumes SWIPL() is globally available from swipl-bundle.js.
 
+							const instance = swipl.Prolog();
+
+							const code = editorText + "\n\n" + mainText;
+							
+							const goal = instance.newGoal(code);
+
+							let solutions = [];
+							let result = null;
+
+							try {
+								while ((result = goal.next()) !== null) {
+								  solutions.push(result);
+								}
+							} catch (e) {
+								logToConsole("Error executing Prolog code:", e);
+							} finally {
+								goal.close();
+							}						
+
+							for (let i = 0; i < solutions.length; i++) {
+							  logToConsole(`Solution ${i + 1}:`, JSON.stringify(solutions[i]));
+							}
 
                             {% elsif page.language == "java" %}                             
                             let code = makeCodeJavaProcessing(editorText, mainText);
