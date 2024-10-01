@@ -2011,13 +2011,26 @@ def pyodide_print(s):
 									      let result = iterator.next();
 										  console.log(JSON.stringify(result.value));
 										  
-										  for (const key in result.value) {
-											  if (result.value.hasOwnProperty(key)) {
-												logToConsole(`${key}: ${result.value[key]}`);
+										  if (typeof result.value === 'undefined') {
+											logToConsole("false");
+											if (typeof result.done === 'undefined') {
+												done = true;
+											} else {
+												done = result.done;
+											}
+										  else {
+											  for (const key in result.value) {
+												  if (result.value.hasOwnProperty(key)) {
+													if !((typeof result.value[key] === 'object' && result.value[key] !== null)) {
+														if (key !== "$tag" && value !== "bindings") {
+															logToConsole(`${key}: ${result.value[key]}`);
+														}
+													}
+												  }
 											  }
+											  
+									      	  done = result.done;
 										  }
-									      
-										  done = result.done;
 										}									
 									  }
 								  }
