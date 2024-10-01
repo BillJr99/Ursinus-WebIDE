@@ -8,7 +8,7 @@ info:
   points: 3
   instructions: "Run this prolog program."
   goals:
-    - To write a Scheme statement
+    - To read a Prolog statement
     
 canvasasmtid: "181954"   
 canvaspoints: 3

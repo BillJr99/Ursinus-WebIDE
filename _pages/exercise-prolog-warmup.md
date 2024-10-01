@@ -8,7 +8,7 @@ info:
   points: 3
   instructions: "Run this prolog program."
   goals:
-    - To write a Scheme statement
+    - To read a Prolog statement
     
 canvasasmtid: "181953"   
 canvaspoints: 3
@@ -54,6 +54,6 @@ files:
       assertz((take_before(X, Y) :- prereq(X, Y))).
 
       % Recursive case: Find an intermediate course Z such that X must be taken before Y
-      assertz((take_before(X, Y) :- prereq(X, Z), take_before(Z, Y))).
+      assertz((take_before(X, Y) :- prereq(Y, Z), take_before(X, Z))).
 
 ---
