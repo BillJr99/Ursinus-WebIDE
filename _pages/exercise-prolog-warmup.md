@@ -30,10 +30,10 @@ files:
     isvisible: true
     code: | 
       take_before(CS173, CS374). 
-	  take_before(X, CS374).
-	  take_before(CS173, X).
-	  take_before(X, Y).
-	  
+      take_before(X, CS374).
+      take_before(CS173, X).
+      take_before(X, Y).
+      
   - filename: "main.pl"
     ismain: true
     name: main
