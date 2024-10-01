@@ -50,17 +50,12 @@ files:
       assertz(prereq(cs174, cs173)).
       assertz(prereq(cs374, cs174)).
 
-      % Base case for the recursive helper: if X is a direct prerequisite for Y.
-      assertz((take_before_recursive(X, Y, _) :- prereq(X, Y))).
-
-      % Recursive step: find an intermediate course Z such that Z is a prerequisite for Y, and ensure no cycles.
-      assertz((take_before_recursive(X, Y, Visited) :- prereq(Z, Y), \+ member(Z, Visited), take_before_recursive(X, Z, [Z | Visited]))).
-
-      % Base case: X must be taken before Y if X is a direct prerequisite for Y.
+      % Base case for direct prerequisites: X must be taken before Y if X is a direct prerequisite for Y.
       assertz((take_before(X, Y) :- prereq(X, Y))).
 
-      % Recursive case: X must be taken before Y if there's a chain of prerequisites from X to Y.
-      assertz((take_before(X, Y) :- take_before_recursive(X, Y, []))).
+      % Recursive case for transitive prerequisites: 
+      % X must be taken before Y if there is a Z such that X is a prerequisite for Z, and Z is a prerequisite for Y.
+      assertz((take_before(X, Y) :- prereq(X, Z), Z \= Y, take_before(Z, Y))).
 
 
 
