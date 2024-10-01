@@ -2005,14 +2005,12 @@ def pyodide_print(s):
 									const line = tokens[i];
 								    if (!(line.trim().startsWith('%'))) {
 										console.log(line);
-										for(const result of Prolog.query(line)) {
-										  if (result === false) {
-											console.log("No more answers.");
-										  } else {
-											for (const [key, value] of result) {
-											  logToConsole(`${key} = ${value.toString()}`);
-											}
-										  }
+										let iterator = Prolog.query(line);
+										let done = false;
+										while(!done) {
+									      let result = iterator.next();
+									      logToConsole(result.value);
+										  done = result.done;
 										}									
 									  }
 								  }
