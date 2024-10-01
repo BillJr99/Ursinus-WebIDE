@@ -1987,31 +1987,21 @@ def pyodide_print(s):
 							
 							
 							{% elsif page.language == "prolog" %}
-							const swipl = await SWIPL(); // Assumes SWIPL() is globally available from swipl-bundle.js.
+							let Prolog;
+							let Module;
+							var options = {
+								arguments: [],
+								on_output: logToConsole
+							};
 
-							const instance = swipl.Prolog();
-
-							const code = editorText + "\n\n" + mainText;
-							
-							const goal = instance.newGoal(code);
-
-							let solutions = [];
-							let result = null;
-
-							try {
-								while ((result = goal.next()) !== null) {
-								  solutions.push(result);
-								}
-							} catch (e) {
-								logToConsole("Error executing Prolog code:", e);
-							} finally {
-								goal.close();
-							}						
-
-							for (let i = 0; i < solutions.length; i++) {
-							  logToConsole(`Solution ${i + 1}:`, JSON.stringify(solutions[i]));
-							}
-
+							SWIPL(options).then(async (module) =>
+								{ 
+								  Module = module;
+								  Prolog = Module.prolog;
+								  await Prolog.load_scripts();
+								  const code = editorText + "\n\n" + mainText;
+								  Prolog.call(code);
+								});							
                             {% elsif page.language == "java" %}                             
                             let code = makeCodeJavaProcessing(editorText, mainText);
                             console.log(code);
