@@ -2001,10 +2001,12 @@ def pyodide_print(s):
 								  await Prolog.load_scripts();
 								  const code = mainText + "\n\n" + editorText;
 								  const tokens = code.split(/\r?\n/).filter(line => line.trim() !== "");
+								  feedbackString = '';
+								  
 								  for (let i = 0; i < tokens.length; i++) {
 									const line = tokens[i];
 								    if (!(line.trim().startsWith('%'))) {
-										logToConsole("?- " + line);
+										feedbackString += "?- " + line + "\n";
 										console.log(line);
 										let iterator = Prolog.query(line);
 										
@@ -2017,7 +2019,7 @@ def pyodide_print(s):
 										  
 										  if (typeof result.value === 'undefined') {
 											if(!alreadyLogged) {
-												logToConsole("false");
+												feedbackString += "false" + "\n";
 												alreadyLogged = true;
 											}
 											
@@ -2028,7 +2030,7 @@ def pyodide_print(s):
 											}
 										  } else if (Object.keys(result.value).length === 1 && result.value.hasOwnProperty('$tag') && result.value['$tag'] === 'bindings') {
 											if(!alreadyLogged) {
-												logToConsole("true");
+												feedbackString += "true" + "\n";
 												alreadyLogged = true;
 											}
 											
@@ -2051,7 +2053,7 @@ def pyodide_print(s):
 											  }
 											  
 											  console_log_line = console_log_line.substring(0, console_log_line.length - 2); // remove last comma and space
-											  logToConsole(console_log_line);
+											  feedbackString += console_log_line + "\n";
 											  alreadyLogged = true;
 											  
 									      	  done = result.done;
@@ -2059,6 +2061,8 @@ def pyodide_print(s):
 										}									
 									  }
 								  }
+								  
+								  logToConsole(feedbackString);
 								});		
 
 								
