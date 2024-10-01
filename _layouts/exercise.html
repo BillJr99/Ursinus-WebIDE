@@ -2031,7 +2031,7 @@ def pyodide_print(s):
 											  for (const key in result.value) {
 												  if (result.value.hasOwnProperty(key)) {
 													if (!(typeof result.value[key] === 'object' && result.value[key] !== null)) {
-														if (key !== "$tag" && value !== "bindings") {
+														if (key !== "$tag" && result.value[key] !== "bindings") {
 															logToConsole(`${key}: ${result.value[key]}`);
 														}
 													}
