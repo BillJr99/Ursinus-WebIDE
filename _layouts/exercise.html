@@ -2013,12 +2013,21 @@ def pyodide_print(s):
 										  
 										  if (typeof result.value === 'undefined') {
 											logToConsole("false");
+											
 											if (typeof result.done === 'undefined') {
 												done = true;
 											} else {
 												done = result.done;
 											}
-										  else {
+										  } else if (Object.keys(result.value).length === 1 && result.value.hasOwnProperty('$tag') && result.value['$tag'] === 'bindings') {
+											logToConsole("true");
+											
+											if (typeof result.done === 'undefined') {
+												done = true;
+											} else {
+												done = result.done;
+											}											
+										  } else {
 											  for (const key in result.value) {
 												  if (result.value.hasOwnProperty(key)) {
 													if !((typeof result.value[key] === 'object' && result.value[key] !== null)) {
