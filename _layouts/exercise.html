@@ -2011,7 +2011,8 @@ def pyodide_print(s):
 										let iterator = Prolog.query(line);
 										
 										let done = false;
-										let alreadyLogged = true;
+										let alreadyLogged = false;
+										
 										while(!done) {
 									      let result = iterator.next();
 										  console.log(JSON.stringify(result));
