@@ -36,13 +36,13 @@ files:
     isreadonly: true
     isvisible: true
     code: |
-	  course(CS173).
-	  course(CS174).
-	  course(CS374).
-	  course(CS475).
-	 
-	  prereq(CS174, CS173).
-	  prereq(CS374, CS174).
-			 
-	  take_before(X, Y) :- prereq(Z, Y), take_before(X, Z). 
+      course(CS173).
+      course(CS174).
+      course(CS374).
+      course(CS475).
+     
+      prereq(CS174, CS173).
+      prereq(CS374, CS174).
+             
+      take_before(X, Y) :- prereq(Z, Y), take_before(X, Z). 
 ---
