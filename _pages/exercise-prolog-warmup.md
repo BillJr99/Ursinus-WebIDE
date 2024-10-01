@@ -20,7 +20,7 @@ processor:
   feedbackprocess: | 
     var pos = feedbackString.toString();
   correctcheck: |
-    pos.toLowerCase().includes("yes")
+    pos.toLowerCase().includes("true")
  
 files:
   - filename: "first.pl"
@@ -30,19 +30,23 @@ files:
     isvisible: true
     code: | 
       take_before(CS173, CS374). 
+	  take_before(X, CS374).
+	  take_before(CS173, X).
+	  take_before(X, Y).
+	  
   - filename: "main.pl"
     ismain: true
     name: main
     isreadonly: true
     isvisible: true
     code: |
-      course(CS173).
-      course(CS174).
-      course(CS374).
-      course(CS475).
+      assert(course(CS173)).
+      assert(course(CS174)).
+      assert(course(CS374)).
+      assert(course(CS475)).
      
-      prereq(CS174, CS173).
-      prereq(CS374, CS174).
+      assert(prereq(CS174, CS173)).
+      assert(prereq(CS374, CS174)).
              
-      take_before(X, Y) :- prereq(Z, Y), take_before(X, Z). 
+      assert(take_before(X, Y) :- prereq(Z, Y), take_before(X, Z)). 
 ---
