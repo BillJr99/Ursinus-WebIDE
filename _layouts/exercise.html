@@ -2009,7 +2009,14 @@ def pyodide_print(s):
 										let done = false;
 										while(!done) {
 									      let result = iterator.next();
-									      logToConsole(result.value);
+										  console.log(JSON.stringify(result.value));
+										  
+										  for (const key in result.value) {
+											  if (result.value.hasOwnProperty(key)) {
+												logToConsole(`${key}: ${result.value[key]}`);
+											  }
+										  }
+									      
 										  done = result.done;
 										}									
 									  }
