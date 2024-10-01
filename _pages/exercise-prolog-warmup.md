@@ -29,7 +29,7 @@ files:
     isreadonly: false
     isvisible: true
     code: | 
-      ?-take_before(CS173, CS374). 
+      take_before(CS173, CS374). 
   - filename: "main.pl"
     ismain: true
     name: main
