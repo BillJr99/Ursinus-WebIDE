@@ -29,9 +29,9 @@ files:
     isreadonly: false
     isvisible: true
     code: | 
-      take_before(CS173, CS374). 
-      take_before(X, CS374).
-      take_before(CS173, X).
+      take_before(cs173, cs374). 
+      take_before(X, cs374).
+      take_before(cs173, X).
       take_before(X, Y).
       
   - filename: "main.pl"

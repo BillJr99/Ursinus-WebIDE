@@ -2029,15 +2029,20 @@ def pyodide_print(s):
 												done = result.done;
 											}											
 										  } else {
+											  let console_log_line = '';
+											  
 											  for (const key in result.value) {
 												  if (result.value.hasOwnProperty(key)) {
 													if (!(typeof result.value[key] === 'object' && result.value[key] !== null)) {
 														if (key !== "$tag" && result.value[key] !== "bindings") {
-															logToConsole(`${key}: ${result.value[key]}`);
+															console_log_line += `${key}: ${result.value[key]}, `;
 														}
 													}
 												  }
 											  }
+											  
+											  console_log_line = console_log_line.substring(0, console_log_line.length() - 2); // remove last comma and space
+											  logToConsole(console_log_line);
 											  
 									      	  done = result.done;
 										  }
