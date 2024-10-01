@@ -2001,11 +2001,13 @@ def pyodide_print(s):
 								  await Prolog.load_scripts();
 								  const code = mainText + "\n\n" + editorText;
 								  const tokens = code.split(/\r?\n/).filter(line => line.trim() !== "");
-								  for (let i = 0; i < tokens.length; i++) {
-									console.log(tokens[i]);
-								    for(const r of Prolog.query(tokens[i])) {
-								      logToConsole(r.X);
-								    }									
+								  if (!(line.trim().startsWith('%'))) {
+									  for (let i = 0; i < tokens.length; i++) {
+										console.log(tokens[i]);
+										for(const r of Prolog.query(tokens[i])) {
+										  logToConsole(r.X);
+										}									
+									  }
 								  }
 								});		
 
