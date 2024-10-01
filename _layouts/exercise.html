@@ -2007,7 +2007,6 @@ def pyodide_print(s):
 										logToConsole("?- " + line);
 										console.log(line);
 										let iterator = Prolog.query(line);
-										console.log(JSON.stringify(iterator));
 										
 										let done = false;
 										while(!done) {
