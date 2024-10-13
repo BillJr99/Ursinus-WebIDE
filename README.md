@@ -167,14 +167,14 @@ since that module is in `/Modules/Graphics/OrthographicView`
 
 ## Creating Your Own Exercises 
 
-To create an exercise, create a Markdown page in your `_pages` directory using the following template.  Items you fill in are denoted with the `<<` and `>>` characters (which you should remove when filling in your desired data!).
+To create an exercise, create a Markdown page in your `_pages` directory using the following template.  Items you fill in are denoted with the `<<` and `>>` characters (which you should remove when filling in your desired data!).  Replace the other items to your preferences.
 
 ```
 ---
 layout: exercise
 permalink: <<your relative URL here - for example, /Modules/ArrayLists/Exercise>>
 title: "<<title here - for example, CS173: Intro to Computer Science - ArrayLists>>"
-language: "<<language here - one of the follwoing: java"
+language: "<<language here - one of the follwoing: java, javascript, cpp, python, pyodide, sql, scheme, prolog, graphics_view, grpahics_shader>>"
 
 
 info:
@@ -184,7 +184,7 @@ info:
     - "To create and manipulate an <code>ArrayList</code>"
     - "To iterate over an <code>ArrayList</code>"
   
-canvasasmtid: "137462"
+canvasasmtid: "<<Your corresponding Canvas gradebook assignment ID: for example, 137462>>"
 canvaspoints: 3
   
 processor:  
@@ -192,11 +192,12 @@ processor:
   incorrectfeedback: "Try again"
   submitformlink: false
   feedbackprocess: | 
-    let ans = feedbackString.split("-");
+    <<instructions on how to parse the console response for correctness - for example, let ans = feedbackString.split("-");>>
   correctcheck: |
-    ans[0] === "7" && ans[1] === "25"
-      
-files:
+    <<a boolean check for correctness suitable for use in an if statement - for example, ans[0] === "7" && ans[1] === "25">>
+
+<<your files and student code appear below, which will populate a file tree.  One file should be main, and instructor files can be marked read-only or even invisible.>>      
+files: 
   - filename: "PrimeArray.java"
     name: primearray
     ismain: false
