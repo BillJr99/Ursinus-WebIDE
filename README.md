@@ -195,6 +195,11 @@ processor:
     <<instructions on how to parse the console response for correctness - for example, let ans = feedbackString.split("-");>>
   correctcheck: |
     <<a boolean check for correctness suitable for use in an if statement - for example, ans[0] === "7" && ans[1] === "25">>
+  <<optionally, add one or more checks for common incorrect answers with targeted hints and feedback>>
+  incorrectchecks:
+    - incorrectcheck: |
+        ans.length == 1
+      feedback: "Try again: you've found one of the prime numbers, keep iterating with your loop to find the other!"
 
 <<your files and student code appear below, which will populate a file tree.  One file should be main, and instructor files can be marked read-only or even invisible.>>      
 files: 
