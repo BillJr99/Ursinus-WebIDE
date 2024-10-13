@@ -49,49 +49,7 @@ If desired, these variables can be overrided on a per-assignment or per-page bas
 * `formlink` can be overriden in the layout 
 
 ## Backend Form Processor for Posting Grades
-Use with the formprocessor backend (available at [https://github.com/BillJr99/formprocessor/](https://github.com/BillJr99/formprocessor/)) to pull from google sheets
-
-## Assignment Specific Notes
-
-### Pyodide Modules
-
-In the markdown files for the modules you're creating, be sure to specify the <code>packages</code> field nested under <code>info</code> to load the packages that are necessary for the module.  For instance, for a module that creates a plot in matplotlib, you'd say
-
-<code>
-packages: "numpy,matplotlib"
-</code>
-
-After creating a plot, use the built-in method <code>save_figure_js()</code> in your main code in python to save the figure to the figure area.  You can also then look at the string <code>audioStr</code> in the command line to extract the base64 binary code for the image to create reference solutions
-
-When creating an audio module, use the built-in method 
-
-<code>save_audio_js(y, sr)</code>
-
-which takes in an array of samples and a sample rate.  Then check the global string <code>audioStr</code> for the base64 binary to create reference solutions
-
-
-### Graphics Modules
-
-The graphics modules are a bit complicated.  My recommendation is to look at the examples exercise-shader-lambertian and exercise-view-orthographic for examples, and to build off of those examples.
-
-As with the pyodide plots, you can do correctness checks by comparing a base64 encoded version of what's rendered to some reference base64 string.  The current output is in the variable <code>canvasStr</code>.  So, for example, if I wanted to compare the current output to some string called <code>correctStr</code>, then I could say the following in <code>feedbackprocess</code>
-
-<code>let isCorrect = await pngImagesEqualTol(canvasStr, correctStr, DEFAULT_TOL, "correctCheck");</code>
-
-Then, my correctcheck could simply be
-
-<code>correctcheck: isCorrect</code>
-
-One thing that's different here from a direct comparison is that, due to slight variations in graphics hardware, the results will be slightly different pixel to pixel.  Therefore, the method <code>pngImagesEqualTol</code> actually does a pixel by pixel Euclidean distance calculation between the two images, and it will return <code>true</code> as long as the distance is less than some tolerance (specified as the third argument).  You can change this tolerance, but I've provided a value <code>DEFAULT_TOL</code> that I found worked well for students in the past.
-
-#### Other notes:
-Be sure that the relative paths for all meshes in `assets/js/ggslac/meshes` are correct based on how deep the module is.  For example, in the homer mesh in exercise1-orthographic, we say
-
-```
-"filename":"../../assets/js/ggslac/meshes/homer.off"
-```
-
-since that module is in `/Modules/Graphics/OrthographicView`
+Use this WebIDE front-end with the formprocessor back-end (available at [https://github.com/BillJr99/formprocessor/](https://github.com/BillJr99/formprocessor/)) to pull from google sheets
 
 ## Example Exercises
 
@@ -164,3 +122,45 @@ This repository contains examples for various programming languages. Each exampl
 ### **Computer Graphics**
 - [CS 476: Computer Graphics - Module 10 Exercise 1](http://www.billmongan.com/Ursinus-WebIDE/Modules/Graphics/IlluminationLambertian) ([source](https://raw.githubusercontent.com/BillJr99/Ursinus-Exercises/refs/heads/main/Graphics/exercise-shader-lambertian.md))
 - [CS 476: Computer Graphics - Object First Perspective/Viewing Exercise 1](http://www.billmongan.com/Ursinus-WebIDE/Modules/Graphics/ViewOrthographic) ([source](https://raw.githubusercontent.com/BillJr99/Ursinus-Exercises/refs/heads/main/Graphics/exercise-view-orthographic.md))
+
+## Assignment Language Specific Notes
+
+### Pyodide Modules
+
+In the markdown files for the modules you're creating, be sure to specify the <code>packages</code> field nested under <code>info</code> to load the packages that are necessary for the module.  For instance, for a module that creates a plot in matplotlib, you'd say
+
+<code>
+packages: "numpy,matplotlib"
+</code>
+
+After creating a plot, use the built-in method <code>save_figure_js()</code> in your main code in python to save the figure to the figure area.  You can also then look at the string <code>audioStr</code> in the command line to extract the base64 binary code for the image to create reference solutions
+
+When creating an audio module, use the built-in method 
+
+<code>save_audio_js(y, sr)</code>
+
+which takes in an array of samples and a sample rate.  Then check the global string <code>audioStr</code> for the base64 binary to create reference solutions
+
+
+### Graphics Modules
+
+The graphics modules are a bit complicated.  My recommendation is to look at the examples exercise-shader-lambertian and exercise-view-orthographic for examples, and to build off of those examples.
+
+As with the pyodide plots, you can do correctness checks by comparing a base64 encoded version of what's rendered to some reference base64 string.  The current output is in the variable <code>canvasStr</code>.  So, for example, if I wanted to compare the current output to some string called <code>correctStr</code>, then I could say the following in <code>feedbackprocess</code>
+
+<code>let isCorrect = await pngImagesEqualTol(canvasStr, correctStr, DEFAULT_TOL, "correctCheck");</code>
+
+Then, my correctcheck could simply be
+
+<code>correctcheck: isCorrect</code>
+
+One thing that's different here from a direct comparison is that, due to slight variations in graphics hardware, the results will be slightly different pixel to pixel.  Therefore, the method <code>pngImagesEqualTol</code> actually does a pixel by pixel Euclidean distance calculation between the two images, and it will return <code>true</code> as long as the distance is less than some tolerance (specified as the third argument).  You can change this tolerance, but I've provided a value <code>DEFAULT_TOL</code> that I found worked well for students in the past.
+
+#### Other notes:
+Be sure that the relative paths for all meshes in `assets/js/ggslac/meshes` are correct based on how deep the module is.  For example, in the homer mesh in exercise1-orthographic, we say
+
+```
+"filename":"../../assets/js/ggslac/meshes/homer.off"
+```
+
+since that module is in `/Modules/Graphics/OrthographicView`
