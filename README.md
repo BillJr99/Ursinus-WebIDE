@@ -27,7 +27,7 @@ These modules engage students and get them to think about topics outside of clas
 1. Fork this repository, and set up Github pages to get a URL.
 2. Create assignments in the `_pages/` directory (details about how to do this are provided below).  To get started, simply add and clone our submodule of exercises into your `_pages` directory via `git submodule add https://github.com/BillJr99/Ursinus-Exercises _pages/Exercises` to use our pre-made exercises available at [https://github.com/BillJr99/Ursinus-Exercises](https://github.com/BillJr99/Ursinus-Exercises)!
 3. Proceed to the Configuration section below to set a few global parameters for linking to your Learning Management System (LMS)
-4. Fork and/or Download the Form Processor ([https://github.com/BillJr99/formprocessor/](https://github.com/BillJr99/formprocessor/)) to configure a Google form/spreadsheet to receive student submissions from the WebIDE front-end, and to post grades and submissions to your LMS in a FERPA-compliant way.
+4. Fork and/or Download the Form Processor ([https://github.com/BillJr99/formprocessor/](https://github.com/BillJr99/formprocessor/)) to configure a Google form/spreadsheet to receive student submissions from the WebIDE front-end, and to post grades and submissions to your LMS in a FERPA-compliant way.  Instructions for configuring the Form Processor can be found on that repository.
 
 ## Basic Configuration
 
