@@ -1,4 +1,22 @@
-Ursinus WebIDE
+# Ursinus WebIDE
+
+As a response to emergency remote teaching during the pandemic, we developed an online “live coding” modules system back in 2020, where students write code in a web page where they can run their code, and it is automatically graded. We have been using this extensively across the entire CS curriculum ever since as a “low stakes” medium to teach and reinforce knowledge scaffold up to more difficult assignments. Since the modules run in the browser, they are highly accessible cross-platform without any software installation necessary. The system is also setup to be “client side” on static web pages, which means that the code the students are exploring runs on student’s computers, making the system much easier and cheaper to maintain; in fact, this even enables us to make the exercises available to anyone on the internet at no additional cost. 
+
+Our system addresses the following goals that we had in providing rapidly developed, low-stakes, frequent practice problems for our students, that have continued to enhance the student experience in the post-pandemic classroom:
+
+1. Create a unified code template across all languages we currently support (C++, Java, Javascript, WebGL, Python, Numpy, R, SQL.
+2. Remember students netid in a cookie so they don’t have to keep entering it, and add functionality to save/load code if they want to return to it.
+3. Devise a simpler way to communicate with Canvas that is easier to maintain.
+4. Setup a more intuitive file browser in the module web pages that shows students what files they can edit for each module.  Mirror the filesystem experience they would expect on their local computers to help scaffold a tree-based filesystem.
+5. Handle infinite loops that students accidentally create in a more graceful way (currently this freezes up the browser).
+6. Provide the illusion of a filesystem within the web development interface that provides students with experience and confidence in using modern development tools and non-mobile filesystems.
+7. Seamlessly display multimedia assets within the environment, such as images and audio, to support courses that entail multimedia development and processing.
+8. Provide low-stakes automated feedback to students by automatically detecting common mistakes and providing feedback in a more authentic “console-like” window
+9. Save student work within the browser, so that students can review their work at a later time by revisiting the exercise page.
+10. Perform all of the above without requiring student installation of software beyond an off-the-shelf web browser, regardless of operating system or computing environment constraints; specifically, software modules function on lower-end systems such as Chromebooks.  This is especially helpful as an equity assurance for students who add the class late and need time to install requisite software, and for students who suffer technology breakdowns during the semester.
+11. Provide an archive of and automatic grading of student submissions that can connect to learning management systems (LMS) in an encrypted, FERPA-complaint way.
+
+These modules engage students and get them to think about topics outside of class in a much more active way than if we simply assigned readings, particularly with instant feedback we give them that often includes hints relevant to the mistakes they make. The modules are also very dynamic and flexible, so there are lots of exercises we can do with multimedia, etc. The infrastructure also serves as a backup option the first couple of weeks of class while students are still getting software setup on their own computers. Finally, there is a subset of students who have consistently told us that they get more out of these than class because they can go through them at their own pace, and we often use them to keep students on track who are traveling for sports, etc.  Since these are freely available open source online, anyone on the internet can try them.
 
 ## Basic Configuration
 
