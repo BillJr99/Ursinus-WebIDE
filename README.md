@@ -1,5 +1,7 @@
 Ursinus WebIDE
 
+## Basic Configuration
+
 In `config.yml`, set:
 
 ```
@@ -11,14 +13,18 @@ publickey: |
 
 `formlink: LINK TO GOOGLE SHEET FOR FORM PROCESSING HERE`  
 
-publickey can be overridden in the layout 
-canvascourseid can be overridden in the exercise page
-formlink can be overriden in the layout 
+If desired, these variables can be overrided on a per-assignment or per-page basis from the global values configured here:
 
+* `publickey` can be overridden in the layout 
+* `canvascourseid` can be overridden in the exercise page
+* `formlink` can be overriden in the layout 
+
+## Backend Form Processor for Posting Grades
 Use with formprocessor backend to pull from google sheets
 
+## Assignment Specific Notes
 
-## Pyodide Modules
+### Pyodide Modules
 
 In the markdown files for the modules you're creating, be sure to specify the <code>packages</code> field nested under <code>info</code> to load the packages that are necessary for the module.  For instance, for a module that creates a plot in matplotlib, you'd say
 
@@ -35,7 +41,7 @@ When creating an audio module, use the built-in method
 which takes in an array of samples and a sample rate.  Then check the global string <code>audioStr</code> for the base64 binary to create reference solutions
 
 
-## Graphics Modules
+### Graphics Modules
 
 The graphics modules are a bit complicated.  My recommendation is to look at the examples exercise-shader-lambertian and exercise-view-orthographic for examples, and to build off of those examples.
 
@@ -49,7 +55,7 @@ Then, my correctcheck could simply be
 
 One thing that's different here from a direct comparison is that, due to slight variations in graphics hardware, the results will be slightly different pixel to pixel.  Therefore, the method <code>pngImagesEqualTol</code> actually does a pixel by pixel Euclidean distance calculation between the two images, and it will return <code>true</code> as long as the distance is less than some tolerance (specified as the third argument).  You can change this tolerance, but I've provided a value <code>DEFAULT_TOL</code> that I found worked well for students in the past.
 
-### Other notes:
+#### Other notes:
 Be sure that the relative paths for all meshes in assets/js/ggslac/meshes are correct based on how deep the module is.  For example, in the homer mesh in exercise1-orthographic, we say
 
 "filename":"../../assets/js/ggslac/meshes/homer.off"
