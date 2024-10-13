@@ -656,6 +656,8 @@ def pyodide_print(s):
                                 ace_editor.session.setMode("ace/mode/java");
                                 {% elsif page.language == "javascript" or page.language == "graphics_view" or page.language == "graphics_shader" %}
                                 ace_editor.session.setMode("ace/mode/javascript");
+				{% elsif page.language == "prolog" %}
+				ace_editor.session.setMode("ace/mode/prolog");
                                 {% endif %}  
                                 
                                 // Override based on file extension
