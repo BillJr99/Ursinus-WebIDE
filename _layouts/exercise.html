@@ -195,6 +195,9 @@ submitformlinkdirections: "Clicking Run below will check your work and, if it pa
 <script src = "{{site.baseurl}}/assets/js/cpp/runtime.js"></script>
 <script src = "{{site.baseurl}}/assets/js/cpp/wasm-tools.js"></script>
 {% endif %}
+{% if page.language == "prolog" %}
+<script src = "{{site.baseurl}}/assets/js/swipl-bundle.js"></script>
+{% endif %}
 {% if page.language == "sql" %}
 <script src="{{site.baseurl}}/assets/js/sql.js/sql.js"></script>
 {% endif %}
@@ -1981,8 +1984,89 @@ def pyodide_print(s):
                             {% elsif page.language == "sql" %}
                             feedbackString = await doSql(editorText, mainText); 
                             logToConsole(feedbackString);    
+							
+							
+							{% elsif page.language == "prolog" %}
+							let Prolog;
+							let Module;
+							var options = {
+								arguments: [],
+								on_output: logToConsole
+							};
 
+							SWIPL(options).then(async (module) =>
+								{ 
+								  Module = module;
+								  Prolog = Module.prolog;
+								  await Prolog.load_scripts();
+								  const code = mainText + "\n\n" + editorText;
+								  const tokens = code.split(/\r?\n/).filter(line => line.trim() !== "");
+								  feedbackString = '';
+								  
+								  for (let i = 0; i < tokens.length; i++) {
+									const line = tokens[i];
+								    if (!(line.trim().startsWith('%'))) {
+										feedbackString += "?- " + line + "\n";
+										console.log(line);
+										let iterator = Prolog.query(line);
+										
+										let done = false;
+										let alreadyLogged = false;
+										
+										while(!done) {
+									      let result = iterator.next();
+										  console.log(JSON.stringify(result));
+										  console.log(JSON.stringify(result.value));
+										  
+										  if (typeof result.value === 'undefined') {
+											if(!alreadyLogged) {
+												feedbackString += "false" + "\n";
+												alreadyLogged = true;
+											}
+											
+											if (typeof result.done === 'undefined') {
+												done = true;
+											} else {
+												done = result.done;
+											}
+										  } else if (Object.keys(result.value).length === 1 && result.value.hasOwnProperty('$tag') && result.value['$tag'] === 'bindings') {
+											if(!alreadyLogged) {
+												feedbackString += "true" + "\n";
+												alreadyLogged = true;
+											}
+											
+											if (typeof result.done === 'undefined') {
+												done = true;
+											} else {
+												done = result.done;
+											}											
+										  } else {
+											  let console_log_line = '';
+											  
+											  for (const key in result.value) {
+												  if (result.value.hasOwnProperty(key)) {
+													if (!(typeof result.value[key] === 'object' && result.value[key] !== null)) {
+														if (key !== "$tag" && result.value[key] !== "bindings") {
+															console_log_line += `${key}: ${result.value[key]}, `;
+														}
+													}
+												  }
+											  }
+											  
+											  console_log_line = console_log_line.substring(0, console_log_line.length - 2); // remove last comma and space
+											  feedbackString += console_log_line + "\n";
+											  alreadyLogged = true;
+											  
+									      	  done = result.done;
+										  }
+										}									
+									  }
+								  }
+								  
+								  logToConsole(feedbackString);
+								});		
 
+								
                             {% elsif page.language == "java" %}                             
                             let code = makeCodeJavaProcessing(editorText, mainText);
                             console.log(code);
