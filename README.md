@@ -83,6 +83,7 @@ This repository contains examples for various programming languages. Each exampl
 - [CS173: Intro to Computer Science - Strings](http://www.billmongan.com/Ursinus-WebIDE/Modules/Strings/Exercise)
 - [CS173: Intro to Computer Science - Strings Revisited](http://www.billmongan.com/Ursinus-WebIDE/Modules/Strings/Exercise2)
 - [CS173: Intro to Computer Science - Tic-Tac-Toe](http://www.billmongan.com/Ursinus-WebIDE/Modules/TicTacToe/Exercise)
+- [CS173: Intro to Computer Science - Horstmann Parsons Puzzle: Swap (from Horstmann)](http://www.billmongan.com/Ursinus-WebIDE/Modules/Horstmann/Swap/Exercise)
 - [CS174: OOP - Drills - Array 3 Sort](http://www.billmongan.com/Ursinus-WebIDE/ArrayDrills/Array3Sort)
 - [CS174: OOP - Drills - Array Insert](http://www.billmongan.com/Ursinus-WebIDE/ArrayDrills/ArrayInsert)
 - [CS174: OOP - Drills - Computing the mean of arrays](http://www.billmongan.com/Ursinus-WebIDE/ArrayDrills/ArrayMean)
@@ -115,8 +116,8 @@ This repository contains examples for various programming languages. Each exampl
 
 ### Statistics
 #### **R**
-- [CS173: Intro to Computer Science - R](http://www.billmongan.com/Ursinus-WebIDE/Modules/R/TutorialExercise)
-- [CS173: Intro to Computer Science - R Quadratic Equation](http://www.billmongan.com/Ursinus-WebIDE/Modules/R/QuadraticExercise)
+- [CS173: Intro to Computer Science - R (from WebR)](http://www.billmongan.com/Ursinus-WebIDE/Modules/R/TutorialExercise)
+- [CS173: Intro to Computer Science - R Quadratic Equation (from WebR)](http://www.billmongan.com/Ursinus-WebIDE/Modules/R/QuadraticExercise)
 
 ### Database Systems with SQL
 - [CS377: Database Design - SQL Aggregation](http://www.billmongan.com/Ursinus-WebIDE/Modules/SQL/Aggregation/Exercise)
