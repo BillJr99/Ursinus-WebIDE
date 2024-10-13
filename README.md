@@ -85,11 +85,13 @@ Then, my correctcheck could simply be
 One thing that's different here from a direct comparison is that, due to slight variations in graphics hardware, the results will be slightly different pixel to pixel.  Therefore, the method <code>pngImagesEqualTol</code> actually does a pixel by pixel Euclidean distance calculation between the two images, and it will return <code>true</code> as long as the distance is less than some tolerance (specified as the third argument).  You can change this tolerance, but I've provided a value <code>DEFAULT_TOL</code> that I found worked well for students in the past.
 
 #### Other notes:
-Be sure that the relative paths for all meshes in assets/js/ggslac/meshes are correct based on how deep the module is.  For example, in the homer mesh in exercise1-orthographic, we say
+Be sure that the relative paths for all meshes in `assets/js/ggslac/meshes` are correct based on how deep the module is.  For example, in the homer mesh in exercise1-orthographic, we say
 
+```
 "filename":"../../assets/js/ggslac/meshes/homer.off"
+```
 
-since that module is in /Modules/Graphics/OrthographicView
+since that module is in `/Modules/Graphics/OrthographicView`
 
 ## Example Exercises
 
