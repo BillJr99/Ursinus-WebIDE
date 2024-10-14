@@ -55,8 +55,11 @@ Use this WebIDE front-end with the formprocessor back-end (available at [https:/
 
 This repository contains examples for various programming languages. Each example is linked below, organized by language.
 
+### A Gallery of Example Screenshots
 ![A screenshot of the Square Wave Exercise](./images/SquareWave.svg)
+<br><br>
 ![A screenshot of an example Computer Graphics Exercise](./images/graphicsScreenshot.png)
+<br><br>  
 ![A screenshot of a matplotlib histogram](./images/plot10heads.png)
 
 ### CS1 and CS2
