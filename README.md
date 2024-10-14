@@ -55,6 +55,10 @@ Use this WebIDE front-end with the formprocessor back-end (available at [https:/
 
 This repository contains examples for various programming languages. Each example is linked below, organized by language.
 
+![A screenshot of the Square Wave Exercise](./images/SquareWave.svg)
+![A screenshot of an example Computer Graphics Exercise](./images/graphicsScreenshot.png)
+![A screenshot of a matplotlib histogram](./images/plot10heads.png)
+
 ### CS1 and CS2
 
 #### **Java**
@@ -88,6 +92,14 @@ This repository contains examples for various programming languages. Each exampl
 
 #### **C++**
 - [C++ Basics](http://www.billmongan.com/Ursinus-WebIDE/Modules/Cpp/CppIntro) ([source](https://raw.githubusercontent.com/BillJr99/Ursinus-Exercises/refs/heads/main/cpp/exercise-cppintro.md))
+- [CS174: Module 14: Recursive Binary Search](http://www.billmongan.com/Ursinus-WebIDE/Modules/Cpp/BinarySearch) ([source](https://raw.githubusercontent.com/BillJr99/Ursinus-Exercises/refs/heads/main/cpp/exercise-cppbinarysearch.md))
+- [CS174: Module 12: C++ Inheritance Exercise 1](http://www.billmongan.com/Ursinus-WebIDE/Modules/Cpp/Inheritance1) ([source](https://raw.githubusercontent.com/BillJr99/Ursinus-Exercises/refs/heads/main/cpp/exercise-cppinheritance.md))
+- [CS174: Linked List: addFirst()](http://www.billmongan.com/Ursinus-WebIDE/Modules/Cpp/LinkedListAddFirst) ([source](https://raw.githubusercontent.com/BillJr99/Ursinus-Exercises/refs/heads/main/cpp/exercise-cpplinkedlist.md))
+- [CS174: Merge Sort Exercise](http://www.billmongan.com/Ursinus-WebIDE/Modules/Cpp/Merge) ([source](https://raw.githubusercontent.com/BillJr99/Ursinus-Exercises/refs/heads/main/cpp/exercise-cppmerge.md))
+- [CS174: Pointer Fundamentals Module: Exercise 1](http://www.billmongan.com/Ursinus-WebIDE/Modules/Cpp/PointerSwap) ([source](https://raw.githubusercontent.com/BillJr99/Ursinus-Exercises/refs/heads/main/cpp/exercise-cpppointerswap.md))
+- [CS174: Module 12: C++ Inheritance Exercise 2](http://www.billmongan.com/Ursinus-WebIDE/Modules/Cpp/Polymorphism) ([source](https://raw.githubusercontent.com/BillJr99/Ursinus-Exercises/refs/heads/main/cpp/exercise-cpppolymorphism.md))
+- [CS174: STL List Class Exercise](http://www.billmongan.com/Ursinus-WebIDE/Modules/Cpp/STLList) ([source](https://raw.githubusercontent.com/BillJr99/Ursinus-Exercises/refs/heads/main/cpp/exercise-cppstllist.md))
+- [CS174: Module 15: Binary Trees Inorder Traversal](http://www.billmongan.com/Ursinus-WebIDE/Modules/Cpp/TreeInorder) ([source](https://raw.githubusercontent.com/BillJr99/Ursinus-Exercises/refs/heads/main/cpp/exercise-cpptreeinorder.md))
 
 #### **Javascript**
 - [Javascript Example Module: Array Min Index](http://www.billmongan.com/Ursinus-WebIDE/Modules/Javascript/MinIndex) ([source](https://raw.githubusercontent.com/BillJr99/Ursinus-Exercises/refs/heads/main/Javascript/exercise-minindex.md))
