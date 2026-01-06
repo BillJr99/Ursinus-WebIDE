@@ -57,6 +57,8 @@ openssl genrsa -out private-key.pem 4096
 openssl rsa -in private-key.pem -pubout -out public-key.pem
 ```
 
+And paste the contents of the relevant file when requested in the config file.
+
 ## Backend Form Processor for Posting Grades
 Use this WebIDE front-end with the formprocessor back-end (available at [https://github.com/BillJr99/formprocessor/](https://github.com/BillJr99/formprocessor/)) to pull from google sheets
 
