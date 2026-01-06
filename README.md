@@ -48,7 +48,14 @@ If desired, these variables can be overrided on a per-assignment or per-page bas
 
 * `publickey` can be overridden in the layout 
 * `canvascourseid` can be overridden in the exercise page
-* `formlink` can be overriden in the layout 
+* `formlink` can be overriden in the layout
+
+You can generate a public and private RSA key for encryption via these commands:
+
+```
+openssl genrsa -out private-key.pem 4096
+openssl rsa -in private-key.pem -pubout -out public-key.pem
+```
 
 ## Backend Form Processor for Posting Grades
 Use this WebIDE front-end with the formprocessor back-end (available at [https://github.com/BillJr99/formprocessor/](https://github.com/BillJr99/formprocessor/)) to pull from google sheets
