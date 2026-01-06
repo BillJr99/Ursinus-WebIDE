@@ -33,7 +33,7 @@ These modules engage students and get them to think about topics outside of clas
 
 ## Basic Configuration
 
-In `config.yml`, edit the variables to suit your preferences.  Specifically, be sure to set the following parameters:
+In `_config.yml`, edit the variables to suit your preferences.  Specifically, be sure to set the following parameters:
 
 ```
 publickey: |  
