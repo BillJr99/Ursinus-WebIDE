@@ -144,9 +144,7 @@ This repository contains examples for various programming languages. Each exampl
 
 In the markdown files for the modules you're creating, be sure to specify the <code>packages</code> field nested under <code>info</code> to load the packages that are necessary for the module.  For instance, for a module that creates a plot in matplotlib, you'd say
 
-```
-packages: "numpy,matplotlib"
-```
+<code>packages: "numpy,matplotlib"</code>
 
 After creating a plot, use the built-in method <code>save_figure_js()</code> in your main code in python to save the figure to the figure area.  You can also then look at the string <code>audioStr</code> in the command line to extract the base64 binary code for the image to create reference solutions
 
