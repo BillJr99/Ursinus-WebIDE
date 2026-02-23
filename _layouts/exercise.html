@@ -2461,9 +2461,21 @@ def pyodide_print(s):
             if (isEmpty) await provideInitialFiles(initialFiles);
             else getFilesFromDirectory(rootBasePath);
 
-            {% if page.openFilesOnLoad %}
-            if (user !== defaultuser) openMultipleFiles({{ page.openFilesOnLoad | jsonify }});
-            {% endif %}
+            // Automatically open all project files in tabs by default
+            if (user !== defaultuser) {
+                {% if page.openFilesOnLoad %}
+                // Use explicitly defined files if specified
+                openMultipleFiles({{ page.openFilesOnLoad | jsonify }});
+                {% else %}
+                // Otherwise, open all initial files that are not read-only and not hidden
+                const filesToOpen = initialFiles
+                    .filter(f => !f.readOnly && f.isvisible !== false)
+                    .map(f => f.fileName);
+                if (filesToOpen.length > 0) {
+                    openMultipleFiles(filesToOpen);
+                }
+                {% endif %}
+            }
 
             // Init terminal
             initTerminal(rootBasePath);
