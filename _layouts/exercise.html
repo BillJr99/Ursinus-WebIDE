@@ -1160,8 +1160,13 @@ def pyodide_print(s):
             // Regular code file tab
             submitView.style.display      = 'none';
             editorContainer.style.display = '';
+            
+            // Set flag to prevent marking as modified during programmatic setValue
+            window._settingEditorValue = true;
             ace_editor.setValue(openFiles[path].content);
             ace_editor.clearSelection();
+            window._settingEditorValue = false;
+            
             saveBtn.disabled = openFiles[path].readOnly;
             setTabAceProperties(path);
             ace_editor.resize();
@@ -1243,7 +1248,7 @@ def pyodide_print(s):
 
         function createTab(path) {
             const tab = document.createElement('div');
-            tab.className = 'tab active';
+            tab.className = 'tab';
             tab.id = path;
             const label = document.createElement('span');
             label.className = 'tab-label';
@@ -1256,7 +1261,12 @@ def pyodide_print(s):
             tabs.appendChild(tab);
             tab.onclick = () => setActiveTab(path);
             close.onclick = (e) => { e.stopPropagation(); closeTab(path); };
-            setActiveTab(path);
+            
+            // Only activate the first tab
+            const existingTabs = document.querySelectorAll('.tab');
+            if (existingTabs.length === 1) {
+                setActiveTab(path);
+            }
         }
 
         async function closeTab(path) {
@@ -2423,6 +2433,9 @@ def pyodide_print(s):
             ace_editor.setOptions({ fontSize: "14px", showPrintMargin: false });
 
             ace_editor.session.on('change', function() {
+                // Don't mark as modified if we're programmatically setting the value
+                if (window._settingEditorValue) return;
+                
                 const activeTab = document.querySelector('.tab.active');
                 if (activeTab && openFiles[activeTab.id]) {
                     openFiles[activeTab.id].content = ace_editor.getValue();
