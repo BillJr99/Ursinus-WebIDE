@@ -1010,16 +1010,23 @@ def pyodide_print(s):
         async function provideInitialFiles(files) {
             const db = await initDB();
             if (!db) { console.error('Failed to initialize DB'); return; }
-            const transaction = db.transaction(STORE_NAME, 'readwrite');
-            const store = transaction.objectStore(STORE_NAME);
-            for (let file of files) {
-                store.put({ path: rootBasePath + '/' + file.fileName, content: file.content, readOnly: file.readOnly, excludeFromExport: file.excludeFromExport, ismain: file.ismain });
-            }
-            transaction.oncomplete = function() {
-                console.log('Initial files provided successfully.');
-                getFilesFromDirectory(rootBasePath);
-            };
-            transaction.onerror = e => console.error('Error providing initial files:', e.target.error);
+            
+            return new Promise((resolve, reject) => {
+                const transaction = db.transaction(STORE_NAME, 'readwrite');
+                const store = transaction.objectStore(STORE_NAME);
+                for (let file of files) {
+                    store.put({ path: rootBasePath + '/' + file.fileName, content: file.content, readOnly: file.readOnly, excludeFromExport: file.excludeFromExport, ismain: file.ismain });
+                }
+                transaction.oncomplete = function() {
+                    console.log('Initial files provided successfully.');
+                    getFilesFromDirectory(rootBasePath);
+                    resolve();
+                };
+                transaction.onerror = e => {
+                    console.error('Error providing initial files:', e.target.error);
+                    reject(e.target.error);
+                };
+            });
         }
 
         async function getFilesFromDirectory(directory) {
@@ -1110,6 +1117,7 @@ def pyodide_print(s):
         }
 
         async function openFile(path, name) {
+            console.log('openFile called for:', path);
             const db = await initDB();
             if (!db) { console.error('Failed to initialize DB'); return; }
             const transaction = db.transaction(STORE_NAME, 'readonly');
@@ -1118,7 +1126,9 @@ def pyodide_print(s):
             request.onsuccess = function(event) {
                 const file = event.target.result;
                 if (file) {
+                    console.log('File retrieved from DB:', path);
                     if (openFiles[path]) {
+                        console.log('File already open, setting active:', path);
                         setActiveTab(path);
                     } else {
                         if (name.match(/\.(jpeg|jpg|gif|png)$/)) {
@@ -1128,13 +1138,19 @@ def pyodide_print(s):
                             displayAudio(file.content);
                             logToConsole(`Opened audio file: ${path}`);
                         } else {
+                            console.log('Creating tab for:', path);
                             openFiles[path] = { content: file.content, modified: false, readOnly: file.readOnly };
                             createTab(path);
                             saveBtn.disabled = (user === defaultuser || file.readOnly);
                             logToConsole(`Opened file: ${path}`);
                         }
                     }
+                } else {
+                    console.error('File not found in DB:', path);
                 }
+            };
+            request.onerror = function(event) {
+                console.error('Error retrieving file:', path, event.target.error);
             };
         }
 
@@ -2471,7 +2487,11 @@ def pyodide_print(s):
             if (!db) { console.error('Failed to initialize DB'); return; }
 
             const isEmpty = await checkIfDirectoryEmpty(rootBasePath);
-            if (isEmpty) await provideInitialFiles(initialFiles);
+            if (isEmpty) {
+                await provideInitialFiles(initialFiles);
+                // Small delay to ensure database transaction is fully committed
+                await new Promise(resolve => setTimeout(resolve, 100));
+            }
             else getFilesFromDirectory(rootBasePath);
 
             // Automatically open all project files in tabs by default
@@ -2480,10 +2500,9 @@ def pyodide_print(s):
                 // Use explicitly defined files if specified
                 openMultipleFiles({{ page.openFilesOnLoad | jsonify }});
                 {% else %}
-                // Otherwise, open all initial files that are not read-only and not hidden
-                const filesToOpen = initialFiles
-                    .filter(f => !f.readOnly && f.isvisible !== false)
-                    .map(f => f.fileName);
+                // Otherwise, open all initial files (including read-only ones)
+                const filesToOpen = initialFiles.map(f => f.fileName);
+                console.log('Opening files:', filesToOpen);
                 if (filesToOpen.length > 0) {
                     openMultipleFiles(filesToOpen);
                 }
