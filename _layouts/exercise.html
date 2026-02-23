@@ -929,6 +929,7 @@ def pyodide_print(s):
             consoleOutput.appendChild(newLine);
             newLine.scrollIntoView({ behavior: "smooth" });
             // If terminal panel is not active, auto-switch to output
+            switchBottomTab('output');
         }
 
         logToConsole("Console output...");
@@ -3930,7 +3931,7 @@ def pyodide_print(s):
                     }
                     term.writeln(`\r\nRunning ${filename}...`);
                     await runCode();
-                    switchBottomTab('terminal');
+                    // switchBottomTab('terminal');  // Keep on output tab instead
                     writePrompt();
                     return;
                 }
