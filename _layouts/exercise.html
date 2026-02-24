@@ -5,11 +5,40 @@ submitformlinkdirections: "Clicking Run below will check your work and, if it pa
 
 <!-- publickey in global yaml or layout; canvascourseid in global or exercise page; formlink in global or layout -->
 
+<!-- ACCESSIBILITY: lang attribute on html element declared in parent layout (default-blank).
+     If the parent layout does not set lang="en", add it here via JavaScript as a fallback. -->
+<script>
+  if (!document.documentElement.lang) document.documentElement.lang = 'en';
+</script>
+
+<!-- ACCESSIBILITY: Document title (WCAG 2.4.2) — injected into <head> from page front matter -->
+<script>
+  if (!document.title || document.title.trim() === '') {
+    document.title = '{{ page.title | default: "Exercise" }} — Ursinus WebIDE';
+  }
+</script>
+
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/xterm@5.3.0/css/xterm.css" />
 <link rel="stylesheet" href="{{site.baseurl}}/assets/css/jstree/style.min.css" />
+
+<!-- ACCESSIBILITY: Skip-to-content link for keyboard users (WCAG 2.4.1) -->
+<style>
+.skip-link {
+    position: absolute; top: -100%; left: 0; z-index: 99999;
+    padding: 8px 16px; background: #007acc; color: #fff;
+    font-size: 14px; font-weight: 600; border-radius: 0 0 4px 0;
+    text-decoration: none; transition: top 0.1s;
+}
+.skip-link:focus { top: 0; }
+/* Screen-reader-only utility (used below for visually-hidden labels) */
+.sr-only {
+    position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+    overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0;
+}
+</style>
 
 <style>
 html, body {
@@ -26,7 +55,7 @@ html, body {
     display: flex; flex-direction: column; height: 100vh; overflow: hidden;
     background: #1e1e1e;
 }
-/* ── Title bar ── */
+/* -- Title bar -- */
 #ide-titlebar {
     display: flex; align-items: center; height: 30px;
     background: #3c3c3c; border-bottom: 1px solid #252526;
@@ -52,7 +81,7 @@ html, body {
 .menu-dropdown-item:hover { background: #094771; color: #fff; }
 .menu-dropdown-item.disabled { color: #6e6e6e !important; pointer-events: none; }
 .menu-dropdown hr { border: none; border-top: 1px solid #454545; margin: 4px 0; }
-.menu-shortcut { color: #8e8e8e; font-size: 11px; margin-left: 16px; }
+.menu-shortcut { color: #a0a0a0; font-size: 11px; margin-left: 16px; }
 #ide-title-center {
     flex: 1; text-align: center; font-size: 13px; color: #cccccc;
     overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding: 0 10px;
@@ -66,23 +95,25 @@ html, body {
 }
 .title-btn:hover { background: #1177bb; }
 #user-status { font-size: 12px; color: #cccccc; white-space: nowrap; }
-/* ── Workbench ── */
+/* -- Workbench -- */
 #ide-workbench { display: flex; flex: 1; overflow: hidden; min-height: 0; }
-/* ── Activity bar ── */
+/* -- Activity bar -- */
 #ide-activity-bar {
     width: 48px; background: #333333; display: flex; flex-direction: column;
     align-items: center; flex-shrink: 0; border-right: 1px solid #252526;
 }
 .activity-icon {
     width: 48px; height: 48px; display: flex; align-items: center; justify-content: center;
-    cursor: pointer; color: #858585; font-size: 20px;
+    cursor: pointer; color: #a0a0a0; font-size: 20px;
     border-left: 2px solid transparent; transition: color 0.1s;
     position: relative;
+    background: transparent; border-top: none; border-right: none; border-bottom: none;
+    padding: 0;
 }
 .activity-icon:hover { color: #cccccc; }
 .activity-icon.active { color: #ffffff; border-left-color: #007acc; }
 .activity-icon svg { width: 24px; height: 24px; fill: currentColor; }
-/* ── Sidebar ── */
+/* -- Sidebar -- */
 #ide-sidebar {
     width: 250px; background: #252526; display: flex; flex-direction: column;
     flex-shrink: 0; border-right: 1px solid #1e1e1e; overflow: hidden;
@@ -97,7 +128,7 @@ html, body {
 }
 .sidebar-icon-actions { display: flex; gap: 2px; flex-shrink: 0; }
 .icon-btn {
-    background: none; border: none; color: #858585; cursor: pointer;
+    background: none; border: none; color: #a0a0a0; cursor: pointer;
     padding: 2px 5px; font-size: 15px; border-radius: 3px; line-height: 1;
 }
 .icon-btn:hover { color: #cccccc; background: #2a2d2e; }
@@ -121,14 +152,14 @@ html, body {
 #sidebar-resize-handle:hover, #sidebar-resize-handle.dragging { background: #007acc; }
 /* Sidebar forms */
 .sidebar-form { padding: 12px; overflow-y: auto; flex: 1; }
-.sidebar-form p { font-size: 12px; color: #9d9d9d; margin: 0 0 10px 0; line-height: 1.4; }
+.sidebar-form p { font-size: 12px; color: #a8a8a8; margin: 0 0 10px 0; line-height: 1.4; }
 .sidebar-form label { display: block; font-size: 11px; color: #ccc; margin-top: 8px; margin-bottom: 2px; }
 .sidebar-form input[type="text"],
 .sidebar-form input[type="password"] {
     width: 100%; box-sizing: border-box; background: #3c3c3c;
     border: 1px solid #555; color: #ccc; padding: 4px 7px; font-size: 12px; border-radius: 2px;
 }
-.sidebar-form input:focus { outline: none; border-color: #007acc; }
+.sidebar-form input:focus { outline: 2px solid #007acc; outline-offset: 0; border-color: #007acc; }
 .sidebar-form .form-check {
     display: flex; align-items: center; gap: 6px; margin-top: 8px; font-size: 12px; color: #ccc;
 }
@@ -161,7 +192,7 @@ html, body {
 }
 .nav-btn:hover { background: #4a4a4a; }
 .info-divider { border: none; border-top: 1px solid #454545; margin: 10px 0; }
-/* ── Editor area ── */
+/* -- Editor area -- */
 #ide-editor-area { display: flex; flex-direction: column; flex: 1; overflow: hidden; min-width: 0; }
 /* Tabs bar */
 #ide-tabs-bar {
@@ -174,16 +205,16 @@ html, body {
 .tabs { display: flex; height: 100%; flex-shrink: 0; }
 .tab {
     display: flex; align-items: center; padding: 0 12px; height: 100%;
-    background: #2d2d2d; color: #969696; cursor: pointer;
+    background: #2d2d2d; color: #888; cursor: pointer;
     border-right: 1px solid #1e1e1e; font-size: 13px; white-space: nowrap;
     min-width: 80px; max-width: 200px; gap: 6px; flex-shrink: 0;
     border-top: 1px solid transparent;
 }
-.tab:hover { background: #1e1e1e; color: #ccc; }
+.tab:hover { background: #1e1e1e; color: #bbb; }
 .tab.active { background: #1e1e1e; color: #fff; border-top-color: #007acc; }
 .tab .tab-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; }
 .tab .close {
-    flex-shrink: 0; font-size: 14px; color: #969696;
+    flex-shrink: 0; font-size: 14px; color: #888;
     padding: 1px 3px; border-radius: 2px; line-height: 1; margin-left: 2px;
 }
 .tab .close:hover { color: #fff; background: #444; }
@@ -246,10 +277,11 @@ audio { width: 100%; min-height: 32px; }
 }
 .bottom-tab {
     padding: 0 12px; height: 100%; display: flex; align-items: center;
-    cursor: pointer; color: #969696; font-size: 11px; font-weight: 600;
+    cursor: pointer; color: #888; font-size: 11px; font-weight: 600;
     text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 1px solid transparent;
+    background: transparent; border-top: none; border-left: none; border-right: none;
 }
-.bottom-tab:hover { color: #ccc; }
+.bottom-tab:hover { color: #bbb; }
 .bottom-tab.active { color: #ccc; border-bottom-color: #007acc; }
 #bottom-panel-actions { margin-left: auto; display: flex; gap: 4px; align-items: center; }
 .bottom-content { display: none; flex: 1; overflow: hidden; min-height: 0; }
@@ -283,9 +315,9 @@ audio { width: 100%; min-height: 32px; }
 #ide-notification.error { border-left-color: #f14c4c; }
 #ide-notification.success { border-left-color: #23d18b; }
 
-/* ─────────────────────────────────────────────────────────────────────
+/* ---------------------------------------------------------------------
    NEW ENHANCEMENT PANELS - Suggestions, Debug, Git History
-   ───────────────────────────────────────────────────────────────────── */
+   --------------------------------------------------------------------- */
 
 /* Suggestions Panel */
 #suggestions-list {
@@ -295,8 +327,12 @@ audio { width: 100%; min-height: 32px; }
     padding: 6px 8px; margin: 2px 0; border-left: 3px solid;
     background: #252526; cursor: pointer; font-size: 12px;
     display: flex; align-items: flex-start; gap: 8px;
+    /* Reset button defaults */
+    width: 100%; text-align: left; border-top: none; border-right: none; border-bottom: none;
+    color: inherit; font-family: inherit; line-height: inherit;
 }
 .suggestion-item:hover { background: #2d2d2d; }
+.suggestion-item:focus { outline: 2px solid #007acc; outline-offset: -2px; }
 .suggestion-item.error { border-left-color: #f48771; }
 .suggestion-item.warning { border-left-color: #cca700; }
 .suggestion-item.info { border-left-color: #75beff; }
@@ -308,7 +344,7 @@ audio { width: 100%; min-height: 32px; }
 .suggestion-item.info .suggestion-icon { color: #75beff; }
 .suggestion-content { flex: 1; }
 .suggestion-message { color: #cccccc; margin-bottom: 2px; }
-.suggestion-location { color: #858585; font-size: 11px; }
+.suggestion-location { color: #a0a0a0; font-size: 11px; }
 .suggestion-hint {
     margin-top: 4px; padding: 4px 6px; background: #1e1e1e;
     border-left: 2px solid #007acc; font-size: 11px; color: #9cdcfe;
@@ -319,7 +355,8 @@ audio { width: 100%; min-height: 32px; }
 #git-history-container { flex: 1; overflow-y: auto; padding: 4px; }
 .commit-item {
     padding: 8px; margin: 4px 0; background: #252526;
-    border-left: 3px solid #007acc; cursor: pointer;
+    border-left: 3px solid #007acc;
+    list-style: none;
 }
 .commit-item:hover { background: #2d2d2d; }
 .commit-hash {
@@ -330,7 +367,7 @@ audio { width: 100%; min-height: 32px; }
     color: #cccccc; font-size: 12px; margin-bottom: 4px;
 }
 .commit-meta {
-    color: #858585; font-size: 11px;
+    color: #a0a0a0; font-size: 11px;
     display: flex; justify-content: space-between;
 }
 .commit-files {
@@ -371,12 +408,17 @@ button:focus, input:focus, select:focus, .tab:focus {
 }
 #ide-input-dialog.visible { display: flex; }
 #ide-input-box { background: #252526; border: 1px solid #454545; width: 440px; border-radius: 4px; overflow: hidden; box-shadow: 4px 8px 20px rgba(0,0,0,0.6); }
-#ide-input-label { padding: 8px 12px 2px; font-size: 11px; color: #858585; }
+#ide-input-label { padding: 8px 12px 2px; font-size: 11px; color: #a8a8a8; }
 #ide-input-field {
     width: 100%; box-sizing: border-box; background: #3c3c3c;
-    border: none; border-bottom: 1px solid #007acc;
-    color: #ccc; padding: 8px 12px; font-size: 14px; outline: none;
+    border: none; border-bottom: 2px solid #007acc;
+    color: #ccc; padding: 8px 12px; font-size: 14px;
+    outline: 2px solid transparent; outline-offset: 0;
     border-radius: 0;
+}
+#ide-input-field:focus {
+    outline: 2px solid #fff;
+    outline-offset: -2px;
 }
 /* Ace editor */
 .ace_editor { font-size: 14px !important; font-family: 'Consolas', 'Courier New', monospace !important; }
@@ -389,7 +431,7 @@ button:focus, input:focus, select:focus, .tab:focus {
 ::-webkit-scrollbar-thumb:hover { background: #555; }
 /* Wrap text container - kept for JS compat */
 .wrap-text-container { display: none; }
-/* ── GitHub staging list ── */
+/* -- GitHub staging list -- */
 .gh-stage-row {
     display: flex; align-items: center; gap: 4px; padding: 3px 6px;
     color: #ccc; font-size: 12px; cursor: default;
@@ -411,7 +453,7 @@ button:focus, input:focus, select:focus, .tab:focus {
     flex: 1; min-width: 0; background: #3c3c3c; border: 1px solid #555;
     color: #ccc; padding: 4px 6px; font-size: 12px; border-radius: 2px;
 }
-.gh-select:focus { outline: none; border-color: #007acc; }
+.gh-select:focus { outline: 2px solid #007acc; outline-offset: 0; border-color: #007acc; }
 .gh-new-repo-box {
     margin-top: 8px; padding: 8px; background: #1e1e1e;
     border-radius: 3px; border: 1px solid #3a3a3a;
@@ -469,84 +511,100 @@ button:focus, input:focus, select:focus, .tab:focus {
 <script src="{{site.baseurl}}/assets/js/ggslac/viewers/matrixanim.js"></script>
 {% endif %}
 
-<!-- ═══════════════════════════ VSCode IDE Layout ═══════════════════════════ -->
-<div id="vscode-ide">
+<!-- ACCESSIBILITY: Skip-to-content link (WCAG 2.4.1) -->
+<a class="skip-link" href="#ide-editor-area">Skip to editor</a>
 
-  <!-- ── Title bar ── -->
-  <div id="ide-titlebar">
-    <div id="ide-menubar">
+<div id="vscode-ide" role="application" aria-label="{{ page.title | default: 'Exercise' }} — Ursinus WebIDE">
+
+    <div id="ide-titlebar" role="banner">
+    <nav id="ide-menubar" role="menubar" aria-label="Application menu">
 
       <!-- File menu -->
-      <div class="menu-item" id="menu-file">
+      <div class="menu-item" id="menu-file"
+           role="menuitem" tabindex="0"
+           aria-haspopup="true" aria-expanded="false"
+           aria-label="File menu">
         File
-        <div class="menu-dropdown">
-          <div class="menu-dropdown-item" onclick="menuNewFile()">New File <span class="menu-shortcut">Ctrl+N</span></div>
-          <div class="menu-dropdown-item" onclick="menuNewDir()">New Folder</div>
-          <hr>
-          <div class="menu-dropdown-item" onclick="menuSave()">Save <span class="menu-shortcut">Ctrl+S</span></div>
-          <div class="menu-dropdown-item" onclick="menuUpload()">Upload File…</div>
-          <div class="menu-dropdown-item" onclick="menuDownload()">Download as ZIP</div>
-          <hr>
-          <div class="menu-dropdown-item" onclick="menuDeleteFile()">Delete File</div>
-          <hr>
-          <div class="menu-dropdown-item" onclick="menuReset()">Reset Files…</div>
+        <div class="menu-dropdown" role="menu" aria-label="File">
+          <div class="menu-dropdown-item" role="menuitem" tabindex="-1" onclick="menuNewFile()">New File <span class="menu-shortcut" aria-label="Ctrl N">Ctrl+N</span></div>
+          <div class="menu-dropdown-item" role="menuitem" tabindex="-1" onclick="menuNewDir()">New Folder</div>
+          <hr role="separator">
+          <div class="menu-dropdown-item" role="menuitem" tabindex="-1" onclick="menuSave()">Save <span class="menu-shortcut" aria-label="Ctrl S">Ctrl+S</span></div>
+          <div class="menu-dropdown-item" role="menuitem" tabindex="-1" onclick="menuUpload()">Upload File…</div>
+          <div class="menu-dropdown-item" role="menuitem" tabindex="-1" onclick="menuDownload()">Download as ZIP</div>
+          <hr role="separator">
+          <div class="menu-dropdown-item" role="menuitem" tabindex="-1" onclick="menuDeleteFile()">Delete File</div>
+          <hr role="separator">
+          <div class="menu-dropdown-item" role="menuitem" tabindex="-1" onclick="menuReset()">Reset Files…</div>
         </div>
       </div>
 
       <!-- View menu -->
-      <div class="menu-item" id="menu-view">
+      <div class="menu-item" id="menu-view"
+           role="menuitem" tabindex="-1"
+           aria-haspopup="true" aria-expanded="false"
+           aria-label="View menu">
         View
-        <div class="menu-dropdown">
-          <div class="menu-dropdown-item" onclick="menuToggleSidebar()">Toggle Sidebar <span class="menu-shortcut">Ctrl+B</span></div>
-          <div class="menu-dropdown-item" onclick="menuToggleTerminal()">Toggle Terminal <span class="menu-shortcut">Ctrl+`</span></div>
-          <hr>
-          <div class="menu-dropdown-item" id="menu-wordwrap-item" onclick="menuToggleWordWrap()">Word Wrap <span class="menu-shortcut">Alt+Z</span></div>
-          <hr>
-          <div class="menu-dropdown-item" onclick="menuShowInfo()">Exercise Info</div>
+        <div class="menu-dropdown" role="menu" aria-label="View">
+          <div class="menu-dropdown-item" role="menuitem" tabindex="-1" onclick="menuToggleSidebar()">Toggle Sidebar <span class="menu-shortcut" aria-label="Ctrl B">Ctrl+B</span></div>
+          <div class="menu-dropdown-item" role="menuitem" tabindex="-1" onclick="menuToggleTerminal()">Toggle Terminal <span class="menu-shortcut" aria-label="Ctrl backtick">Ctrl+`</span></div>
+          <hr role="separator">
+          <div class="menu-dropdown-item" role="menuitem" tabindex="-1" id="menu-wordwrap-item" onclick="menuToggleWordWrap()">Word Wrap <span class="menu-shortcut" aria-label="Alt Z">Alt+Z</span></div>
+          <hr role="separator">
+          <div class="menu-dropdown-item" role="menuitem" tabindex="-1" onclick="menuShowInfo()">Exercise Info</div>
         </div>
       </div>
 
       <!-- Run menu -->
-      <div class="menu-item" id="menu-run">
+      <div class="menu-item" id="menu-run"
+           role="menuitem" tabindex="-1"
+           aria-haspopup="true" aria-expanded="false"
+           aria-label="Run menu">
         Run
-        <div class="menu-dropdown">
-          <div class="menu-dropdown-item" onclick="document.getElementById('run').click()">Run Code <span class="menu-shortcut">Ctrl+Enter</span></div>
-          <div class="menu-dropdown-item" onclick="menuSaveAndRun()">Save &amp; Run <span class="menu-shortcut">F5</span></div>
-          <hr>
-          <div class="menu-dropdown-item" onclick="menuClearOutput()">Clear Output</div>
+        <div class="menu-dropdown" role="menu" aria-label="Run">
+          <div class="menu-dropdown-item" role="menuitem" tabindex="-1" onclick="document.getElementById('run').click()">Run Code <span class="menu-shortcut" aria-label="Ctrl Enter">Ctrl+Enter</span></div>
+          <div class="menu-dropdown-item" role="menuitem" tabindex="-1" onclick="menuSaveAndRun()">Save &amp; Run <span class="menu-shortcut" aria-label="F5">F5</span></div>
+          <hr role="separator">
+          <div class="menu-dropdown-item" role="menuitem" tabindex="-1" onclick="menuClearOutput()">Clear Output</div>
         </div>
       </div>
 
-    </div>
+    </nav>
 
-    <div id="ide-title-center">
+    <div id="ide-title-center" aria-live="polite" aria-atomic="true">
       {{ page.title }}{% if page.info.points %} ({{page.info.points}} pts){% endif %}
     </div>
 
     <div id="ide-title-actions">
-      <span id="user-status"></span>
+      <span id="user-status" aria-live="polite" aria-atomic="true"></span>
       <button id="login" class="title-btn">Log In</button>
       <button id="logout" class="title-btn" style="display:none;">Log Out</button>
     </div>
   </div><!-- /titlebar -->
 
-  <!-- ── Workbench ── -->
+  <!-- -- Workbench -- -->
   <div id="ide-workbench">
 
     <!-- Activity bar -->
-    <div id="ide-activity-bar">
+    <div id="ide-activity-bar" role="toolbar" aria-label="Activity bar" aria-orientation="vertical">
       <!-- Explorer -->
-      <div class="activity-icon active" id="act-explorer" title="Explorer" onclick="switchActivity('explorer')">
-        <svg viewBox="0 0 24 24"><path d="M17.5 2H6.5C5.12 2 4 3.12 4 4.5v15C4 20.88 5.12 22 6.5 22h11c1.38 0 2.5-1.12 2.5-2.5v-15C20 3.12 18.88 2 17.5 2zM8 17H7v-1h1v1zm0-3H7v-1h1v1zm0-3H7v-1h1v1zm8 6H9v-1h7v1zm0-3H9v-1h7v1zm0-3H9v-1h7v1zm0-3H7V8h9v3z"/></svg>
-      </div>
+      <button class="activity-icon active" id="act-explorer"
+              title="Explorer" aria-label="Explorer"
+              aria-pressed="true" onclick="switchActivity('explorer')">
+        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M17.5 2H6.5C5.12 2 4 3.12 4 4.5v15C4 20.88 5.12 22 6.5 22h11c1.38 0 2.5-1.12 2.5-2.5v-15C20 3.12 18.88 2 17.5 2zM8 17H7v-1h1v1zm0-3H7v-1h1v1zm0-3H7v-1h1v1zm8 6H9v-1h7v1zm0-3H9v-1h7v1zm0-3H9v-1h7v1zm0-3H7V8h9v3z"/></svg>
+      </button>
       <!-- GitHub -->
-      <div class="activity-icon" id="act-github" title="Push to GitHub" onclick="switchActivity('github')">
-        <svg viewBox="0 0 24 24"><path d="M12 2C6.477 2 2 6.477 2 12c0 4.418 2.865 8.166 6.839 9.489.5.092.682-.217.682-.482 0-.237-.009-.866-.013-1.7-2.782.604-3.369-1.341-3.369-1.341-.454-1.155-1.11-1.462-1.11-1.462-.908-.62.069-.608.069-.608 1.003.07 1.531 1.03 1.531 1.03.892 1.529 2.341 1.087 2.91.831.092-.646.349-1.086.635-1.337-2.22-.253-4.555-1.11-4.555-4.943 0-1.091.39-1.984 1.029-2.683-.103-.253-.446-1.27.098-2.647 0 0 .84-.269 2.75 1.025A9.578 9.578 0 0112 6.836c.85.004 1.705.114 2.504.336 1.909-1.294 2.747-1.025 2.747-1.025.546 1.377.202 2.394.1 2.647.64.699 1.028 1.592 1.028 2.683 0 3.842-2.339 4.687-4.566 4.935.359.309.678.919.678 1.852 0 1.336-.012 2.415-.012 2.743 0 .267.18.578.688.48C19.138 20.163 22 16.418 22 12c0-5.523-4.477-10-10-10z"/></svg>
-      </div>
+      <button class="activity-icon" id="act-github"
+              title="Push to GitHub" aria-label="Push to GitHub"
+              aria-pressed="false" onclick="switchActivity('github')">
+        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 2C6.477 2 2 6.477 2 12c0 4.418 2.865 8.166 6.839 9.489.5.092.682-.217.682-.482 0-.237-.009-.866-.013-1.7-2.782.604-3.369-1.341-3.369-1.341-.454-1.155-1.11-1.462-1.11-1.462-.908-.62.069-.608.069-.608 1.003.07 1.531 1.03 1.531 1.03.892 1.529 2.341 1.087 2.91.831.092-.646.349-1.086.635-1.337-2.22-.253-4.555-1.11-4.555-4.943 0-1.091.39-1.984 1.029-2.683-.103-.253-.446-1.27.098-2.647 0 0 .84-.269 2.75 1.025A9.578 9.578 0 0112 6.836c.85.004 1.705.114 2.504.336 1.909-1.294 2.747-1.025 2.747-1.025.546 1.377.202 2.394.1 2.647.64.699 1.028 1.592 1.028 2.683 0 3.842-2.339 4.687-4.566 4.935.359.309.678.919.678 1.852 0 1.336-.012 2.415-.012 2.743 0 .267.18.578.688.48C19.138 20.163 22 16.418 22 12c0-5.523-4.477-10-10-10z"/></svg>
+      </button>
       <!-- Info -->
-      <div class="activity-icon" id="act-info" title="Exercise Info" onclick="switchActivity('info')">
-        <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg>
-      </div>
+      <button class="activity-icon" id="act-info"
+              title="Exercise Info" aria-label="Exercise Info"
+              aria-pressed="false" onclick="switchActivity('info')">
+        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg>
+      </button>
     </div><!-- /activity-bar -->
 
     <!-- Sidebar -->
@@ -554,27 +612,27 @@ button:focus, input:focus, select:focus, .tab:focus {
 
       <!-- Explorer panel -->
       <div class="sidebar-panel active" id="panel-explorer">
-        <div class="sidebar-header">
+        <div class="sidebar-header" role="heading" aria-level="2">
           Explorer
-          <div class="sidebar-icon-actions">
-            <button class="icon-btn" id="new"     title="New File"   disabled>+</button>
-            <button class="icon-btn" id="new-dir" title="New Folder" disabled>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M20 6h-8l-2-2H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zm-1 8h-3v3h-2v-3h-3v-2h3V9h2v3h3v2z"/></svg>
+          <div class="sidebar-icon-actions" role="toolbar" aria-label="File operations">
+            <button class="icon-btn" id="new"     title="New File"     aria-label="New file"     disabled>+</button>
+            <button class="icon-btn" id="new-dir" title="New Folder"   aria-label="New folder"   disabled>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" focusable="false"><path d="M20 6h-8l-2-2H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zm-1 8h-3v3h-2v-3h-3v-2h3V9h2v3h3v2z"/></svg>
             </button>
-            <button class="icon-btn" id="upload"   title="Upload File"   disabled>↑</button>
-            <button class="icon-btn" id="download" title="Download ZIP"   disabled>↓</button>
-            <button class="icon-btn" id="reset"    title="Reset Files"   disabled>↺</button>
+            <button class="icon-btn" id="upload"   title="Upload file"   aria-label="Upload file"   disabled>↑</button>
+            <button class="icon-btn" id="download" title="Download ZIP"  aria-label="Download ZIP"  disabled>↓</button>
+            <button class="icon-btn" id="reset"    title="Reset files"   aria-label="Reset files"   disabled>↺</button>
           </div>
         </div>
-        <div id="filesystem"></div>
+        <div id="filesystem" role="tree" aria-label="Project files"></div>
       </div>
 
       <!-- GitHub panel -->
       <div class="sidebar-panel" id="panel-github">
-        <div class="sidebar-header">
+        <div class="sidebar-header" role="heading" aria-level="2">
           GitHub
           <div class="sidebar-icon-actions">
-            <button class="icon-btn" id="gh-disconnect-btn" title="Disconnect" style="display:none;" onclick="disconnectGitHub()">✕</button>
+            <button class="icon-btn" id="gh-disconnect-btn" title="Disconnect GitHub" aria-label="Disconnect GitHub" style="display:none;" onclick="disconnectGitHub()">✕</button>
           </div>
         </div>
 
@@ -582,53 +640,62 @@ button:focus, input:focus, select:focus, .tab:focus {
         <div id="gh-connect-panel" class="sidebar-form">
           <p>Connect to GitHub to push and pull your project files to a repository.</p>
           <button class="form-btn" onclick="openGitHubTokenPage()">1. Open GitHub Token Page ↗</button>
-          <p style="margin-top:10px; font-size:11px; color:#9d9d9d; line-height:1.5;">
+          <p style="margin-top:10px; font-size:11px; color:#a0a0a0; line-height:1.5;">
             On the page that opens, create a token with <strong style="color:#ccc;">repo</strong> scope, copy it, then paste it below.
           </p>
-          <label>2. Paste Token</label>
-          <input type="password" id="gh-token" placeholder="ghp_…" autocomplete="off">
+          <label for="gh-token">2. Paste Token</label>
+          <input type="password" id="gh-token" placeholder="ghp_…" autocomplete="off"
+                 aria-label="GitHub personal access token" aria-describedby="gh-token-hint">
+          <p id="gh-token-hint" class="sr-only">Paste the personal access token you created on GitHub with repo scope.</p>
           <button class="form-btn" style="margin-top:8px;" onclick="connectGitHub()">Connect</button>
-          <div id="gh-connect-status" class="form-status"></div>
+          <div id="gh-connect-status" class="form-status" role="status" aria-live="polite" aria-atomic="true"></div>
         </div>
 
         <!-- Step 2: connected (sub-tabs + push/pull + history — hidden until authenticated) -->
         <div id="gh-connected-panel" style="display:none; flex-direction:column; flex:1; overflow:hidden;">
 
         <!-- GitHub sub-tabs -->
-        <div style="display:flex; background:#2d2d2d; border-bottom:1px solid #1e1e1e;">
-          <div class="gh-subtab active" id="gh-subtab-push" onclick="switchGitHubTab('push')" style="flex:1; padding:6px; text-align:center; cursor:pointer; font-size:11px; border-bottom:2px solid #007acc;">Push/Pull</div>
-          <div class="gh-subtab" id="gh-subtab-history" onclick="switchGitHubTab('history')" style="flex:1; padding:6px; text-align:center; cursor:pointer; font-size:11px; border-bottom:2px solid transparent; color:#858585;">History</div>
+        <div style="display:flex; background:#2d2d2d; border-bottom:1px solid #1e1e1e;"
+             role="tablist" aria-label="GitHub panel tabs">
+          <button class="gh-subtab active" id="gh-subtab-push"
+                  role="tab" aria-selected="true" aria-controls="gh-push-tab" tabindex="0"
+                  onclick="switchGitHubTab('push')"
+                  style="flex:1; padding:6px; text-align:center; cursor:pointer; font-size:11px; border-bottom:2px solid #007acc; background:none; border-top:none; border-left:none; border-right:none; color:#ccc;">Push/Pull</button>
+          <button class="gh-subtab" id="gh-subtab-history"
+                  role="tab" aria-selected="false" aria-controls="gh-history-tab" tabindex="-1"
+                  onclick="switchGitHubTab('history')"
+                  style="flex:1; padding:6px; text-align:center; cursor:pointer; font-size:11px; border-bottom:2px solid transparent; color:#a8a8a8; background:none; border-top:none; border-left:none; border-right:none;">History</button>
         </div>
 
         <!-- Push/Pull tab -->
         <div id="gh-push-tab" style="display:flex; flex-direction:column; flex:1; overflow:hidden;">
           <div id="gh-user-badge" class="gh-user-badge"></div>
           <div class="sidebar-form" style="flex:1; overflow-y:auto;">
-            <label>Repository</label>
+            <label for="gh-repo-select">Repository</label>
             <div style="display:flex; gap:4px; align-items:center;">
-              <select id="gh-repo-select" class="gh-select"></select>
-              <button class="icon-btn" onclick="refreshGitHubRepos()" title="Refresh list">↻</button>
+              <select id="gh-repo-select" class="gh-select" aria-label="Select GitHub repository"></select>
+              <button class="icon-btn" onclick="refreshGitHubRepos()" title="Refresh repository list" aria-label="Refresh repository list">↻</button>
             </div>
             <div id="gh-new-repo-form" class="gh-new-repo-box" style="display:none;">
-              <label style="margin-top:0;">New repo name</label>
-              <input type="text" id="gh-new-repo-name" placeholder="my-project">
+              <label style="margin-top:0;" for="gh-new-repo-name">New repo name</label>
+              <input type="text" id="gh-new-repo-name" placeholder="my-project" aria-label="New repository name">
               <button class="form-btn" style="margin-top:8px;" onclick="createGitHubRepo()">Create Repository</button>
             </div>
-            <label>Branch</label>
-            <input type="text" id="gh-branch" value="main" placeholder="main">
+            <label for="gh-branch">Branch</label>
+            <input type="text" id="gh-branch" value="main" placeholder="main" aria-label="Branch name">
             <label style="margin-top:10px;">Files to Push</label>
             <div style="display:flex; gap:4px; margin-bottom:4px;">
               <button class="form-btn" style="flex:1; padding:3px 6px;" onclick="ghStageAll()">+ All</button>
               <button class="form-btn" style="flex:1; padding:3px 6px; background:#3a3a3a;" onclick="ghUnstageAll()">− None</button>
             </div>
-            <div id="gh-staging-list" style="max-height:180px; overflow-y:auto; border:1px solid #3a3a3a; border-radius:2px; margin-bottom:6px;"></div>
-            <label>Commit Message</label>
-            <input type="text" id="gh-commit-msg" placeholder="Describe your changes…" autocomplete="off">
+            <div id="gh-staging-list" role="group" aria-label="Files staged for push" style="max-height:180px; overflow-y:auto; border:1px solid #3a3a3a; border-radius:2px; margin-bottom:6px;"></div>
+            <label for="gh-commit-msg">Commit Message</label>
+            <input type="text" id="gh-commit-msg" placeholder="Describe your changes…" autocomplete="off" aria-label="Commit message">
             <div style="display:flex; gap:6px; margin-top:10px;">
               <button class="form-btn" style="flex:1;" onclick="pushToGitHub()">↑ Commit and Push</button>
               <button class="form-btn" style="flex:1; background:#2d6a4f;" onclick="pullFromGitHub()">↓ Pull</button>
             </div>
-            <div id="gh-status" class="form-status"></div>
+            <div id="gh-status" class="form-status" role="status" aria-live="polite" aria-atomic="true"></div>
             <button class="form-btn" style="margin-top:16px; background:#5a2d2d;" onclick="disconnectGitHub()">Disconnect GitHub</button>
           </div>
         </div>
@@ -638,8 +705,8 @@ button:focus, input:focus, select:focus, .tab:focus {
           <div style="padding:8px; background:#252526; border-bottom:1px solid #1e1e1e; display:flex; align-items:center; gap:8px;">
             <button class="form-btn" style="flex:1; padding:4px 8px; font-size:11px;" onclick="loadGitHistory()">↻ Refresh</button>
           </div>
-          <div id="git-history-container">
-            <div style="padding:20px; text-align:center; color:#858585;">
+          <div id="git-history-container" aria-live="polite" aria-atomic="false">
+            <div style="padding:20px; text-align:center; color:#a0a0a0;">
               Click Refresh to load commit history
             </div>
           </div>
@@ -650,13 +717,13 @@ button:focus, input:focus, select:focus, .tab:focus {
 
       <!-- Info panel – instructions rendered directly in the sidebar -->
       <div class="sidebar-panel" id="panel-info">
-        <div class="sidebar-header">Exercise Info</div>
+        <div class="sidebar-header" role="heading" aria-level="2">Exercise Info</div>
         <div class="info-panel-content">
           {% if page.info.prev or page.info.next %}
-          <div class="nav-btns">
-            {% if page.info.prev %}<a class="nav-btn" href="{{ page.info.prev }}">← Prev</a>{% endif %}
-            {% if page.info.next %}<a class="nav-btn" href="{{ page.info.next }}">Next →</a>{% endif %}
-          </div>
+          <nav class="nav-btns" aria-label="Exercise navigation">
+            {% if page.info.prev %}<a class="nav-btn" href="{{ page.info.prev }}" aria-label="Previous exercise">← Prev</a>{% endif %}
+            {% if page.info.next %}<a class="nav-btn" href="{{ page.info.next }}" aria-label="Next exercise">Next →</a>{% endif %}
+          </nav>
           {% endif %}
           {% if page.info.goals %}
           <h3>Goals</h3>
@@ -664,17 +731,17 @@ button:focus, input:focus, select:focus, .tab:focus {
           <hr class="info-divider">
           {% endif %}
           {% if page.info.instructions %}
-          <h2>Instructions</h2>
+          <h3>Instructions</h3>
           {{ page.info.instructions }}
           <hr class="info-divider">
           {% endif %}
           {{ content }}
           <hr class="info-divider" style="margin-top:16px;">
-          <p style="font-size:10px; color:#858585; margin:8px 0 0;">
+          <p style="font-size:10px; color:#a0a0a0; margin:8px 0 0;">
             The <em>Ursinus-WebIDE</em> by
-            <a href="https://ctralie.com" target="_blank" rel="noopener">Chris Tralie</a>
+            <a href="https://ctralie.com" target="_blank" rel="noopener">Chris Tralie<span class="sr-only"> (opens in new tab)</span></a>
             and
-            <a href="https://billmongan.com" target="_blank" rel="noopener">Bill Mongan</a>
+            <a href="https://billmongan.com" target="_blank" rel="noopener">Bill Mongan<span class="sr-only"> (opens in new tab)</span></a>
           </p>
         </div>
       </div>
@@ -685,14 +752,18 @@ button:focus, input:focus, select:focus, .tab:focus {
     <div id="sidebar-resize-handle"></div>
 
     <!-- Editor area -->
-    <div id="ide-editor-area">
+    <div id="ide-editor-area" role="main" aria-label="Code editor area">
 
       <!-- Tabs bar -->
       <div id="ide-tabs-bar">
         <div class="tabs"></div>
-        <div id="ide-tabs-actions">
-          <button id="run"  class="action-btn run-btn" disabled>▶ Run</button>
-          <button id="save" class="action-btn"         disabled>Save</button>
+        <div id="ide-tabs-actions" role="toolbar" aria-label="Editor actions">
+          <button id="run"  class="action-btn run-btn" disabled
+                  aria-label="Run code (Ctrl+Enter)"
+                  title="Run code (Ctrl+Enter)">▶ Run</button>
+          <button id="save" class="action-btn"         disabled
+                  aria-label="Save file (Ctrl+S)"
+                  title="Save file (Ctrl+S)">Save</button>
         </div>
       </div>
 
@@ -714,7 +785,11 @@ button:focus, input:focus, select:focus, .tab:focus {
             {% if page.language == "graphics_shader" %}
             <button id="updateShaders">Update Shaders</button>
             {% endif %}
-            <canvas id="GLCanvas1" style="border:none" width="800" height="600"></canvas>
+            <canvas id="GLCanvas1" style="border:none" width="800" height="600"
+                    role="img"
+                    aria-label="WebGL graphics output canvas">
+              <p>Your browser does not support WebGL. A graphical rendering canvas would appear here.</p>
+            </canvas>
           </div>
         </div>
       </div><!-- /editor-main -->
@@ -723,36 +798,41 @@ button:focus, input:focus, select:focus, .tab:focus {
       <div id="bottom-resize-handle"></div>
 
       <!-- Bottom panel: Terminal + Output -->
-      <div id="ide-bottom-panel">
-        <div id="bottom-tabs-bar">
-          <div class="bottom-tab active" id="btab-terminal" onclick="switchBottomTab('terminal')">Terminal</div>
-          <div class="bottom-tab"        id="btab-output"   onclick="switchBottomTab('output')">Output</div>
-          <div class="bottom-tab"        id="btab-suggestions" onclick="switchBottomTab('suggestions')">Suggestions <span id="suggestions-count" style="opacity:0.6;"></span></div>
+      <div id="ide-bottom-panel" role="region" aria-label="Output panels">
+        <div id="bottom-tabs-bar" role="tablist" aria-label="Output panel tabs">
+          <button class="bottom-tab active" id="btab-terminal"
+                  role="tab" aria-selected="true" aria-controls="terminal-panel" tabindex="0"
+                  onclick="switchBottomTab('terminal')">Terminal</button>
+          <button class="bottom-tab"        id="btab-output"
+                  role="tab" aria-selected="false" aria-controls="output-panel" tabindex="-1"
+                  onclick="switchBottomTab('output')">Output</button>
+          <button class="bottom-tab"        id="btab-suggestions"
+                  role="tab" aria-selected="false" aria-controls="suggestions-panel" tabindex="-1"
+                  onclick="switchBottomTab('suggestions')">Suggestions <span id="suggestions-count" aria-label="suggestion count" style="opacity:0.6;"></span></button>
 
           <div id="bottom-panel-actions">
-            <button class="icon-btn" id="clear-console" title="Clear Output">✕ Clear Output</button>
+            <button class="icon-btn" id="clear-console" title="Clear Output" aria-label="Clear output">✕ Clear Output</button>
           </div>
         </div>
 
-        <div id="terminal-panel" class="bottom-content active">
+        <div id="terminal-panel" class="bottom-content active" role="tabpanel" aria-labelledby="btab-terminal">
           <div id="terminal-container"></div>
         </div>
 
-        <div id="output-panel" class="bottom-content">
+        <div id="output-panel" class="bottom-content" role="tabpanel" aria-labelledby="btab-output" hidden>
           <div id="output-container">
-            <pre id="console" style="white-space:pre-wrap; overflow-x:hidden;"></pre>
+            <pre id="console" style="white-space:pre-wrap; overflow-x:hidden;" aria-live="polite" aria-atomic="false" aria-label="Program output"></pre>
           </div>
         </div>
 
         <!-- Suggestions Panel -->
-        <div id="suggestions-panel" class="bottom-content">
-          <div id="suggestions-list">
-            <div style="padding:20px; text-align:center; color:#858585;">
+        <div id="suggestions-panel" class="bottom-content" role="tabpanel" aria-labelledby="btab-suggestions" hidden>
+          <div id="suggestions-list" aria-live="polite" aria-atomic="false">
+            <div style="padding:20px; text-align:center; color:#a0a0a0;">
               No suggestions. Code quality feedback will appear here.
             </div>
           </div>
         </div>
-
 
       </div><!-- /bottom-panel -->
 
@@ -760,18 +840,22 @@ button:focus, input:focus, select:focus, .tab:focus {
   </div><!-- /workbench -->
 
   <!-- Status bar -->
-  <div id="ide-status-bar">
+  <div id="ide-status-bar" role="contentinfo" aria-label="Editor status">
     <div id="status-left">
-      <span class="status-item" id="status-user">Not logged in</span>
+      <span class="status-item" id="status-user" aria-live="polite" aria-atomic="true">Not logged in</span>
       <span class="status-item" id="status-lang">{{ page.language | default: "text" }}</span>
     </div>
     <div id="status-right">
-      <span class="status-item active" id="status-wordwrap" title="Toggle Word Wrap" onclick="menuToggleWordWrap()">Word Wrap: On</span>
-      <span class="status-item" id="status-line-col">Ln 1, Col 1</span>
+      <button class="status-item active" id="status-wordwrap"
+              title="Toggle Word Wrap" aria-label="Word Wrap: On. Click to toggle."
+              aria-pressed="true"
+              onclick="menuToggleWordWrap()"
+              style="background:none; border:none; cursor:pointer; font:inherit; padding:inherit; color:inherit;">Word Wrap: On</button>
+      <span class="status-item" id="status-line-col" aria-live="polite" aria-atomic="true">Ln 1, Col 1</span>
     </div>
   </div>
 
-</div><!-- /vscode-ide -->
+</div><!-- /ide -->
 
 <!-- Hidden compat elements (IDs referenced by existing JS logic) -->
 <div id="compat-hidden">
@@ -784,13 +868,21 @@ button:focus, input:focus, select:focus, .tab:focus {
 </div>
 
 <!-- Notification toast -->
-<div id="ide-notification"></div>
+<div id="ide-notification"
+     role="alert"
+     aria-live="assertive"
+     aria-atomic="true"></div>
 
 <!-- Input dialog (command-palette style) -->
-<div id="ide-input-dialog">
+<div id="ide-input-dialog"
+     role="dialog"
+     aria-modal="true"
+     aria-labelledby="ide-input-label"
+     aria-hidden="true">
   <div id="ide-input-box">
     <div id="ide-input-label"></div>
-    <input type="text" id="ide-input-field" autocomplete="off">
+    <input type="text" id="ide-input-field" autocomplete="off"
+           aria-labelledby="ide-input-label">
   </div>
 </div>
 
@@ -870,7 +962,7 @@ def pyodide_print(s):
     var canvasStr = "";
     {% endif %}
 
-    // ── Global state ──────────────────────────────────────────────────────────
+    // -- Global state ----------------------------------------------------------
     let ace_editor = null;
     let termFitAddon = null;
     let xtermInstance = null;
@@ -922,20 +1014,28 @@ def pyodide_print(s):
             {% endfor %}
         ];
 
-        // ── Bottom tab switcher ────────────
+        // -- Bottom tab switcher ------------
         window.switchBottomTab = (name) => {
-            document.querySelectorAll('.bottom-tab').forEach(t => t.classList.remove('active'));
-            document.querySelectorAll('.bottom-content').forEach(c => c.classList.remove('active'));
-            const tab     = document.getElementById('btab-' + name);
-            const content = document.getElementById(name + '-panel');
-            if (tab)     tab.classList.add('active');
-            if (content) content.classList.add('active');
+            // Update tab buttons — ARIA tab pattern (roving tabindex + aria-selected)
+            document.querySelectorAll('.bottom-tab').forEach(t => {
+                const isActive = t.id === 'btab-' + name;
+                t.classList.toggle('active', isActive);
+                t.setAttribute('aria-selected', isActive ? 'true' : 'false');
+                t.setAttribute('tabindex', isActive ? '0' : '-1');
+            });
+            // Update tab panels — use hidden attribute for screen reader visibility
+            document.querySelectorAll('.bottom-content').forEach(c => {
+                const isActive = c.id === name + '-panel';
+                c.classList.toggle('active', isActive);
+                if (isActive) c.removeAttribute('hidden');
+                else          c.setAttribute('hidden', '');
+            });
             if (name === 'terminal' && typeof termFitAddon !== 'undefined' && termFitAddon) {
                 setTimeout(() => termFitAddon.fit(), 50);
             }
         };
 
-        // ── Console output ────────────────────────────────────────────────────
+        // -- Console output ----------------------------------------------------
         function logToConsole(message) {
             const newLine = document.createElement('div');
             newLine.textContent = message + '\n';
@@ -947,7 +1047,7 @@ def pyodide_print(s):
 
         logToConsole("Console output...");
 
-        // ── Processing / Java boilerplate ─────────────────────────────────────
+        // -- Processing / Java boilerplate -------------------------------------
         const PROCESSING_CODE_BEGIN = `
         var feedbackString = \"\";
         function feedbackPrintln(s) { return s + "\\n"; }
@@ -986,7 +1086,7 @@ def pyodide_print(s):
             return s;
         }
 
-        // ── IndexedDB ─────────────────────────────────────────────────────────
+        // -- IndexedDB ---------------------------------------------------------
         const DB_NAME = 'CodeIDB';
         const DB_VERSION = 1;
         const STORE_NAME = 'Files';
@@ -1159,9 +1259,13 @@ def pyodide_print(s):
         }
 
         async function setActiveTab(path) {
-            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-            const tabEl = document.getElementById(path);
-            if (tabEl) tabEl.classList.add('active');
+            // ARIA tab pattern: roving tabindex + aria-selected
+            document.querySelectorAll('.tab').forEach(t => {
+                const isActive = t.id === path;
+                t.classList.toggle('active', isActive);
+                t.setAttribute('aria-selected', isActive ? 'true' : 'false');
+                t.setAttribute('tabindex', isActive ? '0' : '-1');
+            });
 
             const submitView      = document.getElementById('submit-view');
             const editorContainer = document.getElementById('editor-container');
@@ -1176,13 +1280,13 @@ def pyodide_print(s):
             // Regular code file tab
             submitView.style.display      = 'none';
             editorContainer.style.display = '';
-            
+
             // Set flag to prevent marking as modified during programmatic setValue
             window._settingEditorValue = true;
             ace_editor.setValue(openFiles[path].content);
             ace_editor.clearSelection();
             window._settingEditorValue = false;
-            
+
             saveBtn.disabled = openFiles[path].readOnly;
             setTabAceProperties(path);
             ace_editor.resize();
@@ -1223,18 +1327,26 @@ def pyodide_print(s):
             const tab = document.createElement('div');
             tab.className = 'tab tab-submit active';
             tab.id = SUBMIT_TAB_ID;
+            tab.setAttribute('role', 'tab');
+            tab.setAttribute('aria-selected', 'true');
+            tab.setAttribute('aria-controls', 'editor-container');
+            tab.setAttribute('tabindex', '0');
 
             const icon = document.createElement('span');
             icon.style.cssText = 'flex-shrink:0; font-size:13px; opacity:0.8;';
+            icon.setAttribute('aria-hidden', 'true');
             icon.textContent = '✓';
 
             const label = document.createElement('span');
             label.className = 'tab-label';
             label.textContent = 'Submit Assignment';
 
-            const close = document.createElement('span');
+            const close = document.createElement('button');
             close.className = 'close';
             close.innerHTML = '&times;';
+            close.setAttribute('aria-label', 'Close Submit Assignment tab');
+            close.setAttribute('tabindex', '0');
+            close.style.cssText = 'background:none; border:none; cursor:pointer; color:inherit; padding:1px 3px;';
 
             tab.appendChild(icon);
             tab.appendChild(label);
@@ -1242,7 +1354,9 @@ def pyodide_print(s):
             tabs.appendChild(tab);
 
             tab.onclick   = () => setActiveTab(SUBMIT_TAB_ID);
+            tab.onkeydown = (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setActiveTab(SUBMIT_TAB_ID); } };
             close.onclick = (e) => { e.stopPropagation(); closeSubmitTab(); };
+            close.onkeydown = (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); closeSubmitTab(); } };
             setActiveTab(SUBMIT_TAB_ID);
         }
 
@@ -1254,30 +1368,76 @@ def pyodide_print(s):
             document.getElementById('submit-view').style.display = 'none';
             document.getElementById('editor-container').style.display = '';
             if (Object.keys(openFiles).length > 0) {
-                setActiveTab(Object.keys(openFiles)[0]);
+                const nextPath = Object.keys(openFiles)[0];
+                setActiveTab(nextPath);
+                const nextTab = document.getElementById(nextPath);
+                if (nextTab) nextTab.focus();
             } else {
                 ace_editor.setValue('');
                 ace_editor.setReadOnly(true);
                 saveBtn.disabled = true;
+                ace_editor.focus();
             }
         }
 
         function createTab(path) {
+            const filename = path.substring(path.lastIndexOf('/') + 1);
             const tab = document.createElement('div');
             tab.className = 'tab';
             tab.id = path;
+            // ARIA tab role attributes
+            tab.setAttribute('role', 'tab');
+            tab.setAttribute('aria-selected', 'false');
+            tab.setAttribute('aria-controls', 'editor-container');
+            tab.setAttribute('tabindex', '-1');
+            tab.setAttribute('title', filename);
+
             const label = document.createElement('span');
             label.className = 'tab-label';
-            label.textContent = path.substring(path.lastIndexOf('/') + 1);
+            label.textContent = filename;
+
             const close = document.createElement('span');
             close.className = 'close';
             close.innerHTML = '&times;';
+            close.setAttribute('role', 'button');
+            close.setAttribute('aria-label', `Close ${filename}`);
+            close.setAttribute('tabindex', '0');
+
             tab.appendChild(label);
             tab.appendChild(close);
+
+            // Ensure tabs container has role=tablist (set once)
+            if (!tabs.hasAttribute('role')) {
+                tabs.setAttribute('role', 'tablist');
+                tabs.setAttribute('aria-label', 'Open files');
+            }
+
             tabs.appendChild(tab);
             tab.onclick = () => setActiveTab(path);
             close.onclick = (e) => { e.stopPropagation(); closeTab(path); };
-            
+            // Allow keyboard activation of close button
+            close.addEventListener('keydown', e => {
+                if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); closeTab(path); }
+            });
+            // Arrow key navigation between tabs (roving tabindex pattern)
+            tab.addEventListener('keydown', e => {
+                const allTabs = Array.from(tabs.querySelectorAll('[role="tab"]'));
+                const idx = allTabs.indexOf(tab);
+                if (e.key === 'ArrowRight') {
+                    e.preventDefault();
+                    allTabs[(idx + 1) % allTabs.length].focus();
+                } else if (e.key === 'ArrowLeft') {
+                    e.preventDefault();
+                    allTabs[(idx - 1 + allTabs.length) % allTabs.length].focus();
+                } else if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    setActiveTab(path);
+                } else if (e.key === 'Delete' || e.key === 'Backspace') {
+                    e.preventDefault();
+                    closeTab(path);
+                }
+            });
+
             // Only activate the first tab
             const existingTabs = document.querySelectorAll('.tab');
             if (existingTabs.length === 1) {
@@ -1296,12 +1456,16 @@ def pyodide_print(s):
             const tabEl = document.getElementById(path);
             if (tabEl) tabEl.remove();
             if (Object.keys(openFiles).length > 0) {
-                setActiveTab(Object.keys(openFiles)[0]);
+                const nextPath = Object.keys(openFiles)[0];
+                setActiveTab(nextPath);
+                const nextTab = document.getElementById(nextPath);
+                if (nextTab) nextTab.focus();
             } else {
                 document.getElementById('editor-container').style.display = '';
                 ace_editor.setValue('');
                 ace_editor.setReadOnly(true);
                 saveBtn.disabled = true;
+                ace_editor.focus();
             }
         }
 
@@ -1375,14 +1539,23 @@ def pyodide_print(s):
         }
 
         wrapTextCheckbox.addEventListener('change', function() {
+            const wwBtn = document.getElementById('status-wordwrap');
             if (this.checked) {
                 consoleOutput.style.whiteSpace = 'pre-wrap';
                 consoleOutput.style.overflowX = 'hidden';
-                document.getElementById('status-wordwrap').textContent = 'Word Wrap: On';
+                if (wwBtn) {
+                    wwBtn.textContent = 'Word Wrap: On';
+                    wwBtn.setAttribute('aria-pressed', 'true');
+                    wwBtn.setAttribute('aria-label', 'Word Wrap: On. Click to toggle.');
+                }
             } else {
                 consoleOutput.style.whiteSpace = 'pre';
                 consoleOutput.style.overflowX = 'auto';
-                document.getElementById('status-wordwrap').textContent = 'Word Wrap: Off';
+                if (wwBtn) {
+                    wwBtn.textContent = 'Word Wrap: Off';
+                    wwBtn.setAttribute('aria-pressed', 'false');
+                    wwBtn.setAttribute('aria-label', 'Word Wrap: Off. Click to toggle.');
+                }
             }
         });
 
@@ -1397,7 +1570,7 @@ def pyodide_print(s):
         // ENHANCEMENTS: State Management, Code Quality, Suggestions, Debug, Accessibility
         // ══════════════════════════════════════════════════════════════════════
 
-        // ── State Management (Proposal 19) ───────────────────────────────────
+        // -- State Management (Proposal 19) -----------------------------------
         const AppState = {
             user: { id: user, authenticated: false, preferences: {} },
             workspace: { currentFile: null, openFiles: new Map(), unsavedChanges: new Set() },
@@ -1427,7 +1600,7 @@ def pyodide_print(s):
 
         const stateManager = new StateManager(AppState);
 
-        // ── Code Completion (Proposal 6) ─────────────────────────────────────
+        // -- Code Completion (Proposal 6) -------------------------------------
         function enhanceEditorAutocomplete(editor) {
             editor.setOptions({
                 enableBasicAutocompletion: true,
@@ -1436,7 +1609,7 @@ def pyodide_print(s):
             });
         }
 
-        // ── Contextual Learning & Error Patterns (Proposal 5) ────────────────
+        // -- Contextual Learning & Error Patterns (Proposal 5) ----------------
         const errorPatterns = {
             python: [
                 {
@@ -1488,7 +1661,7 @@ def pyodide_print(s):
             return null;
         }
 
-        // ── Code Quality / Static Analysis ───────────────────────────────────
+        // -- Code Quality / Static Analysis -----------------------------------
         //
         // analyzeCode(language, code) → [{line, severity, message, suggestion}]
         //
@@ -1499,7 +1672,7 @@ def pyodide_print(s):
         //
         const _analysisRules = {
 
-            // ── Java ──────────────────────────────────────────────────────────
+            // -- Java ----------------------------------------------------------
             java: {
                 perLinePat: [
                     { re: /==\s*"[^"]*"/,
@@ -1539,7 +1712,7 @@ def pyodide_print(s):
                 ],
                 wholeProg(lines) {
                     const issues = [];
-                    // ── Unreachable code after return/throw/break/continue ────
+                    // -- Unreachable code after return/throw/break/continue ----
                     // Track brace depth to know when we're inside a method body.
                     let braceDepth = 0;
                     let methodDepth = null;   // brace depth at method open
@@ -1595,7 +1768,7 @@ def pyodide_print(s):
                         if (opens > closes) seenReturn = false;
                     }
 
-                    // ── Missing default in switch ─────────────────────────────
+                    // -- Missing default in switch -----------------------------
                     let inSwitch = false, switchDepth = 0, hasDefault = false;
                     braceDepth = 0;
                     for (let i = 0; i < lines.length; i++) {
@@ -1623,7 +1796,7 @@ def pyodide_print(s):
                         }
                     }
 
-                    // ── Mutable public fields (basic) ─────────────────────────
+                    // -- Mutable public fields (basic) -------------------------
                     for (let i = 0; i < lines.length; i++) {
                         if (/^\s*public\s+(?!static\s+final\b)(?!class\b)(?!interface\b)(?!enum\b)(?!void\b)(?!abstract\b)[\w<>\[\]]+\s+\w+\s*[=;]/.test(lines[i])) {
                             issues.push({
@@ -1639,7 +1812,7 @@ def pyodide_print(s):
                 }
             },
 
-            // ── Python / Pyodide ──────────────────────────────────────────────
+            // -- Python / Pyodide ----------------------------------------------
             python: {
                 perLinePat: [
                     { re: /^\s*print\s+[^(=]/,
@@ -1695,7 +1868,7 @@ def pyodide_print(s):
                 }
             },
 
-            // ── C / C++ ───────────────────────────────────────────────────────
+            // -- C / C++ -------------------------------------------------------
             cpp: {
                 perLinePat: [
                     { re: /\bgets\s*\(/,
@@ -1752,7 +1925,7 @@ def pyodide_print(s):
                 }
             },
 
-            // ── JavaScript ────────────────────────────────────────────────────
+            // -- JavaScript ----------------------------------------------------
             javascript: {
                 perLinePat: [
                     { re: /\bvar\s+\w/,
@@ -1798,7 +1971,7 @@ def pyodide_print(s):
                 }
             },
 
-            // ── SQL ───────────────────────────────────────────────────────────
+            // -- SQL -----------------------------------------------------------
             sql: {
                 perLinePat: [
                     { re: /SELECT\s+\*/i,
@@ -1820,7 +1993,7 @@ def pyodide_print(s):
                 wholeProg(lines) { return []; }
             },
 
-            // ── Scheme ────────────────────────────────────────────────────────
+            // -- Scheme --------------------------------------------------------
             scheme: {
                 perLinePat: [
                     { re: /\(define\s+[A-Z]/,
@@ -1916,27 +2089,35 @@ def pyodide_print(s):
             _analysisDebounceTimer = setTimeout(_triggerAnalysis, 800);
         }
 
-        // ── Suggestions panel (static analysis) ─────────────────────────────────
+        // -- Suggestions panel (static analysis) ---------------------------------
 
         function updateSuggestionsPanel(suggestions) {
             const list  = document.getElementById('suggestions-list');
             const count = document.getElementById('suggestions-count');
             if (!list) return;
 
+            const iconMap = { error: '✕', warning: '⚠', info: 'ℹ' };
+            const labelMap = { error: 'Error', warning: 'Warning', info: 'Info' };
+
             if (suggestions.length === 0) {
-                list.innerHTML = '<div style="padding:20px;text-align:center;color:#858585;">No suggestions. Good job!</div>';
-                count.textContent = '';
+                list.innerHTML = '<div style="padding:20px;text-align:center;color:#a0a0a0;">No suggestions. Good job!</div>';
+                if (count) { count.textContent = ''; count.setAttribute('aria-label', '0 suggestions'); }
             } else {
-                count.textContent = `(${suggestions.length})`;
+                if (count) {
+                    count.textContent = `(${suggestions.length})`;
+                    count.setAttribute('aria-label', `${suggestions.length} suggestion${suggestions.length === 1 ? '' : 's'}`);
+                }
                 list.innerHTML = suggestions.map(p => `
-                    <div class="suggestion-item ${p.severity}" onclick="window.jumpToLine(${p.line})">
-                        <div class="suggestion-icon">${p.severity === 'error' ? '✕' : p.severity === 'warning' ? '⚠' : 'ℹ'}</div>
+                    <button class="suggestion-item ${p.severity}"
+                            onclick="window.jumpToLine(${p.line})"
+                            aria-label="${labelMap[p.severity] || 'Info'} on line ${p.line}: ${p.message.replace(/"/g, '&quot;')}">
+                        <div class="suggestion-icon" aria-hidden="true">${iconMap[p.severity] || 'ℹ'}</div>
                         <div class="suggestion-content">
                             <div class="suggestion-message">${p.message}</div>
                             <div class="suggestion-location">Line ${p.line}</div>
                             ${p.suggestion ? `<div class="suggestion-hint">💡 ${p.suggestion}</div>` : ''}
                         </div>
-                    </div>`).join('');
+                    </button>`).join('');
             }
 
         }
@@ -1955,7 +2136,7 @@ def pyodide_print(s):
             }
         };
 
-        // ── Git History (Proposal 7) ─────────────────────────────────────────
+        // -- Git History (Proposal 7) -----------------------------------------
         window.loadGitHistory = async function() {
             if (!githubToken || !currentRepo) {
                 ideNotify('Connect to GitHub and select a repository first', 'error');
@@ -1983,34 +2164,34 @@ def pyodide_print(s):
                     return;
                 }
                 
-                historyContainer.innerHTML = commits.map(commit => `
-                    <div class="commit-item">
-                        <div class="commit-hash">${commit.sha.substring(0, 7)}</div>
-                        <div class="commit-message">${commit.commit.message}</div>
+                const escape = s => s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+                historyContainer.innerHTML = `<ul style="list-style:none;margin:0;padding:0;" aria-label="Commit history">` +
+                    commits.map(commit => `
+                    <li class="commit-item">
+                        <div class="commit-hash" aria-label="Commit hash ${commit.sha.substring(0,7)}">${escape(commit.sha.substring(0,7))}</div>
+                        <div class="commit-message">${escape(commit.commit.message)}</div>
                         <div class="commit-meta">
-                            <span>${commit.commit.author.name}</span>
-                            <span>${new Date(commit.commit.author.date).toLocaleDateString()}</span>
+                            <span>${escape(commit.commit.author.name)}</span>
+                            <span><time datetime="${commit.commit.author.date}">${new Date(commit.commit.author.date).toLocaleDateString()}</time></span>
                         </div>
-                    </div>
-                `).join('');
+                    </li>
+                `).join('') + `</ul>`;
             } catch (error) {
                 historyContainer.innerHTML = `<div style="padding:20px; text-align:center; color:#f48771;">Error: ${error.message}</div>`;
             }
         };
 
         window.switchGitHubTab = function switchGitHubTab(tab) {
-            // Switch between push/pull and history tabs
+            // Switch between push/pull and history tabs — ARIA tab pattern
             document.querySelectorAll('.gh-subtab').forEach(t => {
-                t.classList.remove('active');
-                t.style.borderBottomColor = 'transparent';
-                t.style.color = '#858585';
+                const isActive = t.id === `gh-subtab-${tab}`;
+                t.classList.toggle('active', isActive);
+                t.setAttribute('aria-selected', isActive ? 'true' : 'false');
+                t.setAttribute('tabindex', isActive ? '0' : '-1');
+                t.style.borderBottomColor = isActive ? '#007acc' : 'transparent';
+                t.style.color = isActive ? '#ccc' : '#a8a8a8';
             });
-            
-            const activeTab = document.getElementById(`gh-subtab-${tab}`);
-            activeTab.classList.add('active');
-            activeTab.style.borderBottomColor = '#007acc';
-            activeTab.style.color = '#ccc';
-            
+
             if (tab === 'push') {
                 document.getElementById('gh-push-tab').style.display = 'flex';
                 document.getElementById('gh-history-tab').style.display = 'none';
@@ -2020,7 +2201,7 @@ def pyodide_print(s):
             }
         }
 
-        // ── Accessibility Enhancements (Proposal 10) ─────────────────────────
+        // -- Accessibility Enhancements (Proposal 10) -------------------------
         function setupAccessibilityShortcuts() {
             document.addEventListener('keydown', (e) => {
                 // Ctrl+Shift+E: Focus Explorer
@@ -2080,13 +2261,13 @@ def pyodide_print(s):
         // Initialize accessibility features
         setupAccessibilityShortcuts();
 
-        // ── Enhanced Terminal Commands (Proposals 3, 4) ──────────────────────
+        // -- Enhanced Terminal Commands (Proposals 3, 4) ----------------------
         // These integrate with the existing handleCommand function
         // Added: gdb, pdb, pytest, unittest commands for debugging and testing
 
         // ══════════════════════════════════════════════════════════════════════
 
-        // ── Auth ─────────────────────────────────────────────────────────────
+        // -- Auth -------------------------------------------------------------
         loginBtn.addEventListener('click', async () => {
             const userId = await idePrompt("Enter your Ursinus user ID:");
             if (userId && userId !== defaultuser) {
@@ -2235,7 +2416,7 @@ def pyodide_print(s):
             saveBtn.disabled = true;
         }
 
-        // ── File content helpers ──────────────────────────────────────────────
+        // -- File content helpers ----------------------------------------------
         async function getMainFileContentsRecursively(directory, filterFn) {
             if (!filterFn) filterFn = () => true;
             const db = await initDB();
@@ -2282,7 +2463,7 @@ def pyodide_print(s):
             });
         }
 
-        // ── Browser signing (ECDSA P-256) ─────────────────────────────────────
+        // -- Browser signing (ECDSA P-256) -------------------------------------
         const SIGNING_KEY_PRIV = 'ursinusSigningPrivJWK';
         const SIGNING_KEY_PUB  = 'ursinusSigningPubJWK';
 
@@ -2315,7 +2496,7 @@ def pyodide_print(s):
             return { signature: arrayBufferToBase64(sigBuf), signingKey: pubKeyJWK, signedAt: new Date().toISOString() };
         }
 
-        // ── Encryption + submission ──────────────────────────────────────────
+        // -- Encryption + submission ------------------------------------------
         async function encryptFiles(files, halfcredit, points) {
             const aesKey = await window.crypto.subtle.generateKey(
                 { name: 'AES-CBC', length: 256 }, true, ['encrypt', 'decrypt']
@@ -2390,7 +2571,7 @@ def pyodide_print(s):
             return window.btoa(JSON.stringify(pkg));
         }
 
-        // ── Utility functions ─────────────────────────────────────────────────
+        // -- Utility functions -------------------------------------------------
         function isBase64(str) {
             try { return btoa(atob(str)) === str; } catch (e) { return false; }
         }
@@ -2415,7 +2596,7 @@ def pyodide_print(s):
 
         function displayImage(content, hasHeader) {
             if (!hasHeader) content = 'data:image/jpeg;base64,' + content;
-            imageArea.innerHTML = `<img src="${content}" style="max-width:100%;">`;
+            imageArea.innerHTML = `<img src="${content}" style="max-width:100%;" alt="Program image output">`;
             document.getElementById('media-area').style.display = 'flex';
         }
 
@@ -2438,7 +2619,7 @@ def pyodide_print(s):
             });
         }
 
-        // ── Window load: init Ace + jstree ────────────────────────────────────
+        // -- Window load: init Ace + jstree ------------------------------------
         window.addEventListener('load', async () => {
             await waitForElement('#filesystem');
             await waitForElement('#editor-container');
@@ -2446,7 +2627,22 @@ def pyodide_print(s):
             ace_editor = ace.edit("editor-container");
             ace_editor.setTheme("ace/theme/monokai");
             ace_editor.setFontSize(14);
-            ace_editor.setOptions({ fontSize: "14px", showPrintMargin: false });
+            ace_editor.setOptions({
+                fontSize: "14px",
+                showPrintMargin: false,
+                // Enable screen reader accessibility mode by default (WCAG 4.1.2)
+                enableBasicAutocompletion: true,
+                enableSnippets: true
+            });
+            // Screen reader mode provides a textarea that screen readers can interact with
+            ace_editor.setOption('enableEmmet', false);
+            try { ace_editor.renderer.setOption('screenReaderMode', true); } catch(e) {}
+            // Ensure the editor container is reachable by keyboard and identified
+            const aceEl = document.getElementById('editor-container');
+            if (aceEl) {
+                aceEl.setAttribute('role', 'group');
+                aceEl.setAttribute('aria-label', 'Code editor');
+            }
 
             ace_editor.session.on('change', function() {
                 // Don't mark as modified if we're programmatically setting the value
@@ -2538,7 +2734,7 @@ def pyodide_print(s):
             {% endif %}
         });
 
-        // ── DB helpers ────────────────────────────────────────────────────────
+        // -- DB helpers --------------------------------------------------------
         async function clearDBPath(path) {
             const db = await initDB();
             if (!db) return;
@@ -2601,7 +2797,7 @@ def pyodide_print(s):
         logToConsole("{{ layout.submitformlinkdirections }}");
         {% endif %}
 
-        // ── C++ compile support ───────────────────────────────────────────────
+        // -- C++ compile support -----------------------------------------------
         {% if page.language == "cpp" %}
         const compileButton = document.createElement('button');
         compileButton.type = 'button';
@@ -2772,7 +2968,7 @@ def pyodide_print(s):
         }
         {% endif %}
 
-        // ── Scheme ───────────────────────────────────────────────────────────
+        // -- Scheme -----------------------------------------------------------
         {% if page.language == "scheme" %}
         async function doScheme(codeString, mainString) {
             feedbackString = "";
@@ -2791,7 +2987,7 @@ def pyodide_print(s):
         }
         {% endif %}
 
-        // ── SQL ───────────────────────────────────────────────────────────────
+        // -- SQL ---------------------------------------------------------------
         {% if page.language == "sql" %}
         async function doSql(codeString, mainString) {
             feedbackString = "";
@@ -2814,7 +3010,7 @@ def pyodide_print(s):
         }
         {% endif %}
 
-        // ── Pyodide setup ─────────────────────────────────────────────────────
+        // -- Pyodide setup -----------------------------------------------------
         {% if page.language == "pyodide" %}
         let packages = [];
         {% if page.info.packages %}
@@ -2833,7 +3029,7 @@ def pyodide_print(s):
         let pyodidePromise = new Promise(resolve => setupPyodide().then(resolve));
         {% endif %}
 
-        // ── Graphics setup ───────────────────────────────────────────────────
+        // -- Graphics setup ---------------------------------------------------
         {% if page.language == "graphics_view" or page.language == "graphics_shader" %}
         document.getElementById("graphicsArea").style.display = "block";
         document.getElementById("media-area").style.display = "flex";
@@ -2958,7 +3154,7 @@ def pyodide_print(s):
         document.getElementById("updateShaders").onclick = updateShaders;
         {% endif %}
 
-        // ── Run code ─────────────────────────────────────────────────────────
+        // -- Run code ---------------------------------------------------------
         async function runCode() {
             try {
                 let filterFn = undefined;
@@ -3160,7 +3356,7 @@ def pyodide_print(s):
             }
         }
 
-        // ── GitHub wizard ─────────────────────────────────────────────────────
+        // -- GitHub wizard -----------------------------------------------------
 
         const GH_API = 'https://api.github.com';
         const GH_HDR = tok => ({
@@ -3541,7 +3737,7 @@ def pyodide_print(s):
             }
         };
 
-        // ── GitHub staging helpers ────────────────────────────────────────────
+        // -- GitHub staging helpers --------------------------------------------
 
         function getCurrentRootBase() {
             return (xtermInstance && xtermInstance._ursinusRootBase) || rootBasePath;
@@ -3614,7 +3810,7 @@ def pyodide_print(s):
             updateGhStagingUI();
         };
 
-        // ── xterm.js Terminal ─────────────────────────────────────────────────
+        // -- xterm.js Terminal -------------------------------------------------
         function initTerminal(initialRootBase) {
             if (typeof Terminal === 'undefined') {
                 console.warn('xterm.js not loaded; terminal disabled');
@@ -3643,6 +3839,30 @@ def pyodide_print(s):
 
             term.open(document.getElementById('terminal-container'));
             if (fitAddon) fitAddon.fit();
+
+            // Add accessible label to xterm's generated container so screen readers
+            // can identify it. The textarea xterm creates is the actual interactive element.
+            const termContainer = document.getElementById('terminal-container');
+            if (termContainer) {
+                termContainer.setAttribute('role', 'region');
+                termContainer.setAttribute('aria-label', 'Interactive terminal');
+                // xterm generates a textarea for input; label it
+                const xtermTextarea = termContainer.querySelector('textarea.xterm-helper-textarea');
+                if (xtermTextarea) {
+                    xtermTextarea.setAttribute('aria-label', 'Terminal input');
+                    xtermTextarea.setAttribute('aria-multiline', 'false');
+                }
+                // Also listen for when xterm finishes rendering to label the textarea
+                const observer = new MutationObserver(() => {
+                    const ta = termContainer.querySelector('textarea.xterm-helper-textarea');
+                    if (ta && !ta.hasAttribute('aria-label')) {
+                        ta.setAttribute('aria-label', 'Terminal input');
+                        ta.setAttribute('aria-multiline', 'false');
+                        observer.disconnect();
+                    }
+                });
+                observer.observe(termContainer, { childList: true, subtree: true });
+            }
 
             // Prevent the browser from stealing Tab key focus away from xterm.
             // attachCustomKeyEventHandler intercepts the raw DOM KeyboardEvent
@@ -3687,7 +3907,7 @@ def pyodide_print(s):
                 term.write(`\r\x1b[32m${uid}@webide\x1b[0m:\x1b[94m${getDisplayPath()}\x1b[0m$ ${inputBuffer}`);
             }
 
-            // ── Shell argument parser: respects single/double quotes ──────────
+            // -- Shell argument parser: respects single/double quotes ----------
             function parseArgs(cmd) {
                 const tokens = []; let cur = '', inS = false, inD = false;
                 for (let i = 0; i < cmd.length; i++) {
@@ -3752,7 +3972,7 @@ def pyodide_print(s):
                 return '/' + parts.join('/');
             }
 
-            // ── Read a single file from IDB ───────────────────────────────────
+            // -- Read a single file from IDB -----------------------------------
             async function virtualCat(fullPath) {
                 const db = await initDB();
                 const tx = db.transaction(STORE_NAME, 'readonly');
@@ -3764,7 +3984,7 @@ def pyodide_print(s):
                 });
             }
 
-            // ── handleCommand ────────────────────────────────────────────────
+            // -- handleCommand ------------------------------------------------
             async function handleCommand(rawCmd) {
                 rawCmd = rawCmd.trim();
                 if (!rawCmd) { writePrompt(); return; }
@@ -3997,7 +4217,7 @@ def pyodide_print(s):
                 writePrompt();
             }
 
-            // ── Terminal push helper ─────────────────────────────────────────
+            // -- Terminal push helper -----------------------------------------
             async function _terminalPush(token, repo, branch, message, staging) {
                 const root = getCurrentRoot();
                 const allFiles = await getAllFilesRecursively(root);
@@ -4036,7 +4256,7 @@ def pyodide_print(s):
                 return { n, errors };
             }
 
-            // ── git subcommand handler ───────────────────────────────────────
+            // -- git subcommand handler ---------------------------------------
             async function handleGitCommand(args) {
                 const sub = args[0];
                 if (!sub) {
@@ -4189,7 +4409,7 @@ def pyodide_print(s):
                 writePrompt();
             }
 
-            // ── Tab completion ───────────────────────────────────────────────
+            // -- Tab completion -----------------------------------------------
             function findCommonPrefix(strs) {
                 if (!strs.length) return '';
                 let prefix = strs[0];
@@ -4216,7 +4436,7 @@ def pyodide_print(s):
                 const command    = prevTokens[0] || '';
                 const hasSpace   = buf.endsWith(' ');
 
-                // ── Command-name completion ──
+                // -- Command-name completion --
                 if (!command && !hasSpace) {
                     const cmds = ['ls','cd','pwd','cat','git','clear','help','gcc','g++','javac','java','python','python3','./a.out'];
                     const hits = cmds.filter(c => c.startsWith(partial));
@@ -4235,7 +4455,7 @@ def pyodide_print(s):
                     return;
                 }
 
-                // ── git subcommand completion ──
+                // -- git subcommand completion --
                 if (command === 'git' && !hasSpace && prevTokens.length === 1) {
                     const subs = ['status','add','commit','push','pull'];
                     const hits = subs.filter(s => s.startsWith(partial));
@@ -4253,7 +4473,7 @@ def pyodide_print(s):
                     return;
                 }
 
-                // ── File/dir path completion ──
+                // -- File/dir path completion --
                 const needsPath = ['cat','ls','cd','java','python','python3','javac','gcc','g++'].includes(command) ||
                                   (command === 'git' && prevTokens[1] === 'add');
                 if (!needsPath) return;
@@ -4337,12 +4557,18 @@ def pyodide_print(s):
             });
         }
 
-        // ── Resize handles ────────────────────────────────────────────────────
+        // -- Resize handles ----------------------------------------------------
         function initResizeHandles() {
             // Sidebar horizontal resize
             const sidebarHandle = document.getElementById('sidebar-resize-handle');
             const sidebar = document.getElementById('ide-sidebar');
             let sResizing = false, sStartX = 0, sStartW = 0;
+
+            // ARIA attributes for keyboard discoverability
+            sidebarHandle.setAttribute('role', 'separator');
+            sidebarHandle.setAttribute('aria-label', 'Sidebar resize handle. Use Arrow Left/Right to resize, Shift for larger steps.');
+            sidebarHandle.setAttribute('aria-orientation', 'vertical');
+            sidebarHandle.setAttribute('tabindex', '0');
 
             sidebarHandle.addEventListener('mousedown', e => {
                 sResizing = true; sStartX = e.clientX; sStartW = sidebar.offsetWidth;
@@ -4351,16 +4577,53 @@ def pyodide_print(s):
                 e.preventDefault();
             });
 
+            // Keyboard resize: Arrow keys (shift = 40px step, plain = 8px step)
+            sidebarHandle.addEventListener('keydown', e => {
+                const step = e.shiftKey ? 40 : 8;
+                const w = sidebar.offsetWidth;
+                if (e.key === 'ArrowRight') {
+                    e.preventDefault();
+                    sidebar.style.width = Math.min(600, w + step) + 'px';
+                    if (ace_editor) ace_editor.resize();
+                } else if (e.key === 'ArrowLeft') {
+                    e.preventDefault();
+                    sidebar.style.width = Math.max(80, w - step) + 'px';
+                    if (ace_editor) ace_editor.resize();
+                }
+            });
+
             // Bottom panel vertical resize
             const bottomHandle = document.getElementById('bottom-resize-handle');
             const bottomPanel  = document.getElementById('ide-bottom-panel');
             let bResizing = false, bStartY = 0, bStartH = 0;
+
+            bottomHandle.setAttribute('role', 'separator');
+            bottomHandle.setAttribute('aria-label', 'Bottom panel resize handle. Use Arrow Up/Down to resize, Shift for larger steps.');
+            bottomHandle.setAttribute('aria-orientation', 'horizontal');
+            bottomHandle.setAttribute('tabindex', '0');
 
             bottomHandle.addEventListener('mousedown', e => {
                 bResizing = true; bStartY = e.clientY; bStartH = bottomPanel.offsetHeight;
                 bottomHandle.classList.add('dragging');
                 document.body.style.cursor = 'row-resize';
                 e.preventDefault();
+            });
+
+            // Keyboard resize for bottom panel
+            bottomHandle.addEventListener('keydown', e => {
+                const step = e.shiftKey ? 40 : 8;
+                const h = bottomPanel.offsetHeight;
+                if (e.key === 'ArrowUp') {
+                    e.preventDefault();
+                    bottomPanel.style.height = Math.min(600, h + step) + 'px';
+                    if (ace_editor) ace_editor.resize();
+                    if (termFitAddon) termFitAddon.fit();
+                } else if (e.key === 'ArrowDown') {
+                    e.preventDefault();
+                    bottomPanel.style.height = Math.max(60, h - step) + 'px';
+                    if (ace_editor) ace_editor.resize();
+                    if (termFitAddon) termFitAddon.fit();
+                }
             });
 
             document.addEventListener('mousemove', e => {
@@ -4383,26 +4646,120 @@ def pyodide_print(s):
             });
         }
 
-        // ── Menu system ───────────────────────────────────────────────────────
+        // -- Menu system -------------------------------------------------------
         function initMenuSystem() {
-            // Close menus on outside click
+            const menubar = document.getElementById('ide-menubar');
+            const menuItems = Array.from(menubar.querySelectorAll('[role="menuitem"][aria-haspopup]'));
+
+            // Roving tabindex helper: only the active top-level item is in tab order
+            const setMenuTabIndex = (activeItem) => {
+                menuItems.forEach(m => m.setAttribute('tabindex', m === activeItem ? '0' : '-1'));
+            };
+
+            // Close all menus and reset aria-expanded
+            const closeAllMenus = () => {
+                menuItems.forEach(m => {
+                    m.classList.remove('open');
+                    m.setAttribute('aria-expanded', 'false');
+                });
+            };
+
+            // Open a specific menu and set aria-expanded
+            const openMenu = (item) => {
+                closeAllMenus();
+                item.classList.add('open');
+                item.setAttribute('aria-expanded', 'true');
+                setMenuTabIndex(item);
+                // Move focus to first item in dropdown
+                const first = item.querySelector('[role="menuitem"]:not([disabled])');
+                if (first) setTimeout(() => first.focus(), 0);
+            };
+
+            // Close on outside click
             document.addEventListener('click', e => {
-                if (!e.target.closest('.menu-item')) {
-                    document.querySelectorAll('.menu-item.open').forEach(m => m.classList.remove('open'));
-                }
+                if (!e.target.closest('.menu-item')) closeAllMenus();
             });
 
             // Toggle menu open/close on click
-            document.querySelectorAll('.menu-item').forEach(item => {
+            menuItems.forEach(item => {
                 item.addEventListener('click', e => {
                     const wasOpen = item.classList.contains('open');
-                    document.querySelectorAll('.menu-item.open').forEach(m => m.classList.remove('open'));
-                    if (!wasOpen) item.classList.add('open');
+                    closeAllMenus();
+                    if (!wasOpen) openMenu(item);
                     e.stopPropagation();
+                });
+
+                // Enter/Space open the menu when the top-level item is focused
+                item.addEventListener('keydown', e => {
+                    if (e.key === 'Enter' || e.key === ' ' || e.key === 'ArrowDown') {
+                        e.preventDefault();
+                        openMenu(item);
+                    } else if (e.key === 'Escape') {
+                        closeAllMenus();
+                        item.focus();
+                    } else if (e.key === 'ArrowRight') {
+                        e.preventDefault();
+                        const idx = menuItems.indexOf(item);
+                        const next = menuItems[(idx + 1) % menuItems.length];
+                        setMenuTabIndex(next);
+                        next.focus();
+                    } else if (e.key === 'ArrowLeft') {
+                        e.preventDefault();
+                        const idx = menuItems.indexOf(item);
+                        const prev = menuItems[(idx - 1 + menuItems.length) % menuItems.length];
+                        setMenuTabIndex(prev);
+                        prev.focus();
+                    }
                 });
             });
 
-            // Keyboard shortcuts
+            // Keyboard navigation within an open dropdown
+            menubar.addEventListener('keydown', e => {
+                const openItem = menubar.querySelector('.menu-item.open');
+                if (!openItem) return;
+                const dropdown = openItem.querySelector('[role="menu"]');
+                if (!dropdown) return;
+                const items = Array.from(dropdown.querySelectorAll('[role="menuitem"]:not([disabled])'));
+                const focused = document.activeElement;
+                const idx = items.indexOf(focused);
+
+                if (e.key === 'ArrowDown') {
+                    e.preventDefault();
+                    items[(idx + 1) % items.length].focus();
+                } else if (e.key === 'ArrowUp') {
+                    e.preventDefault();
+                    items[(idx - 1 + items.length) % items.length].focus();
+                } else if (e.key === 'Home') {
+                    e.preventDefault();
+                    items[0].focus();
+                } else if (e.key === 'End') {
+                    e.preventDefault();
+                    items[items.length - 1].focus();
+                } else if (e.key === 'Escape') {
+                    closeAllMenus();
+                    openItem.focus();
+                } else if (e.key === 'ArrowRight') {
+                    e.preventDefault();
+                    closeAllMenus();
+                    const mIdx = menuItems.indexOf(openItem);
+                    const next = menuItems[(mIdx + 1) % menuItems.length];
+                    next.focus();
+                    openMenu(next);
+                } else if (e.key === 'ArrowLeft') {
+                    e.preventDefault();
+                    closeAllMenus();
+                    const mIdx = menuItems.indexOf(openItem);
+                    const prev = menuItems[(mIdx - 1 + menuItems.length) % menuItems.length];
+                    prev.focus();
+                    openMenu(prev);
+                } else if (e.key === 'Tab') {
+                    // Tab closes the menu and allows natural focus flow
+                    closeAllMenus();
+                    setMenuTabIndex(openItem);
+                }
+            });
+
+            // Global keyboard shortcuts
             document.addEventListener('keydown', e => {
                 if ((e.ctrlKey || e.metaKey) && e.key === 's') { e.preventDefault(); menuSave(); }
                 if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') { e.preventDefault(); if (!runBtn.disabled) runBtn.click(); }
@@ -4413,7 +4770,7 @@ def pyodide_print(s):
             });
         }
 
-        // ── Menu actions ──────────────────────────────────────────────────────
+        // -- Menu actions ------------------------------------------------------
         window.menuNewFile   = () => newBtn.click();
         window.menuNewDir    = () => newDirBtn.click();
         window.menuSave      = () => { if (!saveBtn.disabled) saveActiveTabs(); };
@@ -4457,7 +4814,7 @@ def pyodide_print(s):
 
         window.menuShowInfo = () => switchActivity('info');
 
-        // ── Activity bar switcher ─────────────────────────────────────────────
+        // -- Activity bar switcher ---------------------------------------------
         window.switchActivity = (name) => {
             // Ensure sidebar is visible when switching panels
             const sidebar = document.getElementById('ide-sidebar');
@@ -4466,29 +4823,61 @@ def pyodide_print(s):
                 sidebar.style.display = '';
                 handle.style.display  = '';
             }
-            document.querySelectorAll('.activity-icon').forEach(i => i.classList.remove('active'));
+            document.querySelectorAll('.activity-icon').forEach(i => {
+                i.classList.remove('active');
+                i.setAttribute('aria-pressed', 'false');
+            });
             document.querySelectorAll('.sidebar-panel').forEach(p => p.classList.remove('active'));
             const actEl   = document.getElementById('act-' + name);
             const panelEl = document.getElementById('panel-' + name);
-            if (actEl)   actEl.classList.add('active');
+            if (actEl) {
+                actEl.classList.add('active');
+                actEl.setAttribute('aria-pressed', 'true');
+            }
             if (panelEl) panelEl.classList.add('active');
             // Refresh panels when they become visible
             if (name === 'github') { refreshGhCommitMsg(); updateGhStagingUI(); }
         };
 
-        // ── IDE prompt (replaces browser prompt()) ────────────────────────────
+        // -- IDE prompt (replaces browser prompt()) ----------------------------
         window.idePrompt = function(labelText, defaultVal) {
             return new Promise(resolve => {
-                const dialog = document.getElementById('ide-input-dialog');
-                const label  = document.getElementById('ide-input-label');
-                const field  = document.getElementById('ide-input-field');
+                const dialog        = document.getElementById('ide-input-dialog');
+                const label         = document.getElementById('ide-input-label');
+                const field         = document.getElementById('ide-input-field');
+                const previousFocus = document.activeElement;
+
                 label.textContent = labelText;
                 field.value = defaultVal || '';
                 dialog.classList.add('visible');
-                field.focus();
+                dialog.setAttribute('aria-hidden', 'false');
+                // Slight delay so screen readers announce the dialog after it opens
+                setTimeout(() => field.focus(), 50);
+
+                // -- Focus trap: keep Tab/Shift+Tab inside the dialog ----------
+                const focusableSelectors = 'a[href], button:not([disabled]), input, select, textarea, [tabindex]:not([tabindex="-1"])';
+                const trapFocus = e => {
+                    if (e.key !== 'Tab') return;
+                    const focusable = Array.from(dialog.querySelectorAll(focusableSelectors))
+                                          .filter(el => !el.closest('[hidden]'));
+                    if (!focusable.length) { e.preventDefault(); return; }
+                    const first = focusable[0];
+                    const last  = focusable[focusable.length - 1];
+                    if (e.shiftKey && document.activeElement === first) {
+                        e.preventDefault(); last.focus();
+                    } else if (!e.shiftKey && document.activeElement === last) {
+                        e.preventDefault(); first.focus();
+                    }
+                };
+                dialog.addEventListener('keydown', trapFocus);
+
                 const done = val => {
                     dialog.classList.remove('visible');
+                    dialog.setAttribute('aria-hidden', 'true');
+                    dialog.removeEventListener('keydown', trapFocus);
                     field.removeEventListener('keydown', keyHandler);
+                    // Restore focus to element that triggered the dialog
+                    if (previousFocus && previousFocus.focus) previousFocus.focus();
                     resolve(val);
                 };
                 const keyHandler = e => {
@@ -4500,7 +4889,7 @@ def pyodide_print(s):
             });
         };
 
-        // ── Notification toast ────────────────────────────────────────────────
+        // -- Notification toast ------------------------------------------------
         window.ideNotify = function(message, type) {
             const n = document.getElementById('ide-notification');
             n.textContent = message;
