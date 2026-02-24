@@ -1,4 +1,5 @@
 *.sh
+!localdeploy.sh
 *.log
 _site/**
 .sass-cache/**
