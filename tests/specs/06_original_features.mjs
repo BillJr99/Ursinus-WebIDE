@@ -17,7 +17,17 @@ export default async function run() {
     });
 
     await step('Logout clears user, disables Run, removes localStorage userId', async () => {
-        await withPage(PAGE, async (page) => {
+        // Don't use the harness's auto-login init script — it re-fires on
+        // every new document (including the submit iframe load) and would
+        // clobber removeItem()'s effect. Set userId once via evaluate, then
+        // reload, then click logout.
+        await withPage(PAGE, { login: false }, async (page) => {
+            await page.evaluate(() => localStorage.setItem('userId', 'logouttest'));
+            await page.reload({ waitUntil: 'load' });
+            await page.waitForTimeout(2500);
+            // Confirm precondition — Run should be enabled after the reload
+            expect.equal(await page.locator('#run').isDisabled(), false,
+                'Run should be enabled after pre-login reload');
             await page.locator('#logout').click();
             await page.waitForTimeout(500);
             const stored = await page.evaluate(() => localStorage.getItem('userId'));
@@ -134,8 +144,14 @@ export default async function run() {
     await step('Existing keyboard shortcuts still work (Ctrl+B toggles sidebar)', async () => {
         await withPage(PAGE, async (page) => {
             await page.evaluate(() => document.activeElement && document.activeElement.blur());
-            await page.keyboard.press('Control+B');
-            await page.waitForTimeout(120);
+            // Use the down/press/up form so we get a real chord with key="b"
+            // (Playwright's "Control+B" can produce key="B" + Shift implicit
+            // depending on the build, which doesn't match the handler's
+            // e.key === 'b' check).
+            await page.keyboard.down('Control');
+            await page.keyboard.press('b');
+            await page.keyboard.up('Control');
+            await page.waitForTimeout(150);
             const hidden = await page.locator('#ide-sidebar').evaluate(el => el.style.display);
             expect.equal(hidden, 'none', 'Ctrl+B should have hidden the sidebar');
         });
