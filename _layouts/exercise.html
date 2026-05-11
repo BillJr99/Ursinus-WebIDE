@@ -1377,13 +1377,172 @@ def pyodide_print(s):
         };
 
         // -- Console output ----------------------------------------------------
+        // Plain-English explanations for common errors across the languages this
+        // IDE supports. Patterns are matched in order; the first match wins.
+        // Keep entries terse — the goal is to nudge a stuck student, not to
+        // replace the official docs.
+        const WEBIDE_ERROR_DICT = [
+            // ---- Python (Brython + Pyodide) ----
+            { lang: 'python', re: /NameError: name '([^']+)' is not defined/,
+              explain: (m) => `Python doesn't recognize "${m[1]}". Either you misspelled it, you forgot to define it before using it, or you forgot to import it (e.g. \`import math\`).` },
+            { lang: 'python', re: /IndentationError: (.*)/,
+              explain: (m) => `Python is strict about indentation. ${m[1]}. Make sure each block (after \`if\`, \`for\`, \`def\`, etc.) is indented by the same number of spaces — most editors use 4.` },
+            { lang: 'python', re: /TabError/,
+              explain: () => `You mixed tabs and spaces for indentation. Pick one and stick with it — most Python style guides recommend 4 spaces.` },
+            { lang: 'python', re: /TypeError: ([^(]+) takes (\d+) positional argument/,
+              explain: (m) => `You're calling \`${m[1].trim()}\` with the wrong number of arguments. It expects ${m[2]}.` },
+            { lang: 'python', re: /TypeError: unsupported operand type\(s\) for ([^:]+): '([^']+)' and '([^']+)'/,
+              explain: (m) => `You tried to use \`${m[1].trim()}\` between a ${m[2]} and a ${m[3]}. Convert one of them first — for example \`int("5")\` or \`str(5)\`.` },
+            { lang: 'python', re: /IndexError: list index out of range/,
+              explain: () => `You asked for an item beyond the end of a list. Lists are 0-indexed: a list of length 5 has valid indices 0..4. Print \`len(your_list)\` to check.` },
+            { lang: 'python', re: /KeyError: '?([^'"]+)'?/,
+              explain: (m) => `The dictionary doesn't have a key called \`${m[1]}\`. Check the spelling, or use \`my_dict.get(${m[1]})\` to get \`None\` instead of an error when the key is missing.` },
+            { lang: 'python', re: /ZeroDivisionError/,
+              explain: () => `You divided by zero. Add a check like \`if denominator != 0:\` before the division.` },
+            { lang: 'python', re: /SyntaxError: (.*)/,
+              explain: (m) => `Python can't parse your code. ${m[1]}. The error usually points one character AFTER the real problem — check for a missing \`)\`, \`:\`, or quote on the previous line.` },
+            { lang: 'python', re: /AttributeError: '([^']+)' object has no attribute '([^']+)'/,
+              explain: (m) => `A ${m[1]} doesn't have a method or property called \`${m[2]}\`. Did you mean a different method? Use \`dir(your_object)\` to see what's available.` },
+            { lang: 'python', re: /RecursionError|maximum recursion depth/,
+              explain: () => `Your function called itself too many times without reaching a base case. Make sure your recursion has an \`if\` that returns without recursing.` },
+            // ---- JavaScript ----
+            { lang: 'javascript', re: /(?:Reference|ReferenceError):? ([^ ]+) is not defined/,
+              explain: (m) => `JavaScript doesn't recognize "${m[1]}". Either you misspelled it or you forgot to declare it with \`let\`, \`const\`, or \`var\`.` },
+            { lang: 'javascript', re: /TypeError: Cannot read propert(?:y|ies) of (undefined|null) \(reading '([^']+)'\)/,
+              explain: (m) => `You tried to read \`.${m[2]}\` on a value that is ${m[1]}. Check that the object exists before using it — e.g. \`if (obj && obj.${m[2]})\`.` },
+            { lang: 'javascript', re: /TypeError: ([^ ]+) is not a function/,
+              explain: (m) => `\`${m[1]}\` is not a function. Either it's the wrong type (maybe an object or undefined), or you misspelled the function name.` },
+            { lang: 'javascript', re: /SyntaxError: (.*)/,
+              explain: (m) => `JavaScript can't parse your code. ${m[1]}. Check for a missing \`}\`, \`)\`, or \`;\`. The error often points one line AFTER the real problem.` },
+            { lang: 'javascript', re: /Maximum call stack size exceeded/,
+              explain: () => `Your function called itself too many times. Make sure recursive functions have a base case that returns without recursing.` },
+            // ---- Java (Processing) ----
+            { lang: 'java', re: /NullPointerException/,
+              explain: () => `You tried to use an object that hasn't been created yet (it's \`null\`). Make sure you call \`new Something()\` and assigned it to your variable before using it.` },
+            { lang: 'java', re: /ArrayIndexOutOfBoundsException:?\s*(-?\d+)?/,
+              explain: (m) => `You asked for index ${m[1] || '?'} of an array, but that's outside the valid range. Java arrays are 0-indexed: \`arr[0]\` to \`arr[arr.length - 1]\`.` },
+            { lang: 'java', re: /cannot find symbol[\s\S]*?symbol:\s*(.+)/,
+              explain: (m) => `The compiler doesn't recognize \`${m[1].trim()}\`. Check spelling, capitalization, and that you've declared it (or imported its class).` },
+            { lang: 'java', re: /\bclass [A-Z]\w* is public, should be declared in a file/,
+              explain: () => `In Java the public class must match the file name. Either rename the class or rename the file.` },
+            { lang: 'java', re: /incompatible types/,
+              explain: () => `You're assigning a value of one type to a variable of another. Java requires explicit conversion — e.g. \`Integer.parseInt("5")\` or \`(int) 3.7\`.` },
+            // ---- C / C++ ----
+            { lang: 'cpp', re: /segmentation fault|SIGSEGV/i,
+              explain: () => `Your program tried to access memory it doesn't own. Common causes: dereferencing a null/uninitialized pointer, going past the end of an array, or recursing too deep.` },
+            { lang: 'cpp', re: /undefined reference to '([^']+)'/,
+              explain: (m) => `The linker can't find \`${m[1]}\`. Did you spell it the same way it was declared? If it's from a library, you may need to include the right header or compile its .cpp file.` },
+            { lang: 'cpp', re: /'([^']+)' was not declared in this scope/,
+              explain: (m) => `\`${m[1]}\` isn't visible at the point where you used it. Either you misspelled it, you forgot to include the header that declares it, or you defined it inside a different function or namespace.` },
+            { lang: 'cpp', re: /expected '([^']+)' before '([^']+)'/,
+              explain: (m) => `The compiler expected \`${m[1]}\` before \`${m[2]}\`. Often you missed a \`;\` or \`)\` on the previous line.` },
+            // ---- SQL ----
+            { lang: 'sql', re: /no such (table|column): (\w+)/i,
+              explain: (m) => `SQL doesn't see a ${m[1]} called \`${m[2]}\`. Check the spelling and the schema — column and table names are case-sensitive in some setups.` },
+            { lang: 'sql', re: /syntax error/i,
+              explain: () => `SQL can't parse your query. Common causes: missing comma between columns, missing quotes around strings, unmatched parentheses, or a reserved word used as an identifier.` },
+            // ---- Generic catch-alls (last-resort) ----
+            { lang: '*', re: /Permission denied/,
+              explain: () => `The browser blocked something — usually localStorage being full, IndexedDB locked by another tab, or a CORS issue. Try closing other browser tabs of this exercise.` },
+            { lang: '*', re: /Failed to fetch/,
+              explain: () => `A network request failed. Check your internet connection. If you're offline, the exercise should still work for everything except submission.` },
+        ];
+
+        const _PAGE_LANG = '{{ page.language | default: "" }}';
+        const _LANG_FAMILY = (() => {
+            // Map page.language to dictionary 'lang' codes
+            if (_PAGE_LANG === 'python' || _PAGE_LANG === 'pyodide') return 'python';
+            if (_PAGE_LANG === 'cpp') return 'cpp';
+            if (_PAGE_LANG === 'java' || _PAGE_LANG === 'graphics_view' || _PAGE_LANG === 'graphics_shader') return 'java';
+            if (_PAGE_LANG === 'javascript') return 'javascript';
+            if (_PAGE_LANG === 'sql') return 'sql';
+            return '*';
+        })();
+
+        function findErrorExplanation(message) {
+            // Try language-specific patterns first, then generic ones.
+            const ordered = WEBIDE_ERROR_DICT
+                .filter(e => e.lang === _LANG_FAMILY)
+                .concat(WEBIDE_ERROR_DICT.filter(e => e.lang === '*'));
+            for (const entry of ordered) {
+                const m = message.match(entry.re);
+                if (m) {
+                    try { return entry.explain(m); }
+                    catch (e) { return null; }
+                }
+            }
+            return null;
+        }
+
+        // Heuristic: does this output line look like an error / traceback / exception?
+        function looksLikeError(message) {
+            if (!message) return false;
+            return /\b(?:Error|Exception|Traceback|SyntaxError|TypeError|NameError|undefined reference|segmentation fault|SIGSEGV|cannot find symbol|no such (?:table|column))\b/i.test(message);
+        }
+
         function logToConsole(message) {
             const newLine = document.createElement('div');
             newLine.textContent = message + '\n';
+            // For likely error lines, attach an inline "What does this mean?" affordance
+            // that expands a plain-English explanation drawn from WEBIDE_ERROR_DICT.
+            if (looksLikeError(String(message))) {
+                const explanation = findErrorExplanation(String(message));
+                if (explanation) {
+                    newLine.style.borderLeft = '3px solid #f48771';
+                    newLine.style.paddingLeft = '6px';
+                    newLine.style.margin = '4px 0';
+                    const btn = document.createElement('button');
+                    btn.type = 'button';
+                    btn.textContent = '? What does this mean?';
+                    btn.className = 'webide-explain-btn';
+                    btn.setAttribute('aria-expanded', 'false');
+                    btn.style.cssText = 'display:inline-block; margin-left:8px; margin-top:2px; padding:1px 8px; background:#3a3a3a; color:#9cdcfe; border:1px solid #555; border-radius:3px; cursor:pointer; font-size:11px; font-family:inherit;';
+                    const expl = document.createElement('div');
+                    expl.className = 'webide-explain-body';
+                    expl.style.cssText = 'display:none; margin:4px 0 4px 6px; padding:6px 8px; background:#1e1e1e; border-left:3px solid #75beff; color:#cccccc; font-size:12px; line-height:1.5; white-space:normal;';
+                    expl.textContent = explanation;
+                    btn.addEventListener('click', () => {
+                        const open = expl.style.display !== 'none';
+                        expl.style.display = open ? 'none' : 'block';
+                        btn.setAttribute('aria-expanded', open ? 'false' : 'true');
+                        btn.textContent = open ? '? What does this mean?' : '✕ Hide explanation';
+                    });
+                    newLine.appendChild(btn);
+                    newLine.appendChild(expl);
+                    // Also surface in the Suggestions tab for discoverability
+                    try { addExplanationToSuggestions(String(message), explanation); } catch (e) {}
+                }
+            }
             consoleOutput.appendChild(newLine);
             newLine.scrollIntoView({ behavior: "smooth" });
             // If terminal panel is not active, auto-switch to output
             switchBottomTab('output');
+        }
+
+        // Mirror error explanations into the existing Suggestions panel so
+        // students who closed the output without reading it can still find help.
+        function addExplanationToSuggestions(errorLine, explanation) {
+            const list = document.getElementById('suggestions-list');
+            if (!list) return;
+            // Clear placeholder text on first real entry
+            const placeholder = list.querySelector('div[style*="text-align"]');
+            if (placeholder) placeholder.remove();
+            const item = document.createElement('button');
+            item.type = 'button';
+            item.className = 'suggestion-item error';
+            item.innerHTML = `
+                <span class="suggestion-icon" aria-hidden="true">!</span>
+                <span class="suggestion-content">
+                  <span class="suggestion-message"></span>
+                  <span class="suggestion-hint"></span>
+                </span>`;
+            item.querySelector('.suggestion-message').textContent = errorLine.split('\n')[0].slice(0, 200);
+            item.querySelector('.suggestion-hint').textContent = explanation;
+            list.appendChild(item);
+            // Update count badge
+            const count = list.querySelectorAll('.suggestion-item').length;
+            const badge = document.getElementById('suggestions-count');
+            if (badge) badge.textContent = count > 0 ? '(' + count + ')' : '';
         }
 
         logToConsole("Console output...");
@@ -2801,12 +2960,70 @@ def pyodide_print(s):
         });
 
         let _runGuard = false;
+
+        // -- Infinite-loop watchdog ------------------------------------------
+        // Many student programs accidentally enter an infinite loop. Most
+        // languages here run on the main thread (Brython exec, JS eval,
+        // Processing.js), so we cannot truly KILL the loop without the user
+        // reloading. But we can warn them that something is wrong instead of
+        // letting the tab look frozen with no explanation.
+        const RUN_WATCHDOG_SOFT_MS  = 5000;   // first warning
+        const RUN_WATCHDOG_HARD_MS  = 15000;  // strong warning + reload prompt
+        let _runWatchdogTimers = [];
+        let _runningBanner = null;
+        function clearRunWatchdog() {
+            _runWatchdogTimers.forEach(t => clearTimeout(t));
+            _runWatchdogTimers = [];
+            if (_runningBanner) { _runningBanner.remove(); _runningBanner = null; }
+        }
+        function startRunWatchdog() {
+            clearRunWatchdog();
+            // Immediate visible banner — works even if the runtime synchronously
+            // freezes the main thread. The banner is removed once runCode settles.
+            try {
+                _runningBanner = document.createElement('div');
+                _runningBanner.style.cssText = 'border-left:3px solid #75beff; padding:6px 8px; margin:6px 0; background:#1a2733; color:#9cdcfe; font-size:12px;';
+                _runningBanner.innerHTML = '<strong>▶ Running…</strong> If the page freezes for more than ~10 seconds, your code may have an infinite loop. Your file work is saved automatically — refresh the tab (Ctrl/Cmd+R) to recover.';
+                consoleOutput.appendChild(_runningBanner);
+                _runningBanner.scrollIntoView({ behavior: 'smooth' });
+            } catch (e) {}
+            const softT = setTimeout(() => {
+                if (typeof ideNotify === 'function') {
+                    ideNotify('Code is still running after 5 seconds. If your tab feels frozen it may be an infinite loop — your work is auto-saved, you can refresh to recover.', 'error');
+                }
+            }, RUN_WATCHDOG_SOFT_MS);
+            const hardT = setTimeout(() => {
+                // After the hard threshold, also write a permanent message into
+                // the console so the warning is visible after the toast fades.
+                try {
+                    const div = document.createElement('div');
+                    div.style.cssText = 'border-left:3px solid #f48771; padding:6px 8px; margin:6px 0; background:#2d1f1f; color:#f48771;';
+                    div.innerHTML = '<strong>⚠ Infinite loop suspected.</strong> Code has been running for 15+ seconds. ';
+                    const reloadBtn = document.createElement('button');
+                    reloadBtn.type = 'button';
+                    reloadBtn.textContent = 'Reload page';
+                    reloadBtn.style.cssText = 'margin-left:8px; padding:2px 10px; background:#f48771; color:#000; border:none; border-radius:3px; cursor:pointer; font-size:11px;';
+                    reloadBtn.addEventListener('click', () => location.reload());
+                    div.appendChild(reloadBtn);
+                    consoleOutput.appendChild(div);
+                    div.scrollIntoView({ behavior: 'smooth' });
+                    switchBottomTab('output');
+                } catch (e) {}
+            }, RUN_WATCHDOG_HARD_MS);
+            _runWatchdogTimers.push(softT, hardT);
+        }
+
         runBtn.addEventListener('click', () => {
             if (_runGuard) return;
             _runGuard = true;
             setTimeout(() => { _runGuard = false; }, 1000);
             saveActiveTabs();
-            runCode();  // runCode handles compile-if-needed, logging, and tab switching
+            startRunWatchdog();
+            // runCode is async; clear the watchdog when it settles, success or fail.
+            // Wrapped in Promise.resolve so non-Promise return values don't crash.
+            Promise.resolve()
+                .then(() => runCode())
+                .finally(() => clearRunWatchdog());
         });
 
         function saveActiveTabs() {
