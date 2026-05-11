@@ -560,6 +560,9 @@ body[data-theme="light"] .calltape-fname { color: #795e26; }
 .calltape-return { color: #b5cea8; }
 body[data-theme="light"] .calltape-return { color: #098658; }
 .calltape-throw { color: #f48771; }
+.calltape-unclosed { color: #cca700; font-style: italic; margin-left: 6px; font-size: 11px; }
+body[data-theme="light"] .calltape-unclosed { color: #a36b00; }
+body[data-theme="hc"] .calltape-unclosed { color: #ffd700; }
 .calltape-toggle {
     display: inline-block; width: 12px; cursor: pointer; user-select: none;
     color: #888; margin-right: 2px;
@@ -1301,9 +1304,11 @@ body[data-theme="hc"] .shortcut-keys kbd { background: #000; color: #ffd700; bor
             <div id="inspector-trace" class="inspector-view" role="tabpanel" aria-labelledby="insub-trace" hidden>
               <div class="inspector-empty">
                 Run your code to see the function-call tape.<br>
-                <span style="font-size:11px;">For Python, calls are recorded automatically. For JavaScript, wrap calls with
-                <code class="code-inline">webideTrace.call('name', args)</code> /
-                <code class="code-inline">webideTrace.return(value)</code>.</span>
+                <span style="font-size:11px;">For Python, calls are recorded automatically. For JavaScript, the simple form is
+                <code class="code-inline">webideTrace.tap('name', arg1)</code> (each tap shows as a sibling).
+                For nested/recursive scopes, use
+                <code class="code-inline">webideTrace.call('name', arg1)</code> /
+                <code class="code-inline">webideTrace.return(value)</code> in matching pairs.</span>
               </div>
             </div>
           </div>
@@ -3493,12 +3498,39 @@ _webide_sys.settrace(None)
             steps: null,       // [ { lineno, function, locals } ]
             callTree: null,    // root call node
             currentStep: 0,
+            hasRun: false,     // flipped to true the first time _afterRun fires
             _lineMarkerId: null,
         };
         let _stepRunRequested = false;
 
         // Public API students can use to record call-stack entries from JS.
-        // Wrap a recursive call:  webideTrace.call('fact', n);  ...; return webideTrace.return(result);
+        //
+        //   webideTrace.tap('name', arg1, arg2);
+        //       Record a single sibling entry in the call tape. Use this for
+        //       simple logging — no push/pop, no nesting.
+        //
+        //   webideTrace.call('fact', n);  ...;  return webideTrace.return(result);
+        //       Record a scope. .call opens a frame, .return closes it. Use
+        //       this when you want to see recursion or nested calls. EVERY
+        //       .call must have a matching .return — otherwise later .call()s
+        //       end up appearing nested inside it. (The renderer adds a
+        //       "(no return)" marker on unclosed frames to make this obvious.)
+        function _webideFormatArgs(args) {
+            return Array.prototype.map.call(args, a => {
+                try {
+                    if (typeof a === 'string') return JSON.stringify(a).slice(0, 40);
+                    if (typeof a === 'object' && a !== null) return JSON.stringify(a).slice(0, 40);
+                    return String(a);
+                } catch (e) { return '?'; }
+            }).join(', ');
+        }
+        function _webideFormatReturn(value) {
+            try {
+                if (typeof value === 'string') return JSON.stringify(value).slice(0, 80);
+                if (typeof value === 'object' && value !== null) return JSON.stringify(value).slice(0, 80);
+                return String(value);
+            } catch (e) { return '?'; }
+        }
         window.webideTrace = {
             _root: { name: '<top>', args: '', children: [], returnValue: null, exception: null },
             _stack: null,
@@ -3506,28 +3538,30 @@ _webide_sys.settrace(None)
                 this._root = { name: '<top>', args: '', children: [], returnValue: null, exception: null };
                 this._stack = [this._root];
             },
+            // Sibling logger — no stack manipulation. Best default for
+            // "I just want to see when this function ran".
+            tap: function(name) {
+                if (!this._stack) this._reset();
+                const argStr = _webideFormatArgs(Array.prototype.slice.call(arguments, 1));
+                const node = {
+                    name: String(name), args: argStr, children: [],
+                    returnValue: null, exception: null, isTap: true,
+                };
+                this._stack[this._stack.length - 1].children.push(node);
+            },
+            // Scope open — pushes a new frame. Must be paired with .return().
             call: function(name) {
                 if (!this._stack) this._reset();
-                const args = Array.prototype.slice.call(arguments, 1);
-                const argStr = args.map(a => {
-                    try {
-                        if (typeof a === 'string') return JSON.stringify(a).slice(0, 40);
-                        if (typeof a === 'object' && a !== null) return JSON.stringify(a).slice(0, 40);
-                        return String(a);
-                    } catch (e) { return '?'; }
-                }).join(', ');
+                const argStr = _webideFormatArgs(Array.prototype.slice.call(arguments, 1));
                 const node = { name: String(name), args: argStr, children: [], returnValue: null, exception: null };
                 this._stack[this._stack.length - 1].children.push(node);
                 this._stack.push(node);
             },
+            // Scope close — pops the topmost frame and records the return.
             return: function(value) {
                 if (!this._stack || this._stack.length <= 1) return value;
                 const node = this._stack.pop();
-                try {
-                    if (typeof value === 'string') node.returnValue = JSON.stringify(value).slice(0, 80);
-                    else if (typeof value === 'object' && value !== null) node.returnValue = JSON.stringify(value).slice(0, 80);
-                    else node.returnValue = String(value);
-                } catch (e) {}
+                node.returnValue = _webideFormatReturn(value);
                 return value;
             }
         };
@@ -3584,11 +3618,15 @@ _webide_sys.settrace(None)
                 window._webide_orig_run_python = null;
             }
             _stepRunRequested = false;
+            _inspectorState.hasRun = true;
             refreshInspectorFromRun();
         }
 
         function refreshInspectorFromRun() {
-            // Variables: prefer Python's __webide_vars, else JS-side diff
+            // Variables: prefer Python's __webide_vars, else JS-side diff.
+            // The JS diff is only meaningful for JavaScript exercises — on
+            // Java (Processing.js) or Graphics pages it would surface
+            // unhelpful runtime internals like $P, so skip it there.
             let vars = null;
             if (window.__webide_vars && typeof window.__webide_vars === 'object') {
                 vars = {};
@@ -3596,7 +3634,7 @@ _webide_sys.settrace(None)
                     const v = window.__webide_vars[k];
                     vars[k] = (v && typeof v === 'object' && 'type' in v) ? v : { type: typeof v, value: String(v) };
                 }
-            } else {
+            } else if (_PAGE_LANG === 'javascript') {
                 vars = snapshotJsGlobalsAfter();
             }
             _inspectorState.vars = vars;
@@ -3658,7 +3696,16 @@ _webide_sys.settrace(None)
             if (!view) return;
             const vars = _inspectorState.vars;
             if (!vars || Object.keys(vars).length === 0) {
-                view.innerHTML = '<div class="inspector-empty">No variables to show. Run your code first.</div>';
+                let msg;
+                if (!_inspectorState.hasRun) {
+                    msg = 'Run your code to inspect variables.';
+                } else if (_LANG_FAMILY === 'python' || _LANG_FAMILY === 'javascript') {
+                    msg = 'No top-level variables were captured this run. '
+                        + '(Assignments inside functions are local to those functions and don\'t show here.)';
+                } else {
+                    msg = 'Variable inspection is currently supported for Python and JavaScript exercises only.';
+                }
+                view.innerHTML = '<div class="inspector-empty">' + msg + '</div>';
                 return;
             }
             view.innerHTML = '';
@@ -3774,21 +3821,38 @@ _webide_sys.settrace(None)
             if (!tree || !tree.children || tree.children.length === 0) {
                 const hint = (_LANG_FAMILY === 'python')
                     ? 'Use <strong>Step Run</strong> to capture function calls.'
-                    : 'Wrap recursive calls with <code class="code-inline">webideTrace.call(\'fname\', arg1, arg2)</code> and <code class="code-inline">return webideTrace.return(result)</code> to record them.';
+                    : 'For simple sibling logging, call '
+                        + '<code class="code-inline">webideTrace.tap(\'fname\', arg1)</code>. '
+                        + 'For nested/recursive scopes, wrap calls with '
+                        + '<code class="code-inline">webideTrace.call(\'fname\', arg1)</code> at entry and '
+                        + '<code class="code-inline">return webideTrace.return(result)</code> at every exit.';
                 view.innerHTML = '<div class="inspector-empty">No call tape recorded.<br>' + hint + '</div>';
                 return;
             }
             view.innerHTML = '';
-            let totalCalls = 0, maxDepth = 0;
+            // Count calls, max depth, and unclosed call() frames so we can warn
+            let totalCalls = 0, maxDepth = 0, unclosed = 0;
             const count = (node, depth) => {
                 totalCalls++;
                 if (depth > maxDepth) maxDepth = depth;
+                // A node is "unclosed" if it was created by .call() (not .tap()),
+                // has no recorded return, has no exception, and yet has children
+                // — that means another call() was issued before the matching
+                // return(). True leaves with no children and no return are
+                // ambiguous (could be in-progress or just never called .return),
+                // but tap() nodes explicitly set isTap and are excluded here.
+                if (!node.isTap && node.returnValue == null && !node.exception
+                        && node.children && node.children.length > 0) {
+                    unclosed++;
+                }
                 for (const c of (node.children || [])) count(c, depth + 1);
             };
             for (const c of tree.children) count(c, 1);
             const summary = document.createElement('div');
             summary.className = 'calltape-summary';
-            summary.textContent = totalCalls + ' call' + (totalCalls === 1 ? '' : 's') + ', max depth ' + maxDepth;
+            summary.textContent = totalCalls + ' call' + (totalCalls === 1 ? '' : 's')
+                + ', max depth ' + maxDepth
+                + (unclosed > 0 ? '  ·  ' + unclosed + ' unclosed (missing .return)' : '');
             view.appendChild(summary);
 
             const root = document.createElement('div');
@@ -3823,6 +3887,14 @@ _webide_sys.settrace(None)
                     ret.textContent = node.returnValue;
                     line.appendChild(arrow);
                     line.appendChild(ret);
+                } else if (!node.isTap && node.returnValue == null && hasKids) {
+                    // call() that never .return()'d — flag it so the user
+                    // knows the visible nesting under it is an artifact of
+                    // the missing return, not real recursion.
+                    const warn = document.createElement('span');
+                    warn.className = 'calltape-unclosed';
+                    warn.textContent = '  (no .return — children may be misnested)';
+                    line.appendChild(warn);
                 }
                 wrap.appendChild(line);
                 if (hasKids) {

@@ -54,7 +54,10 @@ export default async function run() {
                 const ed = ace.edit('editor-container');
                 ed.setValue('def fact(n):\n    return 1 if n <= 1 else n * fact(n-1)\nresult = fact(4)\n', -1);
             });
-            // Activate Step Run mode and click Run
+            // The Step Run button lives inside the Inspector panel; that
+            // panel is hidden by default, so make it visible first.
+            await page.evaluate(() => { switchBottomTab('inspector'); });
+            await page.waitForTimeout(150);
             const stepBtn = page.locator('#inspector-step-run');
             await stepBtn.click();
             // Wait for Pyodide to finish executing (it can take 60 s+)
@@ -120,6 +123,58 @@ export default async function run() {
             let depth = 0, n = tree.children[0];
             while (n.children && n.children.length) { depth++; n = n.children[0]; }
             expect.equal(depth, 3, `depth ${depth}, want 3`);
+        });
+    });
+
+    await step('JavaScript: webideTrace.tap records SIBLINGS (no nesting)', async () => {
+        await withPage('/Modules/Javascript/MinIndex.html', async (page) => {
+            await page.waitForFunction(() => !!window.webideTrace);
+            const tree = await page.evaluate(() => {
+                window.webideTrace._reset();
+                window.webideTrace.tap('test');
+                window.webideTrace.tap('test');
+                window.webideTrace.tap('test');
+                return JSON.parse(JSON.stringify(window.webideTrace._root));
+            });
+            expect.equal(tree.children.length, 3, `expected 3 sibling taps, got ${tree.children.length}`);
+            // Each tap should be a leaf (no children) — that's how we
+            // distinguish sibling logs from a recursive call chain.
+            for (const c of tree.children) {
+                expect.equal(c.children.length, 0, `tap should be a leaf, got ${c.children.length} kids`);
+                expect.equal(c.isTap, true, `tap should set isTap=true`);
+            }
+        });
+    });
+
+    await step('JavaScript: unclosed call() flagged in render summary', async () => {
+        await withPage('/Modules/Javascript/MinIndex.html', async (page) => {
+            await page.waitForFunction(() => !!window.webideTrace);
+            await page.evaluate(() => {
+                window.webideTrace._reset();
+                window.webideTrace.call('test');
+                window.webideTrace.call('test');
+                window.webideTrace.call('test');
+                window.refreshInspectorFromRun && window.refreshInspectorFromRun();
+                switchBottomTab('inspector');
+                switchInspectorView('trace');
+            });
+            await page.waitForTimeout(150);
+            const summary = await page.locator('.calltape-summary').textContent();
+            expect.matches(summary, /unclosed/i, `summary should warn about unclosed: "${summary}"`);
+            const warnings = await page.locator('.calltape-unclosed').count();
+            expect.greater(warnings, 0, `expected at least one .calltape-unclosed marker, got ${warnings}`);
+        });
+    });
+
+    await step('Variables empty-state mentions language after Run on a non-Python/JS page', async () => {
+        await withPage('/Modules/IDE/Exercise.html', { waitMs: 4000 }, async (page) => {
+            await page.waitForFunction(() => !document.getElementById('run').disabled, { timeout: 20000 });
+            await page.locator('#run').click();
+            await page.waitForTimeout(7000);  // Java/Processing.js takes a moment
+            await page.evaluate(() => { switchBottomTab('inspector'); switchInspectorView('vars'); });
+            const msg = await page.locator('#inspector-vars .inspector-empty').textContent();
+            expect.matches(msg, /Python and JavaScript/i,
+                `expected language-aware message, got "${msg.trim()}"`);
         });
     });
 
