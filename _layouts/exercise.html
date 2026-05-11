@@ -1523,14 +1523,17 @@ def _webide_tracer(frame, event, arg):
         # Pyodide's pyodide.runPython is itself implemented in Python — it
         # parses, compiles, and AST-walks the student source via eval_code /
         # generate_tokens / deepcopy / iter_fields / etc. Without a filter,
-        # settrace records all of THAT internal machinery and the call tape
-        # fills with hundreds of iter_child_nodes/_make/deepcopy frames before
-        # the student code ever runs. Skip any frame whose source isn't the
-        # runPython input (pyodide compiles student code with co_filename
-        # '&lt;exec&gt;'; everything else has a real /lib/python path).
+        # settrace records all of THAT internal machinery and the tape fills
+        # with hundreds of iter_child_nodes/_make/deepcopy frames before the
+        # student code ever runs. The runPython call site tags student
+        # source with a unique co_filename ('&lt;webide-student&gt;') so we can
+        # accept ONLY those frames here and skip everything else (returning
+        # None from a global trace function tells CPython not to install a
+        # local tracer for that frame, but child frames still pass through
+        # this global tracer — so we filter each one independently).
         co_fname = frame.f_code.co_filename or ''
-        if co_fname not in ('&lt;exec&gt;', '&lt;string&gt;', '&lt;module&gt;'):
-            return None   # don't trace this frame OR its children
+        if co_fname != '&lt;webide-student&gt;':
+            return None
         fname = frame.f_code.co_name
         lineno = frame.f_lineno
         if event == 'line' and len(_webide_steps) &lt; _webide_STEP_LIMIT:
@@ -4937,7 +4940,16 @@ _webide_sys.settrace(None)
                         pyodide.runPython(prologue);
                     } catch (e) { console.error('Step prologue failed:', e); }
                 }
-                pyodide.runPython(student_code);
+                // When stepping, give the student source a unique co_filename
+                // so the tracer can distinguish student frames from Pyodide's
+                // own internal compile()/eval_code()/AST machinery (which
+                // also uses generic filenames like <exec>). The filter in
+                // pyodideStepPrologue keys off this exact string.
+                if (_webideStepMode) {
+                    pyodide.runPython(student_code, { filename: '<webide-student>' });
+                } else {
+                    pyodide.runPython(student_code);
+                }
                 if (_webideStepMode) {
                     try {
                         pyodide.runPython(document.getElementById('pyodideStepEpilogue').textContent);
