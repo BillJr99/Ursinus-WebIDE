@@ -459,6 +459,279 @@ button:focus, input:focus, select:focus, .tab:focus {
     border-radius: 3px; border: 1px solid #3a3a3a;
 }
 
+/* ============================================================
+   PREFERENCES — Themes, font size, reading mode (dyslexia-friendly)
+   Driven by data-attributes on <body> set by applyPrefs() in JS.
+   localStorage key: 'webide.prefs' (JSON).
+   ============================================================ */
+
+/* Light theme — overrides the dark surface colors.
+   Targeted overrides only; full IDE colors come from inline rules above. */
+body[data-theme="light"] {
+    background: #f5f5f5; color: #222;
+}
+body[data-theme="light"] html,
+body[data-theme="light"] {
+    background: #f5f5f5 !important; color: #222;
+}
+body[data-theme="light"] #vscode-ide,
+body[data-theme="light"] #ide-editor-area,
+body[data-theme="light"] #ide-editor-main,
+body[data-theme="light"] #editor-container,
+body[data-theme="light"] #ide-bottom-panel,
+body[data-theme="light"] #terminal-container,
+body[data-theme="light"] #output-container,
+body[data-theme="light"] #console,
+body[data-theme="light"] #media-area,
+body[data-theme="light"] #submit-view {
+    background: #f5f5f5; color: #222;
+}
+body[data-theme="light"] #ide-titlebar { background: #e6e6e6; border-bottom-color: #c8c8c8; }
+body[data-theme="light"] #ide-tabs-bar,
+body[data-theme="light"] #bottom-tabs-bar { background: #ececec; border-bottom-color: #c8c8c8; }
+body[data-theme="light"] #ide-activity-bar { background: #dddddd; border-right-color: #c8c8c8; }
+body[data-theme="light"] #ide-sidebar { background: #ebebeb; border-right-color: #c8c8c8; }
+body[data-theme="light"] .menu-item,
+body[data-theme="light"] .menu-dropdown-item,
+body[data-theme="light"] .tab,
+body[data-theme="light"] .bottom-tab,
+body[data-theme="light"] .activity-icon { color: #222; }
+body[data-theme="light"] .menu-item:hover,
+body[data-theme="light"] .menu-item.open { background: #cfdcec; }
+body[data-theme="light"] .menu-dropdown { background: #ffffff; border-color: #c8c8c8; box-shadow: 3px 4px 12px rgba(0,0,0,0.18); }
+body[data-theme="light"] .menu-dropdown-item:hover { background: #cfdcec; color: #000; }
+body[data-theme="light"] .tab { background: #ececec; color: #444; border-right-color: #d2d2d2; }
+body[data-theme="light"] .tab.active { background: #ffffff; color: #000; }
+body[data-theme="light"] .bottom-tab.active { color: #000; border-bottom-color: #007acc; }
+body[data-theme="light"] .sidebar-header { color: #444; }
+body[data-theme="light"] .sidebar-form input[type="text"],
+body[data-theme="light"] .sidebar-form input[type="password"],
+body[data-theme="light"] .gh-select {
+    background: #fff; color: #222; border-color: #b8b8b8;
+}
+body[data-theme="light"] .info-panel-content,
+body[data-theme="light"] .info-panel-content h2,
+body[data-theme="light"] .info-panel-content h3,
+body[data-theme="light"] .info-panel-content a { color: #222; }
+body[data-theme="light"] .info-panel-content h2 { color: #0066aa; }
+body[data-theme="light"] .info-panel-content h3 { color: #b35900; }
+body[data-theme="light"] .info-panel-content a { color: #006bb3; }
+body[data-theme="light"] .info-divider { border-top-color: #c8c8c8; }
+body[data-theme="light"] #ide-status-bar { background: #007acc; color: #fff; }
+body[data-theme="light"] .action-btn { background: #ffffff; color: #222; border-color: #b8b8b8; }
+body[data-theme="light"] .action-btn:hover:not(:disabled) { background: #e9e9e9; color: #000; }
+body[data-theme="light"] .action-btn.run-btn { background: #2f8c2c; color: #fff; }
+body[data-theme="light"] .action-btn.run-btn:hover:not(:disabled) { background: #3aa336; }
+body[data-theme="light"] #ide-input-box { background: #fff; border-color: #b8b8b8; }
+body[data-theme="light"] #ide-input-label { color: #444; }
+body[data-theme="light"] #ide-input-field { background: #fff; color: #111; }
+body[data-theme="light"] .activity-icon { color: #555; }
+body[data-theme="light"] .activity-icon:hover { color: #111; }
+body[data-theme="light"] .activity-icon.active { color: #000; border-left-color: #007acc; }
+body[data-theme="light"] .suggestion-item { background: #ffffff; }
+body[data-theme="light"] .suggestion-item:hover { background: #ececec; }
+body[data-theme="light"] .suggestion-message { color: #111; }
+/* Editor (ACE) tokens for light theme — overrides monokai colors via CSS */
+body[data-theme="light"] .ace_editor,
+body[data-theme="light"] .ace_editor .ace_gutter,
+body[data-theme="light"] .ace_editor .ace_scroller { background: #ffffff !important; color: #1f1f1f !important; }
+body[data-theme="light"] .ace_editor .ace_gutter { color: #888 !important; border-right: 1px solid #e0e0e0; }
+body[data-theme="light"] .ace_editor .ace_keyword,
+body[data-theme="light"] .ace_editor .ace_storage { color: #af00db !important; }
+body[data-theme="light"] .ace_editor .ace_string { color: #a31515 !important; }
+body[data-theme="light"] .ace_editor .ace_constant,
+body[data-theme="light"] .ace_editor .ace_constant.ace_numeric { color: #098658 !important; }
+body[data-theme="light"] .ace_editor .ace_comment { color: #008000 !important; font-style: italic; }
+body[data-theme="light"] .ace_editor .ace_function,
+body[data-theme="light"] .ace_editor .ace_entity.ace_name.ace_function { color: #795e26 !important; }
+body[data-theme="light"] .ace_editor .ace_variable,
+body[data-theme="light"] .ace_editor .ace_identifier { color: #1f1f1f !important; }
+body[data-theme="light"] .ace_editor .ace_cursor { color: #000 !important; }
+body[data-theme="light"] .ace_editor .ace_marker-layer .ace_selection { background: #add6ff !important; }
+body[data-theme="light"] .ace_editor .ace_active-line { background: #f3f3f3 !important; }
+
+/* High-contrast theme — black/white/yellow for low-vision users (WCAG AAA-ish) */
+body[data-theme="hc"] {
+    background: #000000 !important; color: #ffffff;
+}
+body[data-theme="hc"] #vscode-ide,
+body[data-theme="hc"] #ide-editor-area,
+body[data-theme="hc"] #ide-editor-main,
+body[data-theme="hc"] #editor-container,
+body[data-theme="hc"] #ide-bottom-panel,
+body[data-theme="hc"] #terminal-container,
+body[data-theme="hc"] #output-container,
+body[data-theme="hc"] #console,
+body[data-theme="hc"] #media-area,
+body[data-theme="hc"] #submit-view {
+    background: #000000; color: #ffffff;
+}
+body[data-theme="hc"] #ide-titlebar { background: #000; border-bottom: 2px solid #ffffff; }
+body[data-theme="hc"] #ide-tabs-bar,
+body[data-theme="hc"] #bottom-tabs-bar { background: #000; border-bottom: 2px solid #ffffff; }
+body[data-theme="hc"] #ide-activity-bar { background: #000; border-right: 2px solid #ffffff; }
+body[data-theme="hc"] #ide-sidebar { background: #000; border-right: 2px solid #ffffff; }
+body[data-theme="hc"] .menu-item,
+body[data-theme="hc"] .menu-dropdown-item,
+body[data-theme="hc"] .tab,
+body[data-theme="hc"] .bottom-tab,
+body[data-theme="hc"] .activity-icon,
+body[data-theme="hc"] .info-panel-content,
+body[data-theme="hc"] .sidebar-header { color: #ffffff; }
+body[data-theme="hc"] .menu-item:hover,
+body[data-theme="hc"] .menu-item.open { background: #1a1a1a; outline: 2px solid #ffd700; }
+body[data-theme="hc"] .menu-dropdown { background: #000; border: 2px solid #ffffff; }
+body[data-theme="hc"] .menu-dropdown-item:hover { background: #ffd700; color: #000; }
+body[data-theme="hc"] .tab.active { background: #1a1a1a; color: #ffffff; border-top-color: #ffd700; }
+body[data-theme="hc"] .bottom-tab.active { color: #ffd700; border-bottom-color: #ffd700; }
+body[data-theme="hc"] .action-btn { background: #000; color: #fff; border: 2px solid #fff; }
+body[data-theme="hc"] .action-btn:hover:not(:disabled) { background: #ffd700; color: #000; }
+body[data-theme="hc"] .action-btn.run-btn { background: #ffd700; color: #000; border-color: #ffd700; font-weight: 700; }
+body[data-theme="hc"] .action-btn.run-btn:hover:not(:disabled) { background: #fff; color: #000; }
+body[data-theme="hc"] #ide-status-bar { background: #ffd700; color: #000; }
+body[data-theme="hc"] button:focus, body[data-theme="hc"] input:focus,
+body[data-theme="hc"] select:focus, body[data-theme="hc"] .tab:focus,
+body[data-theme="hc"] [tabindex]:focus, body[data-theme="hc"] a:focus { outline: 3px solid #ffd700 !important; outline-offset: 2px; }
+body[data-theme="hc"] .ace_editor,
+body[data-theme="hc"] .ace_editor .ace_gutter,
+body[data-theme="hc"] .ace_editor .ace_scroller { background: #000 !important; color: #fff !important; }
+body[data-theme="hc"] .ace_editor .ace_gutter { color: #fff !important; border-right: 2px solid #fff; }
+body[data-theme="hc"] .ace_editor .ace_keyword,
+body[data-theme="hc"] .ace_editor .ace_storage { color: #ffd700 !important; font-weight: 700; }
+body[data-theme="hc"] .ace_editor .ace_string { color: #ffffff !important; text-decoration: underline; }
+body[data-theme="hc"] .ace_editor .ace_constant,
+body[data-theme="hc"] .ace_editor .ace_constant.ace_numeric { color: #00ff00 !important; }
+body[data-theme="hc"] .ace_editor .ace_comment { color: #cccccc !important; font-style: italic; }
+body[data-theme="hc"] .ace_editor .ace_function,
+body[data-theme="hc"] .ace_editor .ace_entity.ace_name.ace_function { color: #00ffff !important; }
+body[data-theme="hc"] .ace_editor .ace_cursor { color: #ffd700 !important; border-left: 2px solid #ffd700 !important; }
+body[data-theme="hc"] .ace_editor .ace_marker-layer .ace_selection { background: #ffd700 !important; color: #000; }
+body[data-theme="hc"] .ace_editor .ace_active-line { background: #1a1a1a !important; }
+
+/* Reading mode: dyslexia-friendly typography (no external font required).
+   Uses font-family stack that prefers OpenDyslexic/Atkinson if installed locally,
+   falls back to a clean sans + extra letter spacing + larger line height. */
+body[data-readingmode="dyslexia"],
+body[data-readingmode="dyslexia"] .menu-item,
+body[data-readingmode="dyslexia"] .menu-dropdown-item,
+body[data-readingmode="dyslexia"] .tab,
+body[data-readingmode="dyslexia"] .bottom-tab,
+body[data-readingmode="dyslexia"] .info-panel-content,
+body[data-readingmode="dyslexia"] .sidebar-form,
+body[data-readingmode="dyslexia"] .sidebar-form p,
+body[data-readingmode="dyslexia"] .sidebar-form label,
+body[data-readingmode="dyslexia"] .form-status,
+body[data-readingmode="dyslexia"] .action-btn,
+body[data-readingmode="dyslexia"] .form-btn,
+body[data-readingmode="dyslexia"] #ide-input-label,
+body[data-readingmode="dyslexia"] #ide-status-bar,
+body[data-readingmode="dyslexia"] #ide-title-center {
+    font-family: "OpenDyslexic", "Atkinson Hyperlegible", "Comic Sans MS",
+                 "Verdana", "Tahoma", -apple-system, sans-serif !important;
+    letter-spacing: 0.04em;
+    word-spacing: 0.08em;
+}
+body[data-readingmode="dyslexia"] .info-panel-content,
+body[data-readingmode="dyslexia"] .sidebar-form p { line-height: 1.7; }
+body[data-readingmode="dyslexia"] .ace_editor {
+    font-family: "OpenDyslexic Mono", "Atkinson Hyperlegible Mono",
+                 "Cascadia Code", "Consolas", monospace !important;
+    letter-spacing: 0.02em;
+    line-height: 1.6 !important;
+}
+
+/* Focus-visible enhancement (WCAG 2.4.7) — only show outlines on keyboard focus,
+   not on mouse-click. The existing :focus rule remains as a fallback for older browsers. */
+button:focus-visible, input:focus-visible, select:focus-visible,
+textarea:focus-visible, .tab:focus-visible, [tabindex]:focus-visible,
+a:focus-visible {
+    outline: 2px solid #ffd700 !important;
+    outline-offset: 2px;
+    z-index: 1;
+}
+button:focus:not(:focus-visible),
+input:focus:not(:focus-visible),
+select:focus:not(:focus-visible) {
+    outline: none !important;
+}
+
+/* ============================================================
+   KEYBOARD SHORTCUT OVERLAY — modeled on #ide-input-dialog
+   ============================================================ */
+#ide-shortcuts-overlay {
+    position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.55); z-index: 9998;
+    display: none; align-items: center; justify-content: center; padding: 20px;
+}
+#ide-shortcuts-overlay.visible { display: flex; }
+#ide-shortcuts-box {
+    background: #252526; border: 1px solid #454545; color: #ccc;
+    width: min(720px, 100%); max-height: 85vh; overflow: auto;
+    border-radius: 6px; box-shadow: 4px 8px 24px rgba(0,0,0,0.7);
+}
+body[data-theme="light"] #ide-shortcuts-box { background: #fff; color: #222; border-color: #b8b8b8; }
+body[data-theme="hc"] #ide-shortcuts-box { background: #000; color: #fff; border: 2px solid #ffd700; }
+#ide-shortcuts-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 12px 16px; border-bottom: 1px solid #454545;
+    font-size: 14px; font-weight: 600;
+}
+body[data-theme="light"] #ide-shortcuts-header { border-bottom-color: #ddd; }
+#ide-shortcuts-close {
+    background: none; border: none; color: inherit; cursor: pointer;
+    font-size: 18px; line-height: 1; padding: 4px 8px; border-radius: 3px;
+}
+#ide-shortcuts-close:hover { background: rgba(255,255,255,0.1); }
+#ide-shortcuts-body { padding: 12px 16px 16px; }
+.shortcut-section { margin-bottom: 14px; }
+.shortcut-section h4 {
+    margin: 4px 0 6px; font-size: 11px; text-transform: uppercase;
+    letter-spacing: 1px; color: #9cdcfe;
+}
+body[data-theme="light"] .shortcut-section h4 { color: #006bb3; }
+.shortcut-row {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 4px 0; font-size: 13px;
+    border-bottom: 1px dashed rgba(255,255,255,0.06);
+}
+body[data-theme="light"] .shortcut-row { border-bottom-color: rgba(0,0,0,0.06); }
+.shortcut-keys { display: flex; gap: 4px; }
+.shortcut-keys kbd {
+    background: #3c3c3c; color: #fff;
+    border: 1px solid #555; border-bottom-width: 2px;
+    border-radius: 3px; padding: 1px 6px;
+    font-family: 'Consolas', monospace; font-size: 12px;
+}
+body[data-theme="light"] .shortcut-keys kbd { background: #f5f5f5; color: #222; border-color: #b8b8b8; }
+body[data-theme="hc"] .shortcut-keys kbd { background: #000; color: #ffd700; border: 1px solid #ffd700; }
+
+/* ============================================================
+   RESPONSIVE / COMPACT LAYOUT — narrow screens (~phones / Chromebook portrait)
+   The IDE wasn't designed for phones, but students often READ the exercise on
+   their phone. Below ~900px we hide the activity bar (it's reachable from menus),
+   collapse the sidebar by default, and stack the bottom panel under the editor.
+   ============================================================ */
+@media (max-width: 900px) {
+    body { font-size: 12px; }
+    #ide-titlebar { height: auto; min-height: 30px; flex-wrap: wrap; }
+    #ide-menubar { flex-wrap: wrap; }
+    .menu-item { padding: 0 8px; font-size: 12px; }
+    .menu-shortcut { display: none; }
+    #ide-title-center { display: none; }
+    #ide-activity-bar { display: none; }
+    #ide-sidebar { width: 200px; min-width: 60px; max-width: 80vw; }
+    #ide-sidebar.compact-hidden { display: none; }
+    #sidebar-resize-handle { display: none; }
+    .action-btn { padding: 3px 6px; font-size: 11px; }
+    #ide-bottom-panel { height: 200px; }
+    .bottom-tab { padding: 0 8px; font-size: 10px; }
+}
+@media (max-width: 600px) {
+    .menu-item { padding: 0 6px; }
+    #ide-status-bar { font-size: 10px; }
+    #status-wordwrap { display: none; }
+    #ide-bottom-panel { height: 35vh; }
+}
 
 </style>
 
@@ -552,6 +825,17 @@ button:focus, input:focus, select:focus, .tab:focus {
           <div class="menu-dropdown-item" role="menuitem" tabindex="-1" id="menu-wordwrap-item" onclick="menuToggleWordWrap()">Word Wrap <span class="menu-shortcut" aria-label="Alt Z">Alt+Z</span></div>
           <hr role="separator">
           <div class="menu-dropdown-item" role="menuitem" tabindex="-1" onclick="menuShowInfo()">Exercise Info</div>
+          <hr role="separator">
+          <!-- Preferences (theme / font / reading mode) -->
+          <div class="menu-dropdown-item" role="menuitem" tabindex="-1" onclick="menuCycleTheme()">
+            Theme: <span id="menu-theme-label" style="margin-left:4px; color:#9cdcfe;">Dark</span>
+          </div>
+          <div class="menu-dropdown-item" role="menuitem" tabindex="-1" onclick="menuCycleFontSize()">
+            Font Size: <span id="menu-fontsize-label" style="margin-left:4px; color:#9cdcfe;">14px</span>
+          </div>
+          <div class="menu-dropdown-item" role="menuitem" tabindex="-1" onclick="menuToggleReadingMode()">
+            Reading Mode: <span id="menu-readingmode-label" style="margin-left:4px; color:#9cdcfe;">Default</span>
+          </div>
         </div>
       </div>
 
@@ -566,6 +850,17 @@ button:focus, input:focus, select:focus, .tab:focus {
           <div class="menu-dropdown-item" role="menuitem" tabindex="-1" onclick="menuSaveAndRun()">Save &amp; Run <span class="menu-shortcut" aria-label="F5">F5</span></div>
           <hr role="separator">
           <div class="menu-dropdown-item" role="menuitem" tabindex="-1" onclick="menuClearOutput()">Clear Output</div>
+        </div>
+      </div>
+
+      <!-- Help menu -->
+      <div class="menu-item" id="menu-help"
+           role="menuitem" tabindex="-1"
+           aria-haspopup="true" aria-expanded="false"
+           aria-label="Help menu">
+        Help
+        <div class="menu-dropdown" role="menu" aria-label="Help">
+          <div class="menu-dropdown-item" role="menuitem" tabindex="-1" onclick="menuShowShortcuts()">Keyboard Shortcuts <span class="menu-shortcut" aria-label="question mark">?</span></div>
         </div>
       </div>
 
@@ -883,6 +1178,52 @@ button:focus, input:focus, select:focus, .tab:focus {
     <div id="ide-input-label"></div>
     <input type="text" id="ide-input-field" autocomplete="off"
            aria-labelledby="ide-input-label">
+  </div>
+</div>
+
+<!-- Keyboard shortcuts overlay (opened via "?" key or Help > Keyboard Shortcuts) -->
+<div id="ide-shortcuts-overlay"
+     role="dialog"
+     aria-modal="true"
+     aria-labelledby="ide-shortcuts-title"
+     aria-hidden="true">
+  <div id="ide-shortcuts-box">
+    <div id="ide-shortcuts-header">
+      <span id="ide-shortcuts-title">Keyboard Shortcuts</span>
+      <button id="ide-shortcuts-close" aria-label="Close shortcuts dialog">✕</button>
+    </div>
+    <div id="ide-shortcuts-body">
+      <div class="shortcut-section">
+        <h4>Editing &amp; Files</h4>
+        <div class="shortcut-row"><span>Save current file</span><span class="shortcut-keys"><kbd>Ctrl</kbd><kbd>S</kbd></span></div>
+        <div class="shortcut-row"><span>Run code</span><span class="shortcut-keys"><kbd>Ctrl</kbd><kbd>Enter</kbd></span></div>
+        <div class="shortcut-row"><span>Save and Run</span><span class="shortcut-keys"><kbd>F5</kbd></span></div>
+        <div class="shortcut-row"><span>Toggle word wrap</span><span class="shortcut-keys"><kbd>Alt</kbd><kbd>Z</kbd></span></div>
+      </div>
+      <div class="shortcut-section">
+        <h4>View</h4>
+        <div class="shortcut-row"><span>Toggle sidebar</span><span class="shortcut-keys"><kbd>Ctrl</kbd><kbd>B</kbd></span></div>
+        <div class="shortcut-row"><span>Toggle terminal panel</span><span class="shortcut-keys"><kbd>Ctrl</kbd><kbd>`</kbd></span></div>
+        <div class="shortcut-row"><span>Focus Explorer</span><span class="shortcut-keys"><kbd>Ctrl</kbd><kbd>Shift</kbd><kbd>E</kbd></span></div>
+        <div class="shortcut-row"><span>Focus Terminal tab</span><span class="shortcut-keys"><kbd>Ctrl</kbd><kbd>Shift</kbd><kbd>T</kbd></span></div>
+        <div class="shortcut-row"><span>Focus Output tab</span><span class="shortcut-keys"><kbd>Ctrl</kbd><kbd>Shift</kbd><kbd>O</kbd></span></div>
+        <div class="shortcut-row"><span>Focus Suggestions tab</span><span class="shortcut-keys"><kbd>Ctrl</kbd><kbd>Shift</kbd><kbd>P</kbd></span></div>
+      </div>
+      <div class="shortcut-section">
+        <h4>Editor Font</h4>
+        <div class="shortcut-row"><span>Increase font size</span><span class="shortcut-keys"><kbd>Ctrl</kbd><kbd>=</kbd></span></div>
+        <div class="shortcut-row"><span>Decrease font size</span><span class="shortcut-keys"><kbd>Ctrl</kbd><kbd>-</kbd></span></div>
+      </div>
+      <div class="shortcut-section">
+        <h4>Help</h4>
+        <div class="shortcut-row"><span>Show this dialog</span><span class="shortcut-keys"><kbd>?</kbd></span></div>
+        <div class="shortcut-row"><span>Close any dialog</span><span class="shortcut-keys"><kbd>Esc</kbd></span></div>
+      </div>
+      <p style="font-size:11px; opacity:0.7; margin-top:8px;">
+        Tip: Within an input field, "?" types a literal question mark. Press <kbd>Esc</kbd> first
+        to leave the field, then press <kbd>?</kbd> to open this dialog.
+      </p>
+    </div>
   </div>
 </div>
 
@@ -2261,6 +2602,163 @@ def pyodide_print(s):
         // Initialize accessibility features
         setupAccessibilityShortcuts();
 
+        // -- Preferences (theme, font size, reading mode) ---------------------
+        // Persisted in localStorage under 'webide.prefs' as a JSON object.
+        // Applied to <body> via data-attributes that CSS selectors target.
+        const PREFS_KEY = 'webide.prefs';
+        const PREFS_DEFAULTS = { theme: 'dark', fontSize: 14, readingMode: 'default' };
+        const THEMES = ['dark', 'light', 'hc'];
+        const THEME_LABELS = { dark: 'Dark', light: 'Light', hc: 'High Contrast' };
+        const FONT_STEPS = [11, 12, 13, 14, 16, 18, 20, 24];
+        const READING_MODES = ['default', 'dyslexia'];
+        const READING_LABELS = { default: 'Default', dyslexia: 'Dyslexia-Friendly' };
+
+        function loadPrefs() {
+            try {
+                const raw = localStorage.getItem(PREFS_KEY);
+                if (!raw) return { ...PREFS_DEFAULTS };
+                return { ...PREFS_DEFAULTS, ...JSON.parse(raw) };
+            } catch (e) {
+                return { ...PREFS_DEFAULTS };
+            }
+        }
+        function savePrefs(p) {
+            try { localStorage.setItem(PREFS_KEY, JSON.stringify(p)); }
+            catch (e) { /* localStorage may be full or disabled — silently ignore */ }
+        }
+
+        let _prefs = loadPrefs();
+
+        function applyPrefs() {
+            // Theme — sets body[data-theme]; CSS rules handle the visuals.
+            const theme = THEMES.includes(_prefs.theme) ? _prefs.theme : 'dark';
+            document.body.dataset.theme = theme;
+            // ACE theme: keep monokai for dark (existing default), use CSS
+            // overrides for light/hc so we don't need to ship extra theme files.
+            if (ace_editor) {
+                ace_editor.setTheme('ace/theme/monokai');
+                ace_editor.setFontSize(_prefs.fontSize);
+                // Force re-render so token classes pick up new colors
+                try { ace_editor.renderer.updateText(); } catch (e) {}
+            }
+            // Apply font size to any other ace instances that exist (file tabs etc.)
+            document.querySelectorAll('.ace_editor').forEach(el => {
+                try {
+                    const ed = ace.edit(el);
+                    ed.setFontSize(_prefs.fontSize);
+                } catch (e) {}
+            });
+            // Reading mode (dyslexia)
+            const mode = READING_MODES.includes(_prefs.readingMode) ? _prefs.readingMode : 'default';
+            document.body.dataset.readingmode = mode;
+            // Sync menu labels
+            const tLab = document.getElementById('menu-theme-label');
+            const fLab = document.getElementById('menu-fontsize-label');
+            const rLab = document.getElementById('menu-readingmode-label');
+            if (tLab) tLab.textContent = THEME_LABELS[theme] || 'Dark';
+            if (fLab) fLab.textContent = _prefs.fontSize + 'px';
+            if (rLab) rLab.textContent = READING_LABELS[mode] || 'Default';
+        }
+
+        window.menuCycleTheme = () => {
+            const idx = THEMES.indexOf(_prefs.theme);
+            _prefs.theme = THEMES[(idx + 1) % THEMES.length];
+            savePrefs(_prefs); applyPrefs();
+            if (typeof ideNotify === 'function') ideNotify('Theme: ' + THEME_LABELS[_prefs.theme]);
+        };
+        window.menuCycleFontSize = () => {
+            const cur = parseInt(_prefs.fontSize, 10) || 14;
+            const next = FONT_STEPS.find(s => s > cur) || FONT_STEPS[0];
+            _prefs.fontSize = next;
+            savePrefs(_prefs); applyPrefs();
+            if (typeof ideNotify === 'function') ideNotify('Font size: ' + next + 'px');
+        };
+        window.menuToggleReadingMode = () => {
+            const idx = READING_MODES.indexOf(_prefs.readingMode);
+            _prefs.readingMode = READING_MODES[(idx + 1) % READING_MODES.length];
+            savePrefs(_prefs); applyPrefs();
+            if (typeof ideNotify === 'function') ideNotify('Reading mode: ' + READING_LABELS[_prefs.readingMode]);
+        };
+
+        // Ensure any later editor created via ace.edit() also picks up font size
+        // and any future theme change (the existing Ctrl+= / Ctrl+- handlers
+        // already mutate setFontSize directly; we also persist the change).
+        document.addEventListener('keydown', (e) => {
+            if ((e.ctrlKey || e.metaKey) && (e.key === '=' || e.key === '+')) {
+                const cur = parseInt(_prefs.fontSize, 10) || 14;
+                _prefs.fontSize = Math.min(40, cur + 1);
+                savePrefs(_prefs);
+            } else if ((e.ctrlKey || e.metaKey) && e.key === '-') {
+                const cur = parseInt(_prefs.fontSize, 10) || 14;
+                _prefs.fontSize = Math.max(8, cur - 1);
+                savePrefs(_prefs);
+            }
+        });
+
+        // Apply on load — also re-applies once ace_editor is created later
+        // (loadPrefsAndApply is called again after ace.edit("editor-container")).
+        applyPrefs();
+        window.__webideApplyPrefs = applyPrefs;  // exposed so ace init can call it
+
+        // -- Keyboard shortcut overlay ---------------------------------------
+        let _shortcutsPreviousFocus = null;
+        function isTypingTarget(el) {
+            if (!el) return false;
+            const tag = el.tagName;
+            if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return true;
+            if (el.isContentEditable) return true;
+            // ACE renders into a div with a hidden textarea; treat .ace_text-input as typing target
+            if (el.classList && el.classList.contains('ace_text-input')) return true;
+            return false;
+        }
+        window.menuShowShortcuts = () => {
+            const dialog = document.getElementById('ide-shortcuts-overlay');
+            const closeBtn = document.getElementById('ide-shortcuts-close');
+            if (!dialog) return;
+            _shortcutsPreviousFocus = document.activeElement;
+            dialog.classList.add('visible');
+            dialog.setAttribute('aria-hidden', 'false');
+            setTimeout(() => closeBtn && closeBtn.focus(), 30);
+
+            const focusableSelectors = 'a[href], button:not([disabled]), input, [tabindex]:not([tabindex="-1"])';
+            const trapFocus = e => {
+                if (e.key !== 'Tab') return;
+                const focusable = Array.from(dialog.querySelectorAll(focusableSelectors));
+                if (!focusable.length) { e.preventDefault(); return; }
+                const first = focusable[0], last = focusable[focusable.length - 1];
+                if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+                else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+            };
+            const close = () => {
+                dialog.classList.remove('visible');
+                dialog.setAttribute('aria-hidden', 'true');
+                dialog.removeEventListener('keydown', trapFocus);
+                dialog.removeEventListener('keydown', escHandler);
+                if (closeBtn) closeBtn.removeEventListener('click', close);
+                dialog.removeEventListener('click', backdropClose);
+                if (_shortcutsPreviousFocus && _shortcutsPreviousFocus.focus) {
+                    try { _shortcutsPreviousFocus.focus(); } catch (e) {}
+                }
+            };
+            const escHandler = e => { if (e.key === 'Escape') { e.preventDefault(); close(); } };
+            const backdropClose = e => { if (e.target === dialog) close(); };
+            dialog.addEventListener('keydown', trapFocus);
+            dialog.addEventListener('keydown', escHandler);
+            if (closeBtn) closeBtn.addEventListener('click', close);
+            dialog.addEventListener('click', backdropClose);
+        };
+
+        // "?" opens the shortcut overlay — unless the user is typing in a field.
+        // Shift+/ is the same key on US keyboards; both events fire e.key === '?'.
+        document.addEventListener('keydown', e => {
+            if (e.key !== '?') return;
+            if (isTypingTarget(e.target)) return;
+            // Don't trigger when modifier keys other than Shift are held
+            if (e.ctrlKey || e.altKey || e.metaKey) return;
+            e.preventDefault();
+            window.menuShowShortcuts();
+        });
+
         // -- Enhanced Terminal Commands (Proposals 3, 4) ----------------------
         // These integrate with the existing handleCommand function
         // Added: gdb, pdb, pytest, unittest commands for debugging and testing
@@ -2634,6 +3132,10 @@ def pyodide_print(s):
                 enableBasicAutocompletion: true,
                 enableSnippets: true
             });
+            // Re-apply persisted preferences once the editor exists
+            if (typeof window.__webideApplyPrefs === 'function') {
+                try { window.__webideApplyPrefs(); } catch (e) {}
+            }
             // Screen reader mode provides a textarea that screen readers can interact with
             ace_editor.setOption('enableEmmet', false);
             try { ace_editor.renderer.setOption('screenReaderMode', true); } catch(e) {}
