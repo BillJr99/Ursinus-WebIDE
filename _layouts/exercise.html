@@ -1570,10 +1570,28 @@ def _webide_tracer(frame, event, arg):
         pass
     return _webide_tracer
 
+# NOTE: settrace is NOT installed here. The JS-side step runner sets
+# _webide_student_source and runs pyodideStepExec, which installs settrace
+# only around the student code — preventing Pyodide's eval_code / compile /
+# AST machinery from being recorded as part of the call tape.
+</div>
+
+<!-- Wrapper that actually runs the student source under settrace. The
+     JS side calls pyodide.globals.set('_webide_student_source', code)
+     before invoking this. The explicit compile() lets us tag student
+     frames with a unique co_filename. -->
+<div id="pyodideStepExec" style="display:none;">
+_webide_compiled = compile(_webide_student_source, '&lt;webide-student&gt;', 'exec')
 _webide_sys.settrace(_webide_tracer)
+try:
+    exec(_webide_compiled, globals())
+finally:
+    _webide_sys.settrace(None)
+del _webide_compiled, _webide_student_source
 </div>
 
 <div id="pyodideStepEpilogue" style="display:none;">
+# kept for backwards compat with any callers that still invoke it
 _webide_sys.settrace(None)
 </div>
 {% endif %}
@@ -4759,6 +4777,10 @@ _webide_sys.settrace(None)
 
         async function setupPyodide() {
             pyodide = await loadPyodide();
+            // Expose on window so other scripts, the browser console, and the
+            // test suite can interact with Pyodide directly (e.g. to invoke
+            // Step Run tracer machinery without going through the file system).
+            window.pyodide = pyodide;
             logToConsole("Importing packages {{page.info.packages}}...");
             for (let i = 0; i < packages.length; i++) await pyodide.loadPackage(packages[i]);
             logToConsole("Finished loading packages. You can run your code now.");
@@ -4932,27 +4954,28 @@ _webide_sys.settrace(None)
                 {% elsif page.language == "pyodide" %}
                 if (!pyodideLoaded) await pyodidePromise;
                 let student_code = editorText + "\n\n" + document.getElementById("pyodideBoilerplate").innerHTML + "\n\n" + mainText;
-                // Step Run mode: install sys.settrace before, uninstall + serialize after.
                 const _webideStepMode = _stepRunRequested;
                 if (_webideStepMode) {
                     try {
-                        const prologue = document.getElementById('pyodideStepPrologue').textContent;
-                        pyodide.runPython(prologue);
-                    } catch (e) { console.error('Step prologue failed:', e); }
-                }
-                // When stepping, give the student source a unique co_filename
-                // so the tracer can distinguish student frames from Pyodide's
-                // own internal compile()/eval_code()/AST machinery (which
-                // also uses generic filenames like <exec>). The filter in
-                // pyodideStepPrologue keys off this exact string.
-                if (_webideStepMode) {
-                    pyodide.runPython(student_code, { filename: '<webide-student>' });
+                        // 1) Load the tracer + state. Does NOT install settrace —
+                        //    that happens inside the student wrapper.
+                        pyodide.runPython(document.getElementById('pyodideStepPrologue').textContent);
+                        // 2) Hand the student source to Python as a variable.
+                        pyodide.globals.set('_webide_student_source', student_code);
+                        // 3) Run a small Python wrapper that compile()s the
+                        //    student source with a unique co_filename, installs
+                        //    settrace, exec's the compiled code, and uninstalls
+                        //    settrace via try/finally. This guarantees that the
+                        //    only frames seen by the tracer are student frames.
+                        pyodide.runPython(document.getElementById('pyodideStepExec').textContent);
+                    } catch (e) {
+                        console.error('Step Run failed:', e);
+                    }
                 } else {
                     pyodide.runPython(student_code);
                 }
                 if (_webideStepMode) {
                     try {
-                        pyodide.runPython(document.getElementById('pyodideStepEpilogue').textContent);
                         // Read out steps + call tree as JS objects
                         const stepsPy = pyodide.globals.get('_webide_steps');
                         const treePy  = pyodide.globals.get('_webide_calltree');

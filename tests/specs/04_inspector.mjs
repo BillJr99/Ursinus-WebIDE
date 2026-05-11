@@ -37,46 +37,57 @@ export default async function run() {
     });
 
     // ---- Pyodide step-through (full CPython sys.settrace) ----
+    // We invoke the step machinery directly via pyodide.runPython rather
+    // than clicking the Run button, because the Run button reads the
+    // student source from IndexedDB and bouncing fact() through the file
+    // system is much more fragile than this direct path. The goal here is
+    // to verify the TRACING MECHANISM produces a clean fact-only tree;
+    // the Run-button integration is covered by 07_language_runs.
     await step('Pyodide: Step Run populates real step list + call tree', async () => {
         await withPage('/Modules/Pyodide/PlotTenHeads.html', { waitMs: 6000 }, async (page) => {
-            // Wait until Pyodide is loaded (it downloads ~10 MB from CDN
-            // on first load — long timeout to accommodate)
+            // Wait until Pyodide has loaded (CDN download, ~10 MB on first hit)
             await page.waitForFunction(
-                () => typeof window.loadPyodide === 'function',
-                { timeout: 60000 }
-            ).catch(() => {});
-            await page.waitForFunction(
-                () => document.getElementById('run') && !document.getElementById('run').disabled,
-                { timeout: 30000 }
+                () => window.pyodide && typeof window.pyodide.runPython === 'function',
+                { timeout: 120000 }
             );
-            // Pre-seed editor with code that recurses so the call tree has shape
-            await page.evaluate(() => {
-                const ed = ace.edit('editor-container');
-                ed.setValue('def fact(n):\n    return 1 if n <= 1 else n * fact(n-1)\nresult = fact(4)\n', -1);
+            const result = await page.evaluate(() => {
+                const proPy  = document.getElementById('pyodideStepPrologue').textContent;
+                const execPy = document.getElementById('pyodideStepExec').textContent;
+                // Reset accumulators (we're outside _beforeRun/_afterRun)
+                window.__webide_steps = null;
+                window.__webide_calltree = null;
+                // 1) Load tracer + state. Does NOT install settrace.
+                pyodide.runPython(proPy);
+                // 2) Hand the student source over.
+                pyodide.globals.set('_webide_student_source',
+                    'def fact(n):\n    return 1 if n <= 1 else n * fact(n-1)\nresult = fact(4)\n');
+                // 3) Run the wrapper that installs settrace, exec's the
+                //    compiled student code, and uninstalls settrace.
+                pyodide.runPython(execPy);
+                // 4) Pull steps + calltree back to JS.
+                const stepsPy = pyodide.globals.get('_webide_steps');
+                const treePy  = pyodide.globals.get('_webide_calltree');
+                const steps   = stepsPy ? stepsPy.toJs({ dict_converter: Object.fromEntries }) : null;
+                const tree    = treePy  ? treePy.toJs({ dict_converter: Object.fromEntries })  : null;
+                if (stepsPy && stepsPy.destroy) stepsPy.destroy();
+                if (treePy  && treePy.destroy)  treePy.destroy();
+                // Normalise Map → plain object so JSON serialises cleanly
+                const normalise = (n) => {
+                    const obj = (n instanceof Map) ? Object.fromEntries(n) : n;
+                    if (obj && obj.children) {
+                        obj.children = obj.children.map(normalise);
+                    }
+                    return obj;
+                };
+                return {
+                    stepsLen: steps ? steps.length : 0,
+                    tree: tree ? normalise(tree) : null,
+                };
             });
-            // The Step Run button lives inside the Inspector panel; that
-            // panel is hidden by default, so make it visible first.
-            await page.evaluate(() => { switchBottomTab('inspector'); });
-            await page.waitForTimeout(150);
-            const stepBtn = page.locator('#inspector-step-run');
-            await stepBtn.click();
-            // Wait for Pyodide to finish executing (it can take 60 s+)
-            const t0 = Date.now();
-            while (Date.now() - t0 < 120000) {
-                const ready = await page.evaluate(() => !!window.__webide_calltree);
-                if (ready) break;
-                await page.waitForTimeout(500);
-            }
-            const result = await page.evaluate(() => ({
-                steps: window.__webide_steps ? window.__webide_steps.length : 0,
-                tree: window.__webide_calltree
-                    ? JSON.parse(JSON.stringify(window.__webide_calltree)) : null,
-            }));
-            expect.greater(result.steps, 3, `expected several recorded line events, got ${result.steps}`);
+            expect.greater(result.stepsLen, 3, `expected several recorded line events, got ${result.stepsLen}`);
             expect.truthy(result.tree && result.tree.children && result.tree.children.length > 0,
-                `expected non-empty call tree, got ${JSON.stringify(result.tree).slice(0, 120)}`);
-            // The recursive fact(4) → fact(3) → fact(2) → fact(1) chain should
-            // be visible somewhere in the tree
+                `expected non-empty call tree, got ${JSON.stringify(result.tree).slice(0, 200)}`);
+            // fact(4) → fact(3) → fact(2) → fact(1) ⇒ 4 frames named "fact"
             const flatNames = [];
             (function walk(n) { flatNames.push(n.name); (n.children || []).forEach(walk); })(result.tree);
             expect.truthy(flatNames.filter(n => n === 'fact').length >= 4,
