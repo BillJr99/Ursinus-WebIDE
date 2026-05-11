@@ -1786,6 +1786,18 @@ def pyodide_print(s):
               explain: (m) => `SQL doesn't see a ${m[1]} called \`${m[2]}\`. Check the spelling and the schema — column and table names are case-sensitive in some setups.` },
             { lang: 'sql', re: /syntax error/i,
               explain: () => `SQL can't parse your query. Common causes: missing comma between columns, missing quotes around strings, unmatched parentheses, or a reserved word used as an identifier.` },
+            // ---- Scheme ----
+            { lang: 'scheme', re: /Unbound variable: (\S+)/i,
+              explain: (m) => `Scheme doesn't recognize \`${m[1]}\`. Either you misspelled it, or you forgot to \`define\` it before using it.` },
+            { lang: 'scheme', re: /Wrong number of arguments/i,
+              explain: () => `You called a procedure with the wrong number of arguments. Check the procedure's definition for how many parameters it expects.` },
+            { lang: 'scheme', re: /not a (number|pair|procedure)/i,
+              explain: (m) => `Scheme expected a ${m[1]} but got something else. Add a \`(display ...)\` to inspect the actual value.` },
+            // ---- Prolog ----
+            { lang: 'prolog', re: /procedure (\S+) does not exist/i,
+              explain: (m) => `Prolog doesn't have a predicate \`${m[1]}\` defined. Check the spelling and arity — \`foo/2\` is a different predicate than \`foo/3\`.` },
+            { lang: 'prolog', re: /Syntax error/i,
+              explain: () => `Prolog can't parse your code. Make sure each clause ends with a period (\`.\`), variables start with capital letters, and atoms start with lowercase letters.` },
             // ---- Generic catch-alls (last-resort) ----
             { lang: '*', re: /Permission denied/,
               explain: () => `The browser blocked something — usually localStorage being full, IndexedDB locked by another tab, or a CORS issue. Try closing other browser tabs of this exercise.` },
@@ -1801,6 +1813,8 @@ def pyodide_print(s):
             if (_PAGE_LANG === 'java' || _PAGE_LANG === 'graphics_view' || _PAGE_LANG === 'graphics_shader') return 'java';
             if (_PAGE_LANG === 'javascript') return 'javascript';
             if (_PAGE_LANG === 'sql') return 'sql';
+            if (_PAGE_LANG === 'scheme') return 'scheme';
+            if (_PAGE_LANG === 'prolog') return 'prolog';
             return '*';
         })();
 
@@ -4659,6 +4673,27 @@ def pyodide_print(s):
                 if (!pyodideLoaded) await pyodidePromise;
                 let student_code = editorText + "\n\n" + document.getElementById("pyodideBoilerplate").innerHTML + "\n\n" + mainText;
                 pyodide.runPython(student_code);
+                // Inspector: snapshot Pyodide globals for the Variables tab
+                try {
+                    const skip = new Set(['__name__', '__doc__', '__package__', '__loader__', '__spec__', '__builtins__',
+                                          'img_str', 'audio_sav_arr', 'audio_sav_sr', 'PYODIDE_COUT',
+                                          'save_figure_js', 'save_audio_js', 'pyodide_print', 'io', 'base64']);
+                    const out = {};
+                    const keys = pyodide.globals.toJs().keys ? Array.from(pyodide.globals.toJs().keys()) : [];
+                    for (const k of keys) {
+                        if (skip.has(k) || (k.startsWith('__') && k.endsWith('__'))) continue;
+                        try {
+                            const v = pyodide.globals.get(k);
+                            const tname = (v && v.constructor && v.constructor.name) || typeof v;
+                            let strVal;
+                            try { strVal = String(v); } catch (e) { strVal = '<unrepresentable>'; }
+                            if (strVal && strVal.length > 200) strVal = strVal.slice(0, 200) + '...';
+                            out[k] = { type: tname, value: strVal };
+                            if (typeof v === 'object' && v && typeof v.destroy === 'function') v.destroy();
+                        } catch (e) { /* skip */ }
+                    }
+                    window.__webide_vars = out;
+                } catch (e) { /* ignore */ }
                 imgStr = pyodide.globals.get("img_str");
                 if (imgStr.length > 0) displayImage(imgStr, true);
                 audioStr = "";
