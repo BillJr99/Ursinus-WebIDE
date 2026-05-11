@@ -574,6 +574,34 @@ body[data-theme="hc"] .calltape-unclosed { color: #ffd700; }
 }
 body[data-theme="light"] .calltape-summary { background: #f0f0f0; color: #444; }
 
+/* Multi-line code example shown in the Call-Tape empty-state. */
+.webide-code-block {
+    font-family: 'Consolas', 'Courier New', monospace;
+    font-size: 11.5px; line-height: 1.45;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 4px;
+    padding: 10px 12px;
+    margin: 8px 0 12px;
+    white-space: pre-wrap;
+    overflow-x: auto;
+    color: #d4d4d4;
+}
+.webide-code-block strong {
+    color: #dcdcaa;
+    font-weight: 700;
+}
+body[data-theme="light"] .webide-code-block {
+    background: rgba(0,0,0,0.04);
+    border-color: rgba(0,0,0,0.08);
+    color: #1f1f1f;
+}
+body[data-theme="light"] .webide-code-block strong { color: #795e26; }
+body[data-theme="hc"] .webide-code-block {
+    background: #000; border: 1px solid #ffd700; color: #fff;
+}
+body[data-theme="hc"] .webide-code-block strong { color: #ffd700; }
+
 /* Inline code chip used in UI hints (empty-states, menus). The default cyan
    reads fine on the dark theme but disappears on the light-theme white
    background, so we set a theme-appropriate fg+bg here. */
@@ -1302,17 +1330,43 @@ body[data-theme="hc"] .shortcut-keys kbd { background: #000; color: #ffd700; bor
               <div class="inspector-empty">Click <strong>Step Run</strong> above to record execution steps. Available for Python.</div>
             </div>
             <div id="inspector-trace" class="inspector-view" role="tabpanel" aria-labelledby="insub-trace" hidden>
-              <div class="inspector-empty">
-                Run your code to see the function-call tape.<br>
-                <span style="font-size:11px;">For Python, calls are recorded automatically. For JavaScript / Java
-                (Processing) you have to <strong>record markers yourself</strong> — the helpers below do
-                <strong>not</strong> invoke any function, they only label entries on this tape.<br><br>
-                <strong>Simple log:</strong> <code class="code-inline">webideTrace.tap('name', arg1)</code> — one
-                sibling entry per call. Best when you just want to see "did this run?".<br><br>
-                <strong>Scoped (nested / recursive):</strong> put
-                <code class="code-inline">webideTrace.call('name', arg1)</code> at every entry to a function
-                and <code class="code-inline">return webideTrace.return(value)</code> at every exit, in matching
-                pairs. Recursion produces nested entries; sequential calls produce siblings.</span>
+              <div class="inspector-empty" style="text-align:left; max-width:720px; margin:0 auto;">
+                <p style="text-align:center; margin:0 0 10px;"><strong>Run your code to see the function-call tape.</strong></p>
+                <p>For <strong>Python</strong>, calls are recorded automatically (use <strong>Step Run</strong>
+                on the Inspector toolbar).</p>
+                <p>For <strong>JavaScript</strong> or <strong>Java (Processing)</strong>, you have to record
+                the markers yourself. These helpers are <strong>labels</strong> — they don't call any function,
+                they only annotate this tape.</p>
+
+                <p><strong>Option 1 — sibling log (simple).</strong> Call
+                <code class="code-inline">webideTrace.tap('name', arg1, arg2)</code> once per event.
+                Each <code class="code-inline">tap</code> shows up as a flat sibling. Use this when you just
+                want to know "did this code run?" or "in what order did these run?".</p>
+
+                <p><strong>Option 2 — scope tracking (for nested / recursive calls).</strong>
+                Put <code class="code-inline">webideTrace.call('name', args…)</code> as the
+                <strong>first line inside the function body</strong>, and
+                <code class="code-inline">webideTrace.return(value)</code> immediately
+                <strong>before every return statement</strong> (or once at the end if the function is void).
+                Then call the function normally from outside.</p>
+
+                <pre class="webide-code-block">// JavaScript example
+function fact(n) {
+    <strong>webideTrace.call('fact', n);</strong>          // at the top
+    if (n &lt;= 1) {
+        return <strong>webideTrace.return(1)</strong>;     // wrap every return
+    }
+    let r = n * fact(n - 1);
+    return <strong>webideTrace.return(r)</strong>;
+}
+fact(4);   // now the tape shows fact(4) → fact(3) → fact(2) → fact(1)</pre>
+
+                <p style="font-size:11px; opacity:0.75;">
+                Every <code class="code-inline">call</code> must be matched by a <code class="code-inline">return</code>.
+                If you put three <code class="code-inline">call</code>s in a row without
+                <code class="code-inline">return</code>s, each one ends up nested inside the previous (which
+                is what the IDE will warn about with <em>"no .return"</em>). For that case use
+                <code class="code-inline">tap</code> instead.</p>
               </div>
             </div>
           </div>
@@ -3825,15 +3879,16 @@ _webide_sys.settrace(None)
             if (!tree || !tree.children || tree.children.length === 0) {
                 const hint = (_LANG_FAMILY === 'python')
                     ? 'Use <strong>Step Run</strong> to capture function calls.'
-                    : 'These helpers are <strong>markers, not invokers</strong> — they label this tape, '
-                        + 'they do not call any function for you. '
-                        + 'For a simple "did this run?" log, use '
+                    : 'These helpers are <strong>markers, not invokers</strong> — they only label this tape.<br>'
+                        + '<strong>tap:</strong> '
                         + '<code class="code-inline">webideTrace.tap(\'fname\', arg1)</code> '
-                        + '(each call adds a sibling). '
-                        + 'For nested/recursive scopes, place '
-                        + '<code class="code-inline">webideTrace.call(\'fname\', arg1)</code> at the start of a function '
-                        + 'and <code class="code-inline">return webideTrace.return(result)</code> at every exit, in '
-                        + '<strong>matching pairs</strong>. Mismatched pairs end up nested even when you didn\'t recurse.';
+                        + 'adds one sibling entry (simple log).<br>'
+                        + '<strong>call/return:</strong> put '
+                        + '<code class="code-inline">webideTrace.call(\'fname\', args)</code> as the '
+                        + 'first line <em>inside</em> the function, and '
+                        + '<code class="code-inline">return webideTrace.return(value)</code> at every '
+                        + 'return statement. Then call the function normally. (Three call()s with no '
+                        + 'return()s in between end up nested — use tap() for that.)';
                 view.innerHTML = '<div class="inspector-empty">No call tape recorded.<br>' + hint + '</div>';
                 return;
             }
