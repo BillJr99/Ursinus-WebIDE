@@ -1834,9 +1834,12 @@ def pyodide_print(s):
         }
 
         // Heuristic: does this output line look like an error / traceback / exception?
+        // Note: many Python error class names embed "Error" without a word
+        // boundary (IndentationError, RecursionError, AttributeError, etc.)
+        // so the regex deliberately does NOT use \b around "Error".
         function looksLikeError(message) {
             if (!message) return false;
-            return /\b(?:Error|Exception|Traceback|SyntaxError|TypeError|NameError|undefined reference|segmentation fault|SIGSEGV|cannot find symbol|no such (?:table|column))\b/i.test(message);
+            return /(?:Error|Exception|Traceback|undefined reference|segmentation fault|SIGSEGV|cannot find symbol|no such (?:table|column)|Unbound variable|procedure .* does not exist|Wrong number of arguments)/i.test(message);
         }
 
         function logToConsole(message) {
