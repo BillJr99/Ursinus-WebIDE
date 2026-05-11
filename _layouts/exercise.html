@@ -1520,6 +1520,17 @@ def _webide_safe_repr(v, limit=80):
 
 def _webide_tracer(frame, event, arg):
     try:
+        # Pyodide's pyodide.runPython is itself implemented in Python — it
+        # parses, compiles, and AST-walks the student source via eval_code /
+        # generate_tokens / deepcopy / iter_fields / etc. Without a filter,
+        # settrace records all of THAT internal machinery and the call tape
+        # fills with hundreds of iter_child_nodes/_make/deepcopy frames before
+        # the student code ever runs. Skip any frame whose source isn't the
+        # runPython input (pyodide compiles student code with co_filename
+        # '&lt;exec&gt;'; everything else has a real /lib/python path).
+        co_fname = frame.f_code.co_filename or ''
+        if co_fname not in ('&lt;exec&gt;', '&lt;string&gt;', '&lt;module&gt;'):
+            return None   # don't trace this frame OR its children
         fname = frame.f_code.co_name
         lineno = frame.f_lineno
         if event == 'line' and len(_webide_steps) &lt; _webide_STEP_LIMIT:

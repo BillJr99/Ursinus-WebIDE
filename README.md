@@ -22,6 +22,118 @@ These modules engage students and get them to think about topics outside of clas
 
 ![A screenshot of the Ursinus WebIDE](./images/screenshot.png)
 
+## Student-facing features
+
+The IDE layout (`_layouts/exercise.html`) ships a number of UX, accessibility,
+and debugging helpers that work on every supported language. None of them
+require any change to existing exercise pages — they appear automatically.
+
+### Preferences (View menu)
+
+Open **View** in the menu bar to access three preferences. All choices persist
+across reloads in `localStorage` under the key `webide.prefs`.
+
+| Item | What it does |
+|---|---|
+| **Theme** | Cycles **Dark → Light → High Contrast → Dark…**. The light theme reflows the entire IDE — including ACE syntax tokens — to a light palette. High Contrast is a low-vision-friendly black/white/gold scheme with gold focus rings. |
+| **Font Size** | Cycles through `11, 12, 13, 14, 16, 18, 20, 24` px and re-applies to every ACE editor instance. You can also press `Ctrl+=` to increase and `Ctrl+-` to decrease (each press persists). |
+| **Reading Mode** | Toggles a **Dyslexia-Friendly** mode that prefers the OpenDyslexic / Atkinson Hyperlegible fonts (with a Comic-Sans/Verdana fallback so it works offline), increases letter-spacing, word-spacing, and line-height in editor + UI text. |
+
+### Keyboard-shortcut overlay (`?`)
+
+Press `?` (or pick **Help → Keyboard Shortcuts**) to open a modal listing every
+shortcut. `Esc` closes it. The overlay is focus-trapped for keyboard users and
+returns focus to wherever you came from. Inside text fields, `?` types a literal
+question mark — press `Esc` first if you want to summon the overlay.
+
+### Responsive / compact layout
+
+Below ~900 px viewport (e.g. a student reading the exercise on their phone),
+the IDE collapses gracefully: the activity bar is hidden, the sidebar narrows,
+keyboard-shortcut hints are dropped, and the bottom panel grows to fill the
+remaining height.
+
+### Accessibility pass
+
+Every clickable button has an `aria-label`, tab/panel pairs use the ARIA
+tablist pattern, the editor exposes `role="group"` with a screen-reader-mode
+ACE option, and **all keyboard-driven focus is outlined** in a gold focus
+ring via `:focus-visible` — mouse clicks don't produce outline noise.
+
+### "Explain this error" affordance
+
+Whenever student code raises a recognizable runtime error, the line printed to
+the Output panel gets an inline **? What does this mean?** button. Clicking it
+expands a plain-English explanation drawn from a per-language dictionary
+covering common Python, Pyodide, JavaScript, Java, C++, SQL, Scheme and Prolog
+errors (e.g. `NameError`, `IndexError`, `NullPointerException`,
+`ArrayIndexOutOfBoundsException`, `segmentation fault`, `undefined reference`,
+`no such table`, `Unbound variable`, …). The same explanation is also appended
+to the **Suggestions** tab so it remains discoverable after the console scrolls.
+
+### Infinite-loop watchdog
+
+Every **Run** click immediately writes a **Running…** banner to the Output
+panel explaining how to recover if the tab freezes:
+
+> Running… If the page freezes for more than ~10 seconds, your code may have
+> an infinite loop. Your file work is saved automatically — refresh the tab
+> (Ctrl/Cmd+R) to recover.
+
+For runtimes that yield to the event loop (worker-based C++, async paths), a
+5-second toast and a 15-second console message with a **Reload page** button
+also fire. For runtimes that block the main thread (Brython `exec`,
+JavaScript `eval`), the upfront banner is the only reliable signal — which is
+why it appears before the run starts.
+
+### Inspector (bottom-panel tab)
+
+A new **Inspector** tab next to Terminal / Output / Suggestions hosts three
+sub-views, populated automatically after every Run:
+
+- **Variables** — top-level variables defined by the student's code, with
+  name, type, and a truncated repr/value.
+  - **Python (Brython)**: captured via an injected `locals()` snapshot
+    postlude.
+  - **Pyodide**: walked from `pyodide.globals` after the run.
+  - **JavaScript**: computed by diffing `window` keys before and after `eval`.
+  - **Other languages**: shows a friendly empty-state pointing out that
+    variable inspection is currently Python/JavaScript-only.
+- **Step-Through** — record execution one line at a time with `sys.settrace`,
+  then play back with **⏮ ◀ ▶ ⏭** controls. The current line is highlighted
+  in the ACE editor and locals at that step appear side-by-side.
+  - Click **↻ Step Run** in the Inspector toolbar to opt into the traced
+    runner for one run (the normal Run button does NOT install the tracer,
+    to keep regular runs fast).
+  - **Pyodide** (full CPython) supports stepping completely.
+  - **Brython** has partial `sys.settrace` support; if no events were
+    captured, a friendly empty-state explains it.
+- **Call Tape** — a tree of function calls with arguments and return values.
+  Recursion produces nested branches; sequential calls produce siblings;
+  exceptions get a ⚡ marker.
+  - **Python** (Step Run): recorded automatically via settrace.
+  - **JavaScript / Java**: students add markers themselves. Two helpers
+    are exposed on `window`:
+    - `webideTrace.tap('name', arg1, arg2)` — adds a flat sibling entry.
+      Best when you just want to log "did this code run?".
+    - `webideTrace.call('name', args…)` placed as the **first line inside a
+      function body**, paired with `return webideTrace.return(value)`
+      immediately **before every return statement** — produces a nested
+      recursion tree. Mismatched pairs are flagged inline with
+      `(no .return — try webideTrace.tap() for sibling logging)` and the
+      summary line counts unclosed frames.
+
+Other helpers also exposed on `window` for in-browser debugging:
+`window.logToConsole(msg)`, `window.refreshInspectorFromRun()`,
+`window.menuCycleTheme()`, `window.menuShowShortcuts()`.
+
+### Test suite
+
+All of the above is exercised by a Playwright-driven test suite in `tests/`
+that runs in GitHub Actions on every push and PR. See
+[`tests/README.md`](./tests/README.md) for the per-language coverage matrix
+and the local instructions.
+
 ## Installation Instructions
 
 1. Fork [this repository](https://github.com/BillJr99/Ursinus-WebIDE), and set up Github pages to get a URL.
