@@ -460,6 +460,123 @@ button:focus, input:focus, select:focus, .tab:focus {
 }
 
 /* ============================================================
+   INSPECTOR PANEL — variables, step-through, call-tape
+   ============================================================ */
+#inspector-panel { display: none; }
+#inspector-panel.active { display: flex; flex-direction: column; }
+#inspector-toolbar {
+    display: flex; align-items: center; gap: 2px;
+    padding: 4px; background: #1f1f1f; border-bottom: 1px solid #2d2d2d;
+    flex-shrink: 0;
+}
+.inspector-subtab {
+    padding: 3px 10px; background: transparent; color: #a0a0a0;
+    border: 1px solid transparent; border-radius: 3px;
+    cursor: pointer; font-size: 11px; text-transform: uppercase;
+    letter-spacing: 0.5px; font-weight: 600;
+}
+.inspector-subtab:hover { color: #ccc; background: #2a2a2a; }
+.inspector-subtab.active { color: #fff; background: #094771; }
+body[data-theme="light"] #inspector-toolbar { background: #f0f0f0; border-bottom-color: #d0d0d0; }
+body[data-theme="light"] .inspector-subtab { color: #444; }
+body[data-theme="light"] .inspector-subtab:hover { background: #e0e0e0; color: #000; }
+body[data-theme="light"] .inspector-subtab.active { background: #cfdcec; color: #000; }
+body[data-theme="hc"] .inspector-subtab.active { background: #ffd700; color: #000; }
+#inspector-body { flex: 1; overflow: auto; padding: 6px 8px; min-height: 0; }
+.inspector-view { display: none; }
+.inspector-view.active { display: block; }
+.inspector-empty {
+    padding: 18px; text-align: center; color: #888; font-size: 12px; line-height: 1.5;
+}
+/* Variables view */
+.inspector-var-row {
+    display: grid; grid-template-columns: minmax(120px, 24%) 80px 1fr;
+    gap: 8px; padding: 4px 6px; border-bottom: 1px dashed rgba(255,255,255,0.05);
+    font-family: 'Consolas', 'Courier New', monospace; font-size: 12px;
+    align-items: baseline;
+}
+body[data-theme="light"] .inspector-var-row { border-bottom-color: rgba(0,0,0,0.06); }
+.inspector-var-name { color: #9cdcfe; word-break: break-word; }
+.inspector-var-type { color: #ce9178; font-style: italic; font-size: 11px; }
+.inspector-var-value {
+    color: #d4d4d4; white-space: pre-wrap; word-break: break-word;
+    overflow: hidden; text-overflow: ellipsis;
+}
+body[data-theme="light"] .inspector-var-name { color: #006bb3; }
+body[data-theme="light"] .inspector-var-type { color: #b35900; }
+body[data-theme="light"] .inspector-var-value { color: #222; }
+/* Step-through view */
+#inspector-steps .step-controls {
+    display: flex; gap: 6px; align-items: center;
+    padding: 6px 4px 10px; border-bottom: 1px solid rgba(255,255,255,0.06);
+    flex-wrap: wrap;
+}
+.step-btn {
+    padding: 3px 10px; background: #3a3a3a; color: #ccc;
+    border: 1px solid #555; border-radius: 3px; cursor: pointer;
+    font-size: 12px; min-width: 32px;
+}
+.step-btn:hover:not(:disabled) { background: #4a4a4a; color: #fff; }
+.step-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.step-progress {
+    flex: 1; min-width: 80px; font-size: 11px; color: #a0a0a0;
+    font-family: 'Consolas', monospace;
+}
+.step-display {
+    margin-top: 8px;
+    display: grid; grid-template-columns: 1fr 1fr; gap: 8px;
+}
+@media (max-width: 700px) { .step-display { grid-template-columns: 1fr; } }
+.step-pane {
+    background: #1a1a1a; border: 1px solid #2d2d2d; border-radius: 3px;
+    padding: 6px 8px; font-family: 'Consolas', monospace; font-size: 12px;
+    min-height: 60px;
+}
+body[data-theme="light"] .step-pane { background: #fafafa; border-color: #d0d0d0; }
+.step-pane h5 {
+    margin: 0 0 4px; font-size: 10px; text-transform: uppercase;
+    color: #9cdcfe; letter-spacing: 1px; font-weight: 700;
+}
+body[data-theme="light"] .step-pane h5 { color: #006bb3; }
+.step-locals .inspector-var-row { padding: 2px 0; border: none; }
+.step-line-display {
+    margin-top: 4px; padding: 4px 6px; background: #0e0e0e;
+    border-left: 3px solid #75beff; color: #ccc; word-break: break-word;
+}
+body[data-theme="light"] .step-line-display { background: #fff; color: #222; }
+.step-line-num { color: #888; margin-right: 8px; font-size: 11px; }
+/* Call-tape view */
+.calltape-tree { font-family: 'Consolas', monospace; font-size: 12px; line-height: 1.5; }
+.calltape-node {
+    margin-left: 16px; padding-left: 8px;
+    border-left: 1px dotted rgba(255,255,255,0.15);
+}
+body[data-theme="light"] .calltape-node { border-left-color: rgba(0,0,0,0.18); }
+.calltape-call { color: #d4d4d4; }
+.calltape-fname { color: #dcdcaa; font-weight: 600; }
+body[data-theme="light"] .calltape-fname { color: #795e26; }
+.calltape-args { color: #9cdcfe; }
+.calltape-arrow { color: #888; margin: 0 4px; }
+.calltape-return { color: #b5cea8; }
+body[data-theme="light"] .calltape-return { color: #098658; }
+.calltape-throw { color: #f48771; }
+.calltape-toggle {
+    display: inline-block; width: 12px; cursor: pointer; user-select: none;
+    color: #888; margin-right: 2px;
+}
+.calltape-children.collapsed { display: none; }
+.calltape-summary {
+    padding: 6px 8px; background: #1a1a1a; border-radius: 3px;
+    margin-bottom: 8px; font-size: 11px; color: #a0a0a0;
+}
+body[data-theme="light"] .calltape-summary { background: #f0f0f0; color: #444; }
+/* ACE marker for the currently-stepped line */
+.ace_editor .webide-step-marker {
+    position: absolute; background: rgba(255, 215, 0, 0.18); z-index: 4;
+}
+body[data-theme="hc"] .ace_editor .webide-step-marker { background: rgba(255, 215, 0, 0.5); }
+
+/* ============================================================
    PREFERENCES — Themes, font size, reading mode (dyslexia-friendly)
    Driven by data-attributes on <body> set by applyPrefs() in JS.
    localStorage key: 'webide.prefs' (JSON).
@@ -1104,6 +1221,9 @@ body[data-theme="hc"] .shortcut-keys kbd { background: #000; color: #ffd700; bor
           <button class="bottom-tab"        id="btab-suggestions"
                   role="tab" aria-selected="false" aria-controls="suggestions-panel" tabindex="-1"
                   onclick="switchBottomTab('suggestions')">Suggestions <span id="suggestions-count" aria-label="suggestion count" style="opacity:0.6;"></span></button>
+          <button class="bottom-tab"        id="btab-inspector"
+                  role="tab" aria-selected="false" aria-controls="inspector-panel" tabindex="-1"
+                  onclick="switchBottomTab('inspector')">Inspector</button>
 
           <div id="bottom-panel-actions">
             <button class="icon-btn" id="clear-console" title="Clear Output" aria-label="Clear output">✕ Clear Output</button>
@@ -1125,6 +1245,42 @@ body[data-theme="hc"] .shortcut-keys kbd { background: #000; color: #ffd700; bor
           <div id="suggestions-list" aria-live="polite" aria-atomic="false">
             <div style="padding:20px; text-align:center; color:#a0a0a0;">
               No suggestions. Code quality feedback will appear here.
+            </div>
+          </div>
+        </div>
+
+        <!-- Inspector Panel: variables, step-through (Python), call-stack tape -->
+        <div id="inspector-panel" class="bottom-content" role="tabpanel" aria-labelledby="btab-inspector" hidden>
+          <div id="inspector-toolbar" role="tablist" aria-label="Inspector views">
+            <button class="inspector-subtab active" id="insub-vars"
+                    role="tab" aria-selected="true" aria-controls="inspector-vars"
+                    onclick="switchInspectorView('vars')">Variables</button>
+            <button class="inspector-subtab" id="insub-steps"
+                    role="tab" aria-selected="false" aria-controls="inspector-steps" tabindex="-1"
+                    onclick="switchInspectorView('steps')">Step-Through</button>
+            <button class="inspector-subtab" id="insub-trace"
+                    role="tab" aria-selected="false" aria-controls="inspector-trace" tabindex="-1"
+                    onclick="switchInspectorView('trace')">Call Tape</button>
+            <div style="margin-left:auto; display:flex; gap:6px; padding:0 6px;">
+              <button id="inspector-step-run" class="action-btn" type="button"
+                      title="Re-run with step instrumentation (Python only)"
+                      style="padding:2px 10px; height:22px; font-size:11px;">↻ Step Run</button>
+            </div>
+          </div>
+          <div id="inspector-body">
+            <div id="inspector-vars" class="inspector-view active" role="tabpanel" aria-labelledby="insub-vars">
+              <div class="inspector-empty">Run your code to inspect variables.</div>
+            </div>
+            <div id="inspector-steps" class="inspector-view" role="tabpanel" aria-labelledby="insub-steps" hidden>
+              <div class="inspector-empty">Click <strong>Step Run</strong> above to record execution steps. Available for Python.</div>
+            </div>
+            <div id="inspector-trace" class="inspector-view" role="tabpanel" aria-labelledby="insub-trace" hidden>
+              <div class="inspector-empty">
+                Run your code to see the function-call tape.<br>
+                <span style="color:#888; font-size:11px;">For Python, calls are recorded automatically. For JavaScript, wrap calls with
+                <code style="color:#9cdcfe;">webideTrace.call('name', args)</code> /
+                <code style="color:#9cdcfe;">webideTrace.return(value)</code>.</span>
+              </div>
             </div>
           </div>
         </div>
@@ -1276,18 +1432,192 @@ def pyodide_print(s):
                 ret += sep
         return ret + end
 
+    # ---------- Inspector helpers (variables + call tape + step-through) -----
+    # These mirror state into JS globals (window['__webide_vars'] etc.) where
+    # the IDE renders them in the Inspector panel after each run.
+
+    _WEBIDE_RESERVED = {'window', 'get_formatted', '__name__', '__builtins__'}
+
+    def _webide_safe_repr(v, limit=200):
+        try:
+            if isinstance(v, (int, float, bool)) or v is None:
+                return str(v)
+            if isinstance(v, str):
+                return v if len(v) < limit else v[:limit] + '...'
+            if callable(v):
+                return '<function ' + getattr(v, '__name__', '?') + '>'
+            s = repr(v)
+            return s if len(s) < limit else s[:limit] + '...'
+        except Exception:
+            return '<unrepresentable>'
+
+    def _webide_snapshot_vars(ns):
+        snap = {}
+        for k, v in ns.items():
+            if k in _WEBIDE_RESERVED:
+                continue
+            if k.startswith('__') and k.endswith('__'):
+                continue
+            tname = type(v).__name__
+            snap[k] = {'type': tname, 'value': _webide_safe_repr(v)}
+        return snap
+
+    def _webide_dict_to_js(d):
+        # Convert a Python dict to a JS-side plain object, recursively for one level.
+        obj = window.Object.new()
+        for k, v in d.items():
+            if isinstance(v, dict):
+                inner = window.Object.new()
+                for ik, iv in v.items():
+                    inner[ik] = iv
+                obj[k] = inner
+            else:
+                obj[k] = v
+        return obj
+
+    def _webide_list_to_js(lst):
+        arr = window.Array.new()
+        for item in lst:
+            if isinstance(item, dict):
+                arr.push(_webide_dict_to_js(item))
+            else:
+                arr.push(item)
+        return arr
+
     def run_python_code(code):
         result = ""
+        # Pre-populate user_ns with the helpers our injected print uses, then
+        # use the SAME dict as globals AND locals so top-level definitions are
+        # visible to functions defined in user code (Python scoping rule).
+        user_ns = {'__name__': '__main__', 'window': window, 'get_formatted': get_formatted}
         try:
             window['python_code_result'] = ''
             code = code.replace("print(", "window['python_code_result'] += get_formatted(")
-            exec(code)
+            exec(code, user_ns)
             result = window['python_code_result']
         except Exception as exc:
             result = traceback.format_exc()
+        # Always snapshot user variables for the Inspector panel.
+        try:
+            window['__webide_vars'] = _webide_dict_to_js(_webide_snapshot_vars(user_ns))
+        except Exception:
+            pass
+        return result
+
+    # ---------- Step-through + call tape via sys.settrace --------------------
+    # Brython's settrace support is limited and may not fire for all events,
+    # but Pyodide (full CPython) handles it cleanly. The JS side checks the
+    # resulting arrays and shows a graceful fallback message if empty.
+
+    _STEP_LIMIT = 2000   # cap to avoid runaway captures
+    _CALL_LIMIT = 2000
+
+    def run_python_code_traced(code):
+        steps = []
+        call_root = {'name': '<module>', 'args': '', 'children': [], 'returnValue': None, 'exception': None}
+        call_stack = [call_root]
+        call_count = [0]
+
+        user_ns = {'__name__': '__main__', 'window': window, 'get_formatted': get_formatted}
+
+        def tracer(frame, event, arg):
+            try:
+                fname = frame.f_code.co_name
+                lineno = frame.f_lineno
+                if event == 'line' and len(steps) < _STEP_LIMIT:
+                    locs = {}
+                    for k, v in frame.f_locals.items():
+                        if k in _WEBIDE_RESERVED: continue
+                        if k.startswith('__'): continue
+                        locs[k] = {'type': type(v).__name__, 'value': _webide_safe_repr(v, 80)}
+                    steps.append({
+                        'lineno': lineno,
+                        'function': fname,
+                        'locals': locs,
+                    })
+                elif event == 'call' and call_count[0] < _CALL_LIMIT:
+                    call_count[0] += 1
+                    args = []
+                    try:
+                        for k, v in frame.f_locals.items():
+                            if k.startswith('__'): continue
+                            args.append(k + '=' + _webide_safe_repr(v, 40))
+                    except Exception:
+                        pass
+                    node = {
+                        'name': fname,
+                        'args': ', '.join(args[:6]),
+                        'children': [],
+                        'returnValue': None,
+                        'exception': None,
+                        'lineno': lineno,
+                    }
+                    call_stack[-1]['children'].append(node)
+                    call_stack.append(node)
+                elif event == 'return':
+                    if len(call_stack) > 1:
+                        call_stack[-1]['returnValue'] = _webide_safe_repr(arg, 80)
+                        call_stack.pop()
+                elif event == 'exception':
+                    if len(call_stack) > 0:
+                        try:
+                            call_stack[-1]['exception'] = _webide_safe_repr(arg[1] if isinstance(arg, tuple) else arg, 80)
+                        except Exception:
+                            call_stack[-1]['exception'] = '<exception>'
+            except Exception:
+                pass
+            return tracer
+
+        result = ""
+        try:
+            window['python_code_result'] = ''
+            traced = code.replace("print(", "window['python_code_result'] += get_formatted(")
+            sys.settrace(tracer)
+            try:
+                exec(traced, user_ns)
+            finally:
+                sys.settrace(None)
+            result = window['python_code_result']
+        except Exception as exc:
+            result = traceback.format_exc()
+
+        # Convert nested Python dicts/lists to JS-friendly objects/arrays.
+        def to_js(node):
+            o = window.Object.new()
+            o['name'] = node['name']
+            o['args'] = node['args']
+            o['returnValue'] = node['returnValue']
+            o['exception'] = node['exception']
+            o['lineno'] = node.get('lineno', 0)
+            kids = window.Array.new()
+            for c in node['children']:
+                kids.push(to_js(c))
+            o['children'] = kids
+            return o
+
+        try:
+            window['__webide_vars'] = _webide_dict_to_js(_webide_snapshot_vars(user_ns))
+            steps_js = window.Array.new()
+            for s in steps:
+                obj = window.Object.new()
+                obj['lineno'] = s['lineno']
+                obj['function'] = s['function']
+                inner = window.Object.new()
+                for k, v in s['locals'].items():
+                    cell = window.Object.new()
+                    cell['type'] = v['type']
+                    cell['value'] = v['value']
+                    inner[k] = cell
+                obj['locals'] = inner
+                steps_js.push(obj)
+            window['__webide_steps'] = steps_js
+            window['__webide_calltree'] = to_js(call_root)
+        except Exception:
+            pass
         return result
 
     window.run_python_code = run_python_code
+    window.run_python_code_traced = run_python_code_traced
 </script>
 
 <!-- xterm.js (terminal emulator) -->
@@ -3019,12 +3349,409 @@ def pyodide_print(s):
             setTimeout(() => { _runGuard = false; }, 1000);
             saveActiveTabs();
             startRunWatchdog();
+            _beforeRun();
             // runCode is async; clear the watchdog when it settles, success or fail.
             // Wrapped in Promise.resolve so non-Promise return values don't crash.
             Promise.resolve()
                 .then(() => runCode())
-                .finally(() => clearRunWatchdog());
+                .finally(() => { clearRunWatchdog(); _afterRun(); });
         });
+
+        // -- Inspector (variables, step-through, call tape) --------------------
+        // Populated after each run from window.__webide_vars / __webide_steps /
+        // __webide_calltree (Python) or by diffing window keys (JavaScript) plus
+        // the optional window.webideTrace API students can call from JS code.
+        const _inspectorState = {
+            vars: null,        // { name: { type, value }, ... }
+            steps: null,       // [ { lineno, function, locals } ]
+            callTree: null,    // root call node
+            currentStep: 0,
+            _lineMarkerId: null,
+        };
+        let _stepRunRequested = false;
+
+        // Public API students can use to record call-stack entries from JS.
+        // Wrap a recursive call:  webideTrace.call('fact', n);  ...; return webideTrace.return(result);
+        window.webideTrace = {
+            _root: { name: '<top>', args: '', children: [], returnValue: null, exception: null },
+            _stack: null,
+            _reset: function() {
+                this._root = { name: '<top>', args: '', children: [], returnValue: null, exception: null };
+                this._stack = [this._root];
+            },
+            call: function(name) {
+                if (!this._stack) this._reset();
+                const args = Array.prototype.slice.call(arguments, 1);
+                const argStr = args.map(a => {
+                    try {
+                        if (typeof a === 'string') return JSON.stringify(a).slice(0, 40);
+                        if (typeof a === 'object' && a !== null) return JSON.stringify(a).slice(0, 40);
+                        return String(a);
+                    } catch (e) { return '?'; }
+                }).join(', ');
+                const node = { name: String(name), args: argStr, children: [], returnValue: null, exception: null };
+                this._stack[this._stack.length - 1].children.push(node);
+                this._stack.push(node);
+            },
+            return: function(value) {
+                if (!this._stack || this._stack.length <= 1) return value;
+                const node = this._stack.pop();
+                try {
+                    if (typeof value === 'string') node.returnValue = JSON.stringify(value).slice(0, 80);
+                    else if (typeof value === 'object' && value !== null) node.returnValue = JSON.stringify(value).slice(0, 80);
+                    else node.returnValue = String(value);
+                } catch (e) {}
+                return value;
+            }
+        };
+
+        // JS-only: capture top-level globals before/after eval to compute a diff
+        let _windowKeysBaseline = null;
+        function snapshotJsGlobalsBefore() {
+            try { _windowKeysBaseline = new Set(Object.keys(window)); }
+            catch (e) { _windowKeysBaseline = null; }
+        }
+        function snapshotJsGlobalsAfter() {
+            if (!_windowKeysBaseline) return null;
+            const newKeys = Object.keys(window).filter(k => !_windowKeysBaseline.has(k));
+            const out = {};
+            for (const k of newKeys) {
+                if (k.startsWith('_') || k.startsWith('webide')) continue;
+                if (k === 'feedbackString' || k === 'PROCESSING_CODE_BEGIN' || k === 'PROCESSING_CODE_END') continue;
+                try {
+                    const v = window[k];
+                    let tname, strVal;
+                    if (v === null) { tname = 'null'; strVal = 'null'; }
+                    else if (Array.isArray(v)) {
+                        tname = 'array';
+                        try { strVal = JSON.stringify(v).slice(0, 200); } catch (e) { strVal = '[Array]'; }
+                    }
+                    else if (typeof v === 'function') { tname = 'function'; strVal = '<function ' + (v.name || '?') + '>'; }
+                    else if (typeof v === 'object') {
+                        tname = 'object';
+                        try { strVal = JSON.stringify(v).slice(0, 200); } catch (e) { strVal = '[Object]'; }
+                    }
+                    else { tname = typeof v; strVal = String(v); }
+                    if (strVal && strVal.length > 200) strVal = strVal.slice(0, 200) + '...';
+                    out[k] = { type: tname, value: strVal };
+                } catch (e) {}
+            }
+            return out;
+        }
+
+        function _beforeRun() {
+            if (window.webideTrace) window.webideTrace._reset();
+            window.__webide_vars = null;
+            window.__webide_steps = null;
+            window.__webide_calltree = null;
+            snapshotJsGlobalsBefore();
+            // Step Run mode: swap in the traced Python runner for this one call
+            if (_stepRunRequested && _LANG_FAMILY === 'python' && window.run_python_code_traced) {
+                window._webide_orig_run_python = window.run_python_code;
+                window.run_python_code = window.run_python_code_traced;
+            }
+        }
+        function _afterRun() {
+            if (window._webide_orig_run_python) {
+                window.run_python_code = window._webide_orig_run_python;
+                window._webide_orig_run_python = null;
+            }
+            _stepRunRequested = false;
+            refreshInspectorFromRun();
+        }
+
+        function refreshInspectorFromRun() {
+            // Variables: prefer Python's __webide_vars, else JS-side diff
+            let vars = null;
+            if (window.__webide_vars && typeof window.__webide_vars === 'object') {
+                vars = {};
+                for (const k of Object.keys(window.__webide_vars)) {
+                    const v = window.__webide_vars[k];
+                    vars[k] = (v && typeof v === 'object' && 'type' in v) ? v : { type: typeof v, value: String(v) };
+                }
+            } else {
+                vars = snapshotJsGlobalsAfter();
+            }
+            _inspectorState.vars = vars;
+
+            // Steps (Python traced run only)
+            if (window.__webide_steps && window.__webide_steps.length) {
+                const steps = [];
+                for (let i = 0; i < window.__webide_steps.length; i++) {
+                    const s = window.__webide_steps[i];
+                    const locals = {};
+                    if (s.locals) {
+                        for (const k of Object.keys(s.locals)) {
+                            const cell = s.locals[k];
+                            locals[k] = { type: cell.type, value: cell.value };
+                        }
+                    }
+                    steps.push({ lineno: s.lineno, function: s.function, locals });
+                }
+                _inspectorState.steps = steps;
+                _inspectorState.currentStep = 0;
+            }
+
+            // Call tree: Python settrace, or JS webideTrace
+            if (window.__webide_calltree) {
+                _inspectorState.callTree = jsifyCallTree(window.__webide_calltree);
+            } else if (window.webideTrace && window.webideTrace._root && window.webideTrace._root.children.length) {
+                _inspectorState.callTree = window.webideTrace._root;
+            }
+            renderInspector();
+        }
+
+        function jsifyCallTree(node) {
+            const out = {
+                name: node.name, args: node.args,
+                returnValue: node.returnValue, exception: node.exception,
+                lineno: node.lineno || 0, children: []
+            };
+            if (node.children) {
+                for (let i = 0; i < node.children.length; i++) {
+                    out.children.push(jsifyCallTree(node.children[i]));
+                }
+            }
+            return out;
+        }
+
+        function renderInspector() {
+            renderInspectorVars();
+            renderInspectorSteps();
+            renderInspectorTree();
+        }
+
+        function renderInspectorVars() {
+            const view = document.getElementById('inspector-vars');
+            if (!view) return;
+            const vars = _inspectorState.vars;
+            if (!vars || Object.keys(vars).length === 0) {
+                view.innerHTML = '<div class="inspector-empty">No variables to show. Run your code first.</div>';
+                return;
+            }
+            view.innerHTML = '';
+            for (const k of Object.keys(vars)) {
+                const v = vars[k];
+                const row = document.createElement('div');
+                row.className = 'inspector-var-row';
+                const nameEl = document.createElement('span');
+                nameEl.className = 'inspector-var-name';
+                nameEl.textContent = k;
+                const typeEl = document.createElement('span');
+                typeEl.className = 'inspector-var-type';
+                typeEl.textContent = (v && v.type) ? v.type : typeof v;
+                const valEl = document.createElement('span');
+                valEl.className = 'inspector-var-value';
+                valEl.textContent = (v && 'value' in v) ? v.value : String(v);
+                row.appendChild(nameEl);
+                row.appendChild(typeEl);
+                row.appendChild(valEl);
+                view.appendChild(row);
+            }
+        }
+
+        function renderInspectorSteps() {
+            const view = document.getElementById('inspector-steps');
+            if (!view) return;
+            const steps = _inspectorState.steps;
+            if (!steps || steps.length === 0) {
+                const msg = (_LANG_FAMILY === 'python')
+                    ? 'Click <strong>Step Run</strong> above to record execution steps.'
+                    : 'Step-Through is available for Python.';
+                view.innerHTML = '<div class="inspector-empty">' + msg + '</div>';
+                return;
+            }
+            let cur = _inspectorState.currentStep | 0;
+            if (cur < 0) cur = 0;
+            if (cur >= steps.length) cur = steps.length - 1;
+            _inspectorState.currentStep = cur;
+
+            view.innerHTML =
+                '<div class="step-controls">' +
+                  '<button class="step-btn" id="step-first" aria-label="Jump to first step" title="First">⏮</button>' +
+                  '<button class="step-btn" id="step-prev" aria-label="Previous step" title="Previous">◀</button>' +
+                  '<button class="step-btn" id="step-next" aria-label="Next step" title="Next">▶</button>' +
+                  '<button class="step-btn" id="step-last" aria-label="Jump to last step" title="Last">⏭</button>' +
+                  '<span class="step-progress" id="step-progress"></span>' +
+                '</div>' +
+                '<div class="step-display">' +
+                  '<div class="step-pane">' +
+                    '<h5>Where</h5>' +
+                    '<div>Function: <strong class="step-fn"></strong></div>' +
+                    '<div class="step-line-display">' +
+                      '<span class="step-line-num"></span><span class="step-line-code"></span>' +
+                    '</div>' +
+                  '</div>' +
+                  '<div class="step-pane step-locals">' +
+                    '<h5>Local Variables</h5>' +
+                    '<div class="step-locals-list"></div>' +
+                  '</div>' +
+                '</div>';
+
+            const updateStep = () => {
+                const i = _inspectorState.currentStep;
+                const s = steps[i];
+                view.querySelector('#step-progress').textContent = 'Step ' + (i + 1) + ' of ' + steps.length;
+                view.querySelector('.step-fn').textContent = s.function || '<module>';
+                view.querySelector('.step-line-num').textContent = 'Line ' + s.lineno + '  ';
+                view.querySelector('.step-line-code').textContent = getEditorLine(s.lineno) || '';
+                const list = view.querySelector('.step-locals-list');
+                list.innerHTML = '';
+                const locals = s.locals || {};
+                const keys = Object.keys(locals);
+                if (keys.length === 0) {
+                    list.innerHTML = '<div style="color:#888; font-style:italic;">(no locals)</div>';
+                } else {
+                    for (const k of keys) {
+                        const v = locals[k];
+                        const row = document.createElement('div');
+                        row.className = 'inspector-var-row';
+                        const n = document.createElement('span'); n.className = 'inspector-var-name'; n.textContent = k;
+                        const t = document.createElement('span'); t.className = 'inspector-var-type'; t.textContent = v.type;
+                        const vEl = document.createElement('span'); vEl.className = 'inspector-var-value'; vEl.textContent = v.value;
+                        row.appendChild(n); row.appendChild(t); row.appendChild(vEl);
+                        list.appendChild(row);
+                    }
+                }
+                // ACE highlight the line for visual feedback
+                try {
+                    if (ace_editor) {
+                        if (_inspectorState._lineMarkerId) {
+                            ace_editor.session.removeMarker(_inspectorState._lineMarkerId);
+                            _inspectorState._lineMarkerId = null;
+                        }
+                        const Range = ace.require('ace/range').Range;
+                        _inspectorState._lineMarkerId = ace_editor.session.addMarker(
+                            new Range(s.lineno - 1, 0, s.lineno - 1, 1),
+                            'webide-step-marker', 'fullLine');
+                        ace_editor.gotoLine(s.lineno, 0, false);
+                    }
+                } catch (e) {}
+            };
+            view.querySelector('#step-first').addEventListener('click', () => { _inspectorState.currentStep = 0; updateStep(); });
+            view.querySelector('#step-last').addEventListener('click',  () => { _inspectorState.currentStep = steps.length - 1; updateStep(); });
+            view.querySelector('#step-prev').addEventListener('click',  () => { if (_inspectorState.currentStep > 0) { _inspectorState.currentStep--; updateStep(); } });
+            view.querySelector('#step-next').addEventListener('click',  () => { if (_inspectorState.currentStep < steps.length - 1) { _inspectorState.currentStep++; updateStep(); } });
+            updateStep();
+        }
+
+        function renderInspectorTree() {
+            const view = document.getElementById('inspector-trace');
+            if (!view) return;
+            const tree = _inspectorState.callTree;
+            if (!tree || !tree.children || tree.children.length === 0) {
+                const hint = (_LANG_FAMILY === 'python')
+                    ? 'Use <strong>Step Run</strong> to capture function calls.'
+                    : 'Wrap recursive calls with <code>webideTrace.call(\'fname\', arg1, arg2)</code> and <code>return webideTrace.return(result)</code> to record them.';
+                view.innerHTML = '<div class="inspector-empty">No call tape recorded.<br>' + hint + '</div>';
+                return;
+            }
+            view.innerHTML = '';
+            let totalCalls = 0, maxDepth = 0;
+            const count = (node, depth) => {
+                totalCalls++;
+                if (depth > maxDepth) maxDepth = depth;
+                for (const c of (node.children || [])) count(c, depth + 1);
+            };
+            for (const c of tree.children) count(c, 1);
+            const summary = document.createElement('div');
+            summary.className = 'calltape-summary';
+            summary.textContent = totalCalls + ' call' + (totalCalls === 1 ? '' : 's') + ', max depth ' + maxDepth;
+            view.appendChild(summary);
+
+            const root = document.createElement('div');
+            root.className = 'calltape-tree';
+            const renderNode = (node, container, depth) => {
+                const wrap = document.createElement('div');
+                wrap.className = 'calltape-node';
+                if (depth === 0) wrap.style.marginLeft = '0';
+                const line = document.createElement('div');
+                line.className = 'calltape-call';
+                const hasKids = node.children && node.children.length > 0;
+                const tog = document.createElement('span');
+                tog.className = 'calltape-toggle';
+                tog.textContent = hasKids ? '▼' : ' ';
+                line.appendChild(tog);
+                const fname = document.createElement('span');
+                fname.className = 'calltape-fname';
+                fname.textContent = node.name;
+                line.appendChild(fname);
+                line.appendChild(document.createTextNode('(' + (node.args || '') + ')'));
+                if (node.exception) {
+                    const ex = document.createElement('span');
+                    ex.className = 'calltape-throw';
+                    ex.textContent = '  ⚡ ' + node.exception;
+                    line.appendChild(ex);
+                } else if (node.returnValue != null && node.returnValue !== 'None' && node.returnValue !== 'undefined') {
+                    const arrow = document.createElement('span');
+                    arrow.className = 'calltape-arrow';
+                    arrow.textContent = '→';
+                    const ret = document.createElement('span');
+                    ret.className = 'calltape-return';
+                    ret.textContent = node.returnValue;
+                    line.appendChild(arrow);
+                    line.appendChild(ret);
+                }
+                wrap.appendChild(line);
+                if (hasKids) {
+                    const kids = document.createElement('div');
+                    kids.className = 'calltape-children';
+                    for (const c of node.children) renderNode(c, kids, depth + 1);
+                    wrap.appendChild(kids);
+                    tog.style.cursor = 'pointer';
+                    tog.addEventListener('click', () => {
+                        const coll = kids.classList.toggle('collapsed');
+                        tog.textContent = coll ? '▶' : '▼';
+                    });
+                }
+                container.appendChild(wrap);
+            };
+            for (const c of tree.children) renderNode(c, root, 0);
+            view.appendChild(root);
+        }
+
+        function getEditorLine(lineno) {
+            try {
+                if (!ace_editor) return '';
+                const sess = ace_editor.session;
+                if (lineno < 1 || lineno > sess.getLength()) return '';
+                return sess.getLine(lineno - 1);
+            } catch (e) { return ''; }
+        }
+        window.getEditorLine = getEditorLine;
+
+        // Inspector sub-tab switching
+        window.switchInspectorView = (name) => {
+            document.querySelectorAll('.inspector-subtab').forEach(t => {
+                const isActive = t.id === 'insub-' + name;
+                t.classList.toggle('active', isActive);
+                t.setAttribute('aria-selected', isActive ? 'true' : 'false');
+                t.setAttribute('tabindex', isActive ? '0' : '-1');
+            });
+            document.querySelectorAll('.inspector-view').forEach(v => {
+                const isActive = v.id === 'inspector-' + name;
+                v.classList.toggle('active', isActive);
+                if (isActive) v.removeAttribute('hidden');
+                else          v.setAttribute('hidden', '');
+            });
+        };
+
+        // Step Run button: re-runs in Python tracing mode
+        const _stepRunBtn = document.getElementById('inspector-step-run');
+        if (_stepRunBtn) {
+            // Hide for non-Python languages
+            if (_LANG_FAMILY !== 'python') _stepRunBtn.style.display = 'none';
+            _stepRunBtn.addEventListener('click', () => {
+                if (_LANG_FAMILY !== 'python') {
+                    if (typeof ideNotify === 'function') ideNotify('Step Run is currently available for Python.', 'error');
+                    return;
+                }
+                _stepRunRequested = true;
+                if (!runBtn.disabled) runBtn.click();
+                switchBottomTab('inspector');
+                setTimeout(() => switchInspectorView('steps'), 80);
+            });
+        }
 
         function saveActiveTabs() {
             logToConsole("Saving open tabs...");
