@@ -84,9 +84,12 @@ echo "[4/5] Running spec files (filter: ${SPEC_FILTER:-<all>}) …"
 # WEBIDE_TEST_CHROMIUM and PLAYWRIGHT_BROWSERS_PATH are both optional —
 # the harness will fall back to Playwright's standard browser lookup
 # (`npx playwright install chromium` writes to ~/.cache/ms-playwright).
+# set -e is on globally; if the runner exits non-zero the rest of this script
+# (the report-path summary) would be skipped without || RC=$?. We want the
+# summary printed regardless, then exit with the runner's actual exit code.
+RC=0
 WEBIDE_TEST_BASE="http://localhost:${WEBIDE_TEST_PORT}" \
-node "$TESTS_DIR/runner.mjs" "$SPEC_FILTER"
-RC=$?
+node "$TESTS_DIR/runner.mjs" "$SPEC_FILTER" || RC=$?
 
 echo
 echo "[5/5] Report:"

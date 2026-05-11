@@ -1650,8 +1650,9 @@ _webide_sys.settrace(None)
         "try:\n"
         "    window['__webide_vars'] = window.Object.new()\n"
         "    for _wk in list(locals().keys()):\n"
-        "        if _wk.startswith('_w') or _wk.startswith('__'): continue\n"
-        "        if _wk in ('window','get_formatted','traceback','sys','doc','tb'): continue\n"
+        "        if _wk.startswith('_webide') or _wk.startswith('__'): continue\n"
+        "        if _wk in ('window','get_formatted','traceback','sys','doc','tb','_WEBIDE_VAR_POSTLUDE',\n"
+        "                   '_WEBIDE_RESERVED','_STEP_LIMIT','_CALL_LIMIT'): continue\n"
         "        _wv = locals()[_wk]\n"
         "        try: _ws = repr(_wv)\n"
         "        except Exception: _ws = '<unrepresentable>'\n"
@@ -1896,7 +1897,10 @@ _webide_sys.settrace(None)
             { lang: 'python', re: /IndexError: list index out of range/,
               explain: () => `You asked for an item beyond the end of a list. Lists are 0-indexed: a list of length 5 has valid indices 0..4. Print \`len(your_list)\` to check.` },
             { lang: 'python', re: /KeyError: '?([^'"]+)'?/,
-              explain: (m) => `The dictionary doesn't have a key called \`${m[1]}\`. Check the spelling, or use \`my_dict.get(${m[1]})\` to get \`None\` instead of an error when the key is missing.` },
+              // The captured key is unquoted in the exception message; the
+              // suggested code needs it quoted, otherwise it reads as a bare
+              // identifier (NameError when run).
+              explain: (m) => `The dictionary doesn't have a key called \`'${m[1]}'\`. Check the spelling, or use \`my_dict.get('${m[1]}')\` to get \`None\` instead of an error when the key is missing.` },
             { lang: 'python', re: /ZeroDivisionError/,
               explain: () => `You divided by zero. Add a check like \`if denominator != 0:\` before the division.` },
             { lang: 'python', re: /SyntaxError: (.*)/,
@@ -3635,7 +3639,11 @@ _webide_sys.settrace(None)
             const newKeys = Object.keys(window).filter(k => !_windowKeysBaseline.has(k));
             const out = {};
             for (const k of newKeys) {
-                if (k.startsWith('_') || k.startsWith('webide')) continue;
+                // Skip our own internals and conventional Python-style dunders,
+                // but allow leading-underscore names like _count / _word that
+                // students might legitimately use.
+                if (k.startsWith('__webide') || k.startsWith('_webide')) continue;
+                if (k.startsWith('webideTrace')) continue;
                 if (k === 'feedbackString' || k === 'PROCESSING_CODE_BEGIN' || k === 'PROCESSING_CODE_END') continue;
                 try {
                     const v = window[k];

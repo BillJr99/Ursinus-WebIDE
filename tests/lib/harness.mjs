@@ -95,12 +95,33 @@ export async function withPage(url, opts, fn) {
     }
 }
 
+// Tracks the result record being filled by the current in-flight step()
+// so snap() can attach screenshots to the correct test (was previously
+// reading results[results.length - 1], which pointed at the PREVIOUS
+// step because step() only pushed after the callback completed).
+let _activeStepResult = null;
+
 /**
  * Run one assertion. Records into results[] and continues regardless of
  * outcome so the suite keeps going after individual failures.
  */
 export async function step(name, fn, opts = {}) {
     const t0 = Date.now();
+    // Push the record BEFORE running the callback so snap() can attach
+    // screenshots to the right test. Mark as 'running' for clarity if
+    // anyone inspects results mid-flight.
+    const record = {
+        spec: _currentSpec || 'unknown',
+        name,
+        status: 'running',
+        message: '',
+        durationMs: 0,
+        error: null,
+        meta: opts.meta || null,
+    };
+    results.push(record);
+    _activeStepResult = record;
+
     let status = 'pass', message = '', errMsg = null;
     try {
         const r = await fn();
@@ -109,17 +130,15 @@ export async function step(name, fn, opts = {}) {
         status = 'fail';
         errMsg = e.stack || String(e);
         message = e.message || String(e);
+    } finally {
+        _activeStepResult = null;
     }
-    const durationMs = Date.now() - t0;
-    results.push({
-        spec: _currentSpec || 'unknown',
-        name,
-        status,
-        message,
-        durationMs,
-        error: errMsg,
-        meta: opts.meta || null,
-    });
+
+    record.status = status;
+    record.message = message;
+    record.error = errMsg;
+    record.durationMs = Date.now() - t0;
+
     const icon = status === 'pass' ? '✓' : '✗';
     const tag = `[${_currentSpec}]`.padEnd(28);
     console.log(`  ${icon} ${tag} ${name}${message ? ' — ' + message : ''}`);
@@ -128,8 +147,9 @@ export async function step(name, fn, opts = {}) {
 
 /**
  * Take a screenshot, store under tests/reports/screens/<spec>-<n>.png,
- * and attach the path to the most recent result for inclusion in the
- * HTML report.
+ * and attach the path to the active step()'s result record. Falls back
+ * to the most recently pushed record if called outside a step (so
+ * pre/post-spec setup snaps still land somewhere reasonable).
  */
 export async function snap(page, label) {
     if (!_shotsDir) return null;
@@ -139,10 +159,10 @@ export async function snap(page, label) {
     const full = path.join(_shotsDir, file);
     try {
         await page.screenshot({ path: full });
-        const last = results[results.length - 1];
-        if (last) {
-            last.screenshots = last.screenshots || [];
-            last.screenshots.push(file);
+        const target = _activeStepResult || results[results.length - 1];
+        if (target) {
+            target.screenshots = target.screenshots || [];
+            target.screenshots.push(file);
         }
         return full;
     } catch (e) {

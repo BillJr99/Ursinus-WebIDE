@@ -30,10 +30,20 @@ export async function startServer({ root, port = 8765 } = {}) {
     if (!started) throw new Error('Static server failed to start on port ' + port);
     return {
         port,
+        // Idempotent: resolve exactly once whether the process exits cleanly,
+        // is force-killed after the SIGKILL timeout, or fails to receive a
+        // signal at all. Clears the SIGKILL timer on a clean exit so we don't
+        // try to kill a dead PID.
         stop: () => new Promise(resolve => {
-            proc.once('close', resolve);
-            try { proc.kill('SIGTERM'); } catch (_e) { resolve(); }
-            setTimeout(() => { try { proc.kill('SIGKILL'); } catch (_e) {} resolve(); }, 1500);
+            let done = false;
+            const finish = () => { if (done) return; done = true; clearTimeout(killTimer); resolve(); };
+            proc.once('close', finish);
+            const killTimer = setTimeout(() => {
+                try { proc.kill('SIGKILL'); } catch (_e) {}
+                finish();
+            }, 1500);
+            try { proc.kill('SIGTERM'); }
+            catch (_e) { finish(); }
         })
     };
 }

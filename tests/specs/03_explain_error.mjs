@@ -16,6 +16,10 @@ const CASES = [
     { url: '/Modules/Cpp/CppIntro.html',               msg: 'segmentation fault',                                     expectMatch: /memory|pointer|null/i,     label: 'C++ segfault' },
     { url: '/Modules/Cpp/CppIntro.html',               msg: "undefined reference to 'main'",                          expectMatch: /linker|spell|library/i,    label: 'C++ undefined ref' },
     { url: '/Modules/SQL/Warmup/Exercise.html',        msg: 'no such table: users',                                   expectMatch: /spelling|schema|table/i,   label: 'SQL no such table' },
+    // KeyError suggestion previously embedded the bare key, producing
+    // `my_dict.get(foo)` which raises NameError when run. Verify the
+    // suggestion is now quoted: `my_dict.get('foo')`.
+    { url: '/Modules/Python/Warmup/Exercise.html',     msg: "KeyError: 'foo'",                                        expectMatch: /'foo'/,                    label: 'Python KeyError (quoted suggestion)' },
 ];
 
 export default async function run() {
