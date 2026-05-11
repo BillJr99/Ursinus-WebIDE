@@ -81,15 +81,11 @@ export default async function run() {
         });
     });
 
-    await step('Pyodide: Run produces output (skipped if CDN unreachable)', async () => {
-        await withPage('/Modules/Pyodide/PlotTenHeads.html', { waitMs: 4000 }, async (page) => {
-            // Pyodide is loaded from cdn.jsdelivr.net; some sandboxed
-            // environments block that. Probe for loadPyodide and skip with
-            // an informative message if absent.
-            const hasLoader = await page.evaluate(() => typeof window.loadPyodide === 'function');
-            if (!hasLoader) {
-                return { message: 'skipped — Pyodide CDN not reachable' };
-            }
+    await step('Pyodide: Run produces output (slow first download)', async () => {
+        // Pyodide downloads ~10MB from cdn.jsdelivr.net on first load — when
+        // running offline this test will fail with a clear "loadPyodide is
+        // not defined" error rather than a timeout. Allow extra wait.
+        await withPage('/Modules/Pyodide/PlotTenHeads.html', { waitMs: 8000 }, async (page) => {
             const out = await clickRunAndCollectConsole(page, { timeout: 90000 });
             expect.greater(out.length, 30, `console: "${out.slice(0, 200)}"`);
         });
