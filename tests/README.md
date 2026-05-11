@@ -49,3 +49,35 @@ tests/
 - **Languages on separate layouts** (NOT covered by these tests, since the new
   features live only in `exercise.html`): R (uses `exercise_r.html`),
   Horstmann (uses `exercise_horstmann.html`).
+
+## Per-language feature support matrix
+
+| Feature                     | Java | C++ | Brython | Pyodide | JS  | SQL | Scheme | Prolog | Graphics |
+|-----------------------------|:----:|:---:|:-------:|:-------:|:---:|:---:|:------:|:------:|:--------:|
+| Theme / font / dyslexia     |  ✓   |  ✓  |   ✓     |   ✓     |  ✓  |  ✓  |   ✓    |   ✓    |    ✓     |
+| Shortcut overlay (`?`)      |  ✓   |  ✓  |   ✓     |   ✓     |  ✓  |  ✓  |   ✓    |   ✓    |    ✓     |
+| Responsive / compact        |  ✓   |  ✓  |   ✓     |   ✓     |  ✓  |  ✓  |   ✓    |   ✓    |    ✓     |
+| Explain-this-error          |  ✓   |  ✓  |   ✓     |   ✓     |  ✓  |  ✓  |   ✓    |   ✓    |    ✓     |
+| Infinite-loop banner        |  ✓   |  ✓  |   ✓     |   ✓     |  ✓  |  ✓  |   ✓    |   ✓    |    ✓     |
+| Variable inspector          |  ·   |  ·  |   ✓     |   ✓     |  ✓  |  ·  |   ·    |   ·    |    ·     |
+| Step-through visualizer     |  ·   |  ·  |   ~     |   ✓     |  ·  |  ·  |   ·    |   ·    |    ·     |
+| Call-stack tape             |  ·   |  ·  |   ~     |   ✓     |  ✓* |  ·  |   ·    |   ·    |    ·     |
+
+- ✓ = supported   · = not available, graceful empty-state shown
+- ~ = best-effort: Brython's `sys.settrace` doesn't fire on `exec()`'d code,
+  so the Steps view will be empty and the empty-state hint shows. Use a
+  Pyodide variant of the exercise for a real step-through experience.
+- ✓\* (JS call-tape) requires the student to wrap recursive calls in the
+  `webideTrace.call(name, ...args)` / `webideTrace.return(value)` helper.
+  Automatic instrumentation would need an AST parser (e.g. acorn) and isn't
+  implemented today.
+
+### Why some languages aren't deeper
+
+- **C++** runs as `clang.wasm` in a Worker; stepping would need wasm-level
+  DWARF / source-map plumbing — out of scope.
+- **SQL** is declarative; "steps" don't apply.
+- **Scheme** (BiwaScheme) and **Prolog** (SWIPL) could be tackled if they
+  expose hooks — not investigated; PRs welcome.
+- **Java** (Processing.js) transpiles to JS at load time; the transpiled
+  code would have to be instrumented after Processing.js produces it.

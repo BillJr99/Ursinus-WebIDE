@@ -36,6 +36,51 @@ export default async function run() {
         });
     });
 
+    // ---- Pyodide step-through (full CPython sys.settrace) ----
+    await step('Pyodide: Step Run populates real step list + call tree', async () => {
+        await withPage('/Modules/Pyodide/PlotTenHeads.html', { waitMs: 6000 }, async (page) => {
+            // Wait until Pyodide is loaded (it downloads ~10 MB from CDN
+            // on first load — long timeout to accommodate)
+            await page.waitForFunction(
+                () => typeof window.loadPyodide === 'function',
+                { timeout: 60000 }
+            ).catch(() => {});
+            await page.waitForFunction(
+                () => document.getElementById('run') && !document.getElementById('run').disabled,
+                { timeout: 30000 }
+            );
+            // Pre-seed editor with code that recurses so the call tree has shape
+            await page.evaluate(() => {
+                const ed = ace.edit('editor-container');
+                ed.setValue('def fact(n):\n    return 1 if n <= 1 else n * fact(n-1)\nresult = fact(4)\n', -1);
+            });
+            // Activate Step Run mode and click Run
+            const stepBtn = page.locator('#inspector-step-run');
+            await stepBtn.click();
+            // Wait for Pyodide to finish executing (it can take 60 s+)
+            const t0 = Date.now();
+            while (Date.now() - t0 < 120000) {
+                const ready = await page.evaluate(() => !!window.__webide_calltree);
+                if (ready) break;
+                await page.waitForTimeout(500);
+            }
+            const result = await page.evaluate(() => ({
+                steps: window.__webide_steps ? window.__webide_steps.length : 0,
+                tree: window.__webide_calltree
+                    ? JSON.parse(JSON.stringify(window.__webide_calltree)) : null,
+            }));
+            expect.greater(result.steps, 3, `expected several recorded line events, got ${result.steps}`);
+            expect.truthy(result.tree && result.tree.children && result.tree.children.length > 0,
+                `expected non-empty call tree, got ${JSON.stringify(result.tree).slice(0, 120)}`);
+            // The recursive fact(4) → fact(3) → fact(2) → fact(1) chain should
+            // be visible somewhere in the tree
+            const flatNames = [];
+            (function walk(n) { flatNames.push(n.name); (n.children || []).forEach(walk); })(result.tree);
+            expect.truthy(flatNames.filter(n => n === 'fact').length >= 4,
+                `expected ≥4 fact calls, got names=${JSON.stringify(flatNames)}`);
+        });
+    });
+
     await step('Python: traced runner is callable + empty-state fallback works', async () => {
         await withPage('/Modules/Python/Warmup/Exercise.html', async (page) => {
             await page.waitForFunction(() => typeof window.run_python_code_traced === 'function');

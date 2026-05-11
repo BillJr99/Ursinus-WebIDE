@@ -1407,6 +1407,74 @@ def pyodide_print(s):
     PYODIDE_COUT += s
 
 </div>
+
+<!-- Step-through tracer for Pyodide (full CPython, so sys.settrace works
+     completely). Prepended to user code when Step Run is requested. -->
+<div id="pyodideStepPrologue" style="display:none;">
+import sys as _webide_sys
+_webide_steps = []
+_webide_calltree = {'name': '&lt;module&gt;', 'args': '', 'children': [], 'returnValue': None, 'exception': None, 'lineno': 0}
+_webide_call_stack = [_webide_calltree]
+_webide_STEP_LIMIT = 2000
+_webide_CALL_LIMIT = 2000
+_webide_call_count = [0]
+
+def _webide_safe_repr(v, limit=80):
+    try:
+        if isinstance(v, (int, float, bool)) or v is None: return str(v)
+        if isinstance(v, str):
+            s = v if len(v) &lt; limit else v[:limit] + '...'
+            return repr(s)
+        if callable(v): return '&lt;function ' + getattr(v, '__name__', '?') + '&gt;'
+        s = repr(v)
+        return s if len(s) &lt; limit else s[:limit] + '...'
+    except Exception:
+        return '&lt;unrepresentable&gt;'
+
+def _webide_tracer(frame, event, arg):
+    try:
+        fname = frame.f_code.co_name
+        lineno = frame.f_lineno
+        if event == 'line' and len(_webide_steps) &lt; _webide_STEP_LIMIT:
+            locs = {}
+            for k, v in frame.f_locals.items():
+                if k.startswith('_webide') or k.startswith('__'): continue
+                locs[k] = {'type': type(v).__name__, 'value': _webide_safe_repr(v)}
+            _webide_steps.append({'lineno': lineno, 'function': fname, 'locals': locs})
+        elif event == 'call' and _webide_call_count[0] &lt; _webide_CALL_LIMIT:
+            _webide_call_count[0] += 1
+            args = []
+            try:
+                for k, v in frame.f_locals.items():
+                    if k.startswith('__'): continue
+                    args.append(k + '=' + _webide_safe_repr(v, 40))
+            except Exception:
+                pass
+            node = {'name': fname, 'args': ', '.join(args[:6]), 'children': [],
+                    'returnValue': None, 'exception': None, 'lineno': lineno}
+            _webide_call_stack[-1]['children'].append(node)
+            _webide_call_stack.append(node)
+        elif event == 'return':
+            if len(_webide_call_stack) &gt; 1:
+                _webide_call_stack[-1]['returnValue'] = _webide_safe_repr(arg)
+                _webide_call_stack.pop()
+        elif event == 'exception':
+            if len(_webide_call_stack) &gt; 0:
+                try:
+                    _webide_call_stack[-1]['exception'] = _webide_safe_repr(
+                        arg[1] if isinstance(arg, tuple) else arg)
+                except Exception:
+                    _webide_call_stack[-1]['exception'] = '&lt;exception&gt;'
+    except Exception:
+        pass
+    return _webide_tracer
+
+_webide_sys.settrace(_webide_tracer)
+</div>
+
+<div id="pyodideStepEpilogue" style="display:none;">
+_webide_sys.settrace(None)
+</div>
 {% endif %}
 
 <script type="text/python">
@@ -4680,7 +4748,31 @@ def pyodide_print(s):
                 {% elsif page.language == "pyodide" %}
                 if (!pyodideLoaded) await pyodidePromise;
                 let student_code = editorText + "\n\n" + document.getElementById("pyodideBoilerplate").innerHTML + "\n\n" + mainText;
+                // Step Run mode: install sys.settrace before, uninstall + serialize after.
+                const _webideStepMode = _stepRunRequested;
+                if (_webideStepMode) {
+                    try {
+                        const prologue = document.getElementById('pyodideStepPrologue').textContent;
+                        pyodide.runPython(prologue);
+                    } catch (e) { console.error('Step prologue failed:', e); }
+                }
                 pyodide.runPython(student_code);
+                if (_webideStepMode) {
+                    try {
+                        pyodide.runPython(document.getElementById('pyodideStepEpilogue').textContent);
+                        // Read out steps + call tree as JS objects
+                        const stepsPy = pyodide.globals.get('_webide_steps');
+                        const treePy  = pyodide.globals.get('_webide_calltree');
+                        if (stepsPy) {
+                            window.__webide_steps = stepsPy.toJs({ dict_converter: Object.fromEntries });
+                            stepsPy.destroy && stepsPy.destroy();
+                        }
+                        if (treePy) {
+                            window.__webide_calltree = treePy.toJs({ dict_converter: Object.fromEntries });
+                            treePy.destroy && treePy.destroy();
+                        }
+                    } catch (e) { console.error('Step epilogue failed:', e); }
+                }
                 // Inspector: snapshot Pyodide globals for the Variables tab
                 try {
                     const skip = new Set(['__name__', '__doc__', '__package__', '__loader__', '__spec__', '__builtins__',
@@ -4690,6 +4782,7 @@ def pyodide_print(s):
                     const keys = pyodide.globals.toJs().keys ? Array.from(pyodide.globals.toJs().keys()) : [];
                     for (const k of keys) {
                         if (skip.has(k) || (k.startsWith('__') && k.endsWith('__'))) continue;
+                        if (k.startsWith('_webide')) continue;  // trace-mode internals
                         try {
                             const v = pyodide.globals.get(k);
                             const tname = (v && v.constructor && v.constructor.name) || typeof v;
