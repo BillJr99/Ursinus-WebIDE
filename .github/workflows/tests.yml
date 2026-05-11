@@ -1,0 +1,98 @@
+name: Test suite
+
+# Triggered on:
+#   - push to any branch
+#   - pull request to any branch
+#   - manually via the Actions tab ("Run workflow")
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+# Cancel an in-flight run when a new commit lands on the same ref
+concurrency:
+  group: tests-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: Headless browser tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Check out repo (with submodules)
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          fetch-depth: 1
+
+      - name: Set up Ruby + cached Bundler
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.3'
+          bundler-cache: true
+
+      - name: Set up Node 22 + npm cache
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: tests/package.json
+
+      - name: Install test-suite dependencies (Playwright)
+        working-directory: tests
+        run: |
+          # tests/package.json is created on first run.sh invocation if
+          # missing; create it up-front so npm has something to install.
+          if [ ! -f package.json ]; then
+            echo '{"name":"ursinus-webide-tests","type":"module","private":true,"dependencies":{"playwright":"^1.56.0"}}' > package.json
+          fi
+          npm install --no-audit --no-fund
+
+      - name: Cache Playwright browsers
+        id: playwright-cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-chromium-${{ runner.os }}-v1
+
+      - name: Install Chromium for Playwright
+        if: steps.playwright-cache.outputs.cache-hit != 'true'
+        working-directory: tests
+        run: npx playwright install --with-deps chromium
+
+      - name: Install system deps for Chromium (only on cache hit)
+        if: steps.playwright-cache.outputs.cache-hit == 'true'
+        working-directory: tests
+        run: npx playwright install-deps chromium
+
+      - name: Run test suite
+        env:
+          PAGES_REPO_NWO: ${{ github.repository }}
+        run: ./tests/run.sh
+
+      - name: Upload HTML report + screenshots
+        # Run even on failure so we can inspect what broke
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-report-${{ github.run_id }}
+          path: |
+            tests/reports/report.html
+            tests/reports/report.md
+            tests/reports/results.json
+            tests/reports/screens/
+          if-no-files-found: warn
+          retention-days: 14
+
+      - name: Summarize in job summary
+        if: always()
+        run: |
+          if [ -f tests/reports/report.md ]; then
+            echo "### Test results" >> "$GITHUB_STEP_SUMMARY"
+            # First handful of lines = summary stats, before the per-spec tables
+            head -8 tests/reports/report.md >> "$GITHUB_STEP_SUMMARY"
+            echo "" >> "$GITHUB_STEP_SUMMARY"
+            echo "Full report + screenshots are available as the **test-report-${{ github.run_id }}** artifact." >> "$GITHUB_STEP_SUMMARY"
+          fi

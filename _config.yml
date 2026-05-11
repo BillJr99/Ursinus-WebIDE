@@ -28,6 +28,16 @@ include:
   - _pages
   - files
 
+# The test suite under tests/, the local Bundler vendor/ directory, and any
+# top-level node_modules are NOT part of the published site. Excluding them
+# keeps `jekyll build` from following symlinks into them.
+exclude:
+  - tests
+  - vendor
+  - node_modules
+  - Gemfile
+  - Gemfile.lock
+
 assets:
   sources:
     - assets

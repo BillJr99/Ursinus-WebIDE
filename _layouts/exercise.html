@@ -459,6 +459,451 @@ button:focus, input:focus, select:focus, .tab:focus {
     border-radius: 3px; border: 1px solid #3a3a3a;
 }
 
+/* ============================================================
+   INSPECTOR PANEL — variables, step-through, call-tape
+   ============================================================ */
+#inspector-panel { display: none; }
+#inspector-panel.active { display: flex; flex-direction: column; }
+#inspector-toolbar {
+    display: flex; align-items: center; gap: 2px;
+    padding: 4px; background: #1f1f1f; border-bottom: 1px solid #2d2d2d;
+    flex-shrink: 0;
+}
+.inspector-subtab {
+    padding: 3px 10px; background: transparent; color: #a0a0a0;
+    border: 1px solid transparent; border-radius: 3px;
+    cursor: pointer; font-size: 11px; text-transform: uppercase;
+    letter-spacing: 0.5px; font-weight: 600;
+}
+.inspector-subtab:hover { color: #ccc; background: #2a2a2a; }
+.inspector-subtab.active { color: #fff; background: #094771; }
+body[data-theme="light"] #inspector-toolbar { background: #f0f0f0; border-bottom-color: #d0d0d0; }
+body[data-theme="light"] .inspector-subtab { color: #444; }
+body[data-theme="light"] .inspector-subtab:hover { background: #e0e0e0; color: #000; }
+body[data-theme="light"] .inspector-subtab.active { background: #cfdcec; color: #000; }
+body[data-theme="hc"] .inspector-subtab.active { background: #ffd700; color: #000; }
+#inspector-body { flex: 1; overflow: auto; padding: 6px 8px; min-height: 0; }
+.inspector-view { display: none; }
+.inspector-view.active { display: block; }
+.inspector-empty {
+    padding: 18px; text-align: center; color: #888; font-size: 12px; line-height: 1.5;
+}
+/* Variables view */
+.inspector-var-row {
+    display: grid; grid-template-columns: minmax(120px, 24%) 80px 1fr;
+    gap: 8px; padding: 4px 6px; border-bottom: 1px dashed rgba(255,255,255,0.05);
+    font-family: 'Consolas', 'Courier New', monospace; font-size: 12px;
+    align-items: baseline;
+}
+body[data-theme="light"] .inspector-var-row { border-bottom-color: rgba(0,0,0,0.06); }
+.inspector-var-name { color: #9cdcfe; word-break: break-word; }
+.inspector-var-type { color: #ce9178; font-style: italic; font-size: 11px; }
+.inspector-var-value {
+    color: #d4d4d4; white-space: pre-wrap; word-break: break-word;
+    overflow: hidden; text-overflow: ellipsis;
+}
+body[data-theme="light"] .inspector-var-name { color: #006bb3; }
+body[data-theme="light"] .inspector-var-type { color: #b35900; }
+body[data-theme="light"] .inspector-var-value { color: #222; }
+/* Step-through view */
+#inspector-steps .step-controls {
+    display: flex; gap: 6px; align-items: center;
+    padding: 6px 4px 10px; border-bottom: 1px solid rgba(255,255,255,0.06);
+    flex-wrap: wrap;
+}
+.step-btn {
+    padding: 3px 10px; background: #3a3a3a; color: #ccc;
+    border: 1px solid #555; border-radius: 3px; cursor: pointer;
+    font-size: 12px; min-width: 32px;
+}
+.step-btn:hover:not(:disabled) { background: #4a4a4a; color: #fff; }
+.step-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.step-progress {
+    flex: 1; min-width: 80px; font-size: 11px; color: #a0a0a0;
+    font-family: 'Consolas', monospace;
+}
+.step-display {
+    margin-top: 8px;
+    display: grid; grid-template-columns: 1fr 1fr; gap: 8px;
+}
+@media (max-width: 700px) { .step-display { grid-template-columns: 1fr; } }
+.step-pane {
+    background: #1a1a1a; border: 1px solid #2d2d2d; border-radius: 3px;
+    padding: 6px 8px; font-family: 'Consolas', monospace; font-size: 12px;
+    min-height: 60px;
+}
+body[data-theme="light"] .step-pane { background: #fafafa; border-color: #d0d0d0; }
+.step-pane h5 {
+    margin: 0 0 4px; font-size: 10px; text-transform: uppercase;
+    color: #9cdcfe; letter-spacing: 1px; font-weight: 700;
+}
+body[data-theme="light"] .step-pane h5 { color: #006bb3; }
+.step-locals .inspector-var-row { padding: 2px 0; border: none; }
+.step-line-display {
+    margin-top: 4px; padding: 4px 6px; background: #0e0e0e;
+    border-left: 3px solid #75beff; color: #ccc; word-break: break-word;
+}
+body[data-theme="light"] .step-line-display { background: #fff; color: #222; }
+.step-line-num { color: #888; margin-right: 8px; font-size: 11px; }
+/* Call-tape view */
+.calltape-tree { font-family: 'Consolas', monospace; font-size: 12px; line-height: 1.5; }
+.calltape-node {
+    margin-left: 16px; padding-left: 8px;
+    border-left: 1px dotted rgba(255,255,255,0.15);
+}
+body[data-theme="light"] .calltape-node { border-left-color: rgba(0,0,0,0.18); }
+.calltape-call { color: #d4d4d4; }
+.calltape-fname { color: #dcdcaa; font-weight: 600; }
+body[data-theme="light"] .calltape-fname { color: #795e26; }
+.calltape-args { color: #9cdcfe; }
+.calltape-arrow { color: #888; margin: 0 4px; }
+.calltape-return { color: #b5cea8; }
+body[data-theme="light"] .calltape-return { color: #098658; }
+.calltape-throw { color: #f48771; }
+.calltape-unclosed { color: #cca700; font-style: italic; margin-left: 6px; font-size: 11px; }
+body[data-theme="light"] .calltape-unclosed { color: #a36b00; }
+body[data-theme="hc"] .calltape-unclosed { color: #ffd700; }
+.calltape-toggle {
+    display: inline-block; width: 12px; cursor: pointer; user-select: none;
+    color: #888; margin-right: 2px;
+}
+.calltape-children.collapsed { display: none; }
+.calltape-summary {
+    padding: 6px 8px; background: #1a1a1a; border-radius: 3px;
+    margin-bottom: 8px; font-size: 11px; color: #a0a0a0;
+}
+body[data-theme="light"] .calltape-summary { background: #f0f0f0; color: #444; }
+
+/* Multi-line code example shown in the Call-Tape empty-state. */
+.webide-code-block {
+    font-family: 'Consolas', 'Courier New', monospace;
+    font-size: 11.5px; line-height: 1.45;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 4px;
+    padding: 10px 12px;
+    margin: 8px 0 12px;
+    white-space: pre-wrap;
+    overflow-x: auto;
+    color: #d4d4d4;
+}
+.webide-code-block strong {
+    color: #dcdcaa;
+    font-weight: 700;
+}
+body[data-theme="light"] .webide-code-block {
+    background: rgba(0,0,0,0.04);
+    border-color: rgba(0,0,0,0.08);
+    color: #1f1f1f;
+}
+body[data-theme="light"] .webide-code-block strong { color: #795e26; }
+body[data-theme="hc"] .webide-code-block {
+    background: #000; border: 1px solid #ffd700; color: #fff;
+}
+body[data-theme="hc"] .webide-code-block strong { color: #ffd700; }
+
+/* Inline code chip used in UI hints (empty-states, menus). The default cyan
+   reads fine on the dark theme but disappears on the light-theme white
+   background, so we set a theme-appropriate fg+bg here. */
+.code-inline {
+    font-family: 'Consolas', 'Courier New', monospace;
+    font-size: 11px;
+    color: #9cdcfe;
+    background: rgba(255, 255, 255, 0.08);
+    padding: 1px 5px;
+    border-radius: 3px;
+    white-space: nowrap;
+}
+body[data-theme="light"] .code-inline { color: #006bb3; background: rgba(0, 0, 0, 0.06); }
+body[data-theme="hc"]    .code-inline { color: #ffd700; background: #000; border: 1px solid #ffd700; }
+
+/* Right-aligned menu-item value (Theme: Dark, Font Size: 14, etc.). Same
+   problem as code-inline — the dropdown's background flips between themes. */
+.menu-value {
+    color: #9cdcfe;
+    margin-left: 4px;
+}
+body[data-theme="light"] .menu-value { color: #006bb3; }
+body[data-theme="hc"]    .menu-value { color: #ffd700; }
+/* ACE marker for the currently-stepped line */
+.ace_editor .webide-step-marker {
+    position: absolute; background: rgba(255, 215, 0, 0.18); z-index: 4;
+}
+body[data-theme="hc"] .ace_editor .webide-step-marker { background: rgba(255, 215, 0, 0.5); }
+
+/* ============================================================
+   PREFERENCES — Themes, font size, reading mode (dyslexia-friendly)
+   Driven by data-attributes on <body> set by applyPrefs() in JS.
+   localStorage key: 'webide.prefs' (JSON).
+   ============================================================ */
+
+/* Light theme — overrides the dark surface colors.
+   Targeted overrides only; full IDE colors come from inline rules above. */
+body[data-theme="light"] {
+    background: #f5f5f5; color: #222;
+}
+body[data-theme="light"] html,
+body[data-theme="light"] {
+    background: #f5f5f5 !important; color: #222;
+}
+body[data-theme="light"] #vscode-ide,
+body[data-theme="light"] #ide-editor-area,
+body[data-theme="light"] #ide-editor-main,
+body[data-theme="light"] #editor-container,
+body[data-theme="light"] #ide-bottom-panel,
+body[data-theme="light"] #terminal-container,
+body[data-theme="light"] #output-container,
+body[data-theme="light"] #console,
+body[data-theme="light"] #media-area,
+body[data-theme="light"] #submit-view {
+    background: #f5f5f5; color: #222;
+}
+body[data-theme="light"] #ide-titlebar { background: #e6e6e6; border-bottom-color: #c8c8c8; }
+body[data-theme="light"] #ide-tabs-bar,
+body[data-theme="light"] #bottom-tabs-bar { background: #ececec; border-bottom-color: #c8c8c8; }
+body[data-theme="light"] #ide-activity-bar { background: #dddddd; border-right-color: #c8c8c8; }
+body[data-theme="light"] #ide-sidebar { background: #ebebeb; border-right-color: #c8c8c8; }
+body[data-theme="light"] .menu-item,
+body[data-theme="light"] .menu-dropdown-item,
+body[data-theme="light"] .tab,
+body[data-theme="light"] .bottom-tab,
+body[data-theme="light"] .activity-icon { color: #222; }
+body[data-theme="light"] .menu-item:hover,
+body[data-theme="light"] .menu-item.open { background: #cfdcec; }
+body[data-theme="light"] .menu-dropdown { background: #ffffff; border-color: #c8c8c8; box-shadow: 3px 4px 12px rgba(0,0,0,0.18); }
+body[data-theme="light"] .menu-dropdown-item:hover { background: #cfdcec; color: #000; }
+body[data-theme="light"] .tab { background: #ececec; color: #444; border-right-color: #d2d2d2; }
+body[data-theme="light"] .tab.active { background: #ffffff; color: #000; }
+body[data-theme="light"] .bottom-tab.active { color: #000; border-bottom-color: #007acc; }
+body[data-theme="light"] .sidebar-header { color: #444; }
+body[data-theme="light"] .sidebar-form input[type="text"],
+body[data-theme="light"] .sidebar-form input[type="password"],
+body[data-theme="light"] .gh-select {
+    background: #fff; color: #222; border-color: #b8b8b8;
+}
+body[data-theme="light"] .info-panel-content,
+body[data-theme="light"] .info-panel-content h2,
+body[data-theme="light"] .info-panel-content h3,
+body[data-theme="light"] .info-panel-content a { color: #222; }
+body[data-theme="light"] .info-panel-content h2 { color: #0066aa; }
+body[data-theme="light"] .info-panel-content h3 { color: #b35900; }
+body[data-theme="light"] .info-panel-content a { color: #006bb3; }
+body[data-theme="light"] .info-divider { border-top-color: #c8c8c8; }
+body[data-theme="light"] #ide-status-bar { background: #007acc; color: #fff; }
+body[data-theme="light"] .action-btn { background: #ffffff; color: #222; border-color: #b8b8b8; }
+body[data-theme="light"] .action-btn:hover:not(:disabled) { background: #e9e9e9; color: #000; }
+body[data-theme="light"] .action-btn.run-btn { background: #2f8c2c; color: #fff; }
+body[data-theme="light"] .action-btn.run-btn:hover:not(:disabled) { background: #3aa336; }
+body[data-theme="light"] #ide-input-box { background: #fff; border-color: #b8b8b8; }
+body[data-theme="light"] #ide-input-label { color: #444; }
+body[data-theme="light"] #ide-input-field { background: #fff; color: #111; }
+body[data-theme="light"] .activity-icon { color: #555; }
+body[data-theme="light"] .activity-icon:hover { color: #111; }
+body[data-theme="light"] .activity-icon.active { color: #000; border-left-color: #007acc; }
+body[data-theme="light"] .suggestion-item { background: #ffffff; }
+body[data-theme="light"] .suggestion-item:hover { background: #ececec; }
+body[data-theme="light"] .suggestion-message { color: #111; }
+/* Editor (ACE) tokens for light theme — overrides monokai colors via CSS */
+body[data-theme="light"] .ace_editor,
+body[data-theme="light"] .ace_editor .ace_gutter,
+body[data-theme="light"] .ace_editor .ace_scroller { background: #ffffff !important; color: #1f1f1f !important; }
+body[data-theme="light"] .ace_editor .ace_gutter { color: #888 !important; border-right: 1px solid #e0e0e0; }
+body[data-theme="light"] .ace_editor .ace_keyword,
+body[data-theme="light"] .ace_editor .ace_storage { color: #af00db !important; }
+body[data-theme="light"] .ace_editor .ace_string { color: #a31515 !important; }
+body[data-theme="light"] .ace_editor .ace_constant,
+body[data-theme="light"] .ace_editor .ace_constant.ace_numeric { color: #098658 !important; }
+body[data-theme="light"] .ace_editor .ace_comment { color: #008000 !important; font-style: italic; }
+body[data-theme="light"] .ace_editor .ace_function,
+body[data-theme="light"] .ace_editor .ace_entity.ace_name.ace_function { color: #795e26 !important; }
+body[data-theme="light"] .ace_editor .ace_variable,
+body[data-theme="light"] .ace_editor .ace_identifier { color: #1f1f1f !important; }
+body[data-theme="light"] .ace_editor .ace_cursor { color: #000 !important; }
+body[data-theme="light"] .ace_editor .ace_marker-layer .ace_selection { background: #add6ff !important; }
+body[data-theme="light"] .ace_editor .ace_active-line { background: #f3f3f3 !important; }
+
+/* High-contrast theme — black/white/yellow for low-vision users (WCAG AAA-ish) */
+body[data-theme="hc"] {
+    background: #000000 !important; color: #ffffff;
+}
+body[data-theme="hc"] #vscode-ide,
+body[data-theme="hc"] #ide-editor-area,
+body[data-theme="hc"] #ide-editor-main,
+body[data-theme="hc"] #editor-container,
+body[data-theme="hc"] #ide-bottom-panel,
+body[data-theme="hc"] #terminal-container,
+body[data-theme="hc"] #output-container,
+body[data-theme="hc"] #console,
+body[data-theme="hc"] #media-area,
+body[data-theme="hc"] #submit-view {
+    background: #000000; color: #ffffff;
+}
+body[data-theme="hc"] #ide-titlebar { background: #000; border-bottom: 2px solid #ffffff; }
+body[data-theme="hc"] #ide-tabs-bar,
+body[data-theme="hc"] #bottom-tabs-bar { background: #000; border-bottom: 2px solid #ffffff; }
+body[data-theme="hc"] #ide-activity-bar { background: #000; border-right: 2px solid #ffffff; }
+body[data-theme="hc"] #ide-sidebar { background: #000; border-right: 2px solid #ffffff; }
+body[data-theme="hc"] .menu-item,
+body[data-theme="hc"] .menu-dropdown-item,
+body[data-theme="hc"] .tab,
+body[data-theme="hc"] .bottom-tab,
+body[data-theme="hc"] .activity-icon,
+body[data-theme="hc"] .info-panel-content,
+body[data-theme="hc"] .sidebar-header { color: #ffffff; }
+body[data-theme="hc"] .menu-item:hover,
+body[data-theme="hc"] .menu-item.open { background: #1a1a1a; outline: 2px solid #ffd700; }
+body[data-theme="hc"] .menu-dropdown { background: #000; border: 2px solid #ffffff; }
+body[data-theme="hc"] .menu-dropdown-item:hover { background: #ffd700; color: #000; }
+body[data-theme="hc"] .tab.active { background: #1a1a1a; color: #ffffff; border-top-color: #ffd700; }
+body[data-theme="hc"] .bottom-tab.active { color: #ffd700; border-bottom-color: #ffd700; }
+body[data-theme="hc"] .action-btn { background: #000; color: #fff; border: 2px solid #fff; }
+body[data-theme="hc"] .action-btn:hover:not(:disabled) { background: #ffd700; color: #000; }
+body[data-theme="hc"] .action-btn.run-btn { background: #ffd700; color: #000; border-color: #ffd700; font-weight: 700; }
+body[data-theme="hc"] .action-btn.run-btn:hover:not(:disabled) { background: #fff; color: #000; }
+body[data-theme="hc"] #ide-status-bar { background: #ffd700; color: #000; }
+body[data-theme="hc"] button:focus, body[data-theme="hc"] input:focus,
+body[data-theme="hc"] select:focus, body[data-theme="hc"] .tab:focus,
+body[data-theme="hc"] [tabindex]:focus, body[data-theme="hc"] a:focus { outline: 3px solid #ffd700 !important; outline-offset: 2px; }
+body[data-theme="hc"] .ace_editor,
+body[data-theme="hc"] .ace_editor .ace_gutter,
+body[data-theme="hc"] .ace_editor .ace_scroller { background: #000 !important; color: #fff !important; }
+body[data-theme="hc"] .ace_editor .ace_gutter { color: #fff !important; border-right: 2px solid #fff; }
+body[data-theme="hc"] .ace_editor .ace_keyword,
+body[data-theme="hc"] .ace_editor .ace_storage { color: #ffd700 !important; font-weight: 700; }
+body[data-theme="hc"] .ace_editor .ace_string { color: #ffffff !important; text-decoration: underline; }
+body[data-theme="hc"] .ace_editor .ace_constant,
+body[data-theme="hc"] .ace_editor .ace_constant.ace_numeric { color: #00ff00 !important; }
+body[data-theme="hc"] .ace_editor .ace_comment { color: #cccccc !important; font-style: italic; }
+body[data-theme="hc"] .ace_editor .ace_function,
+body[data-theme="hc"] .ace_editor .ace_entity.ace_name.ace_function { color: #00ffff !important; }
+body[data-theme="hc"] .ace_editor .ace_cursor { color: #ffd700 !important; border-left: 2px solid #ffd700 !important; }
+body[data-theme="hc"] .ace_editor .ace_marker-layer .ace_selection { background: #ffd700 !important; color: #000; }
+body[data-theme="hc"] .ace_editor .ace_active-line { background: #1a1a1a !important; }
+
+/* Reading mode: dyslexia-friendly typography (no external font required).
+   Uses font-family stack that prefers OpenDyslexic/Atkinson if installed locally,
+   falls back to a clean sans + extra letter spacing + larger line height. */
+body[data-readingmode="dyslexia"],
+body[data-readingmode="dyslexia"] .menu-item,
+body[data-readingmode="dyslexia"] .menu-dropdown-item,
+body[data-readingmode="dyslexia"] .tab,
+body[data-readingmode="dyslexia"] .bottom-tab,
+body[data-readingmode="dyslexia"] .info-panel-content,
+body[data-readingmode="dyslexia"] .sidebar-form,
+body[data-readingmode="dyslexia"] .sidebar-form p,
+body[data-readingmode="dyslexia"] .sidebar-form label,
+body[data-readingmode="dyslexia"] .form-status,
+body[data-readingmode="dyslexia"] .action-btn,
+body[data-readingmode="dyslexia"] .form-btn,
+body[data-readingmode="dyslexia"] #ide-input-label,
+body[data-readingmode="dyslexia"] #ide-status-bar,
+body[data-readingmode="dyslexia"] #ide-title-center {
+    font-family: "OpenDyslexic", "Atkinson Hyperlegible", "Comic Sans MS",
+                 "Verdana", "Tahoma", -apple-system, sans-serif !important;
+    letter-spacing: 0.04em;
+    word-spacing: 0.08em;
+}
+body[data-readingmode="dyslexia"] .info-panel-content,
+body[data-readingmode="dyslexia"] .sidebar-form p { line-height: 1.7; }
+body[data-readingmode="dyslexia"] .ace_editor {
+    font-family: "OpenDyslexic Mono", "Atkinson Hyperlegible Mono",
+                 "Cascadia Code", "Consolas", monospace !important;
+    letter-spacing: 0.02em;
+    line-height: 1.6 !important;
+}
+
+/* Focus-visible enhancement (WCAG 2.4.7) — only show outlines on keyboard focus,
+   not on mouse-click. The existing :focus rule remains as a fallback for older browsers. */
+button:focus-visible, input:focus-visible, select:focus-visible,
+textarea:focus-visible, .tab:focus-visible, [tabindex]:focus-visible,
+a:focus-visible {
+    outline: 2px solid #ffd700 !important;
+    outline-offset: 2px;
+    z-index: 1;
+}
+button:focus:not(:focus-visible),
+input:focus:not(:focus-visible),
+select:focus:not(:focus-visible) {
+    outline: none !important;
+}
+
+/* ============================================================
+   KEYBOARD SHORTCUT OVERLAY — modeled on #ide-input-dialog
+   ============================================================ */
+#ide-shortcuts-overlay {
+    position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.55); z-index: 9998;
+    display: none; align-items: center; justify-content: center; padding: 20px;
+}
+#ide-shortcuts-overlay.visible { display: flex; }
+#ide-shortcuts-box {
+    background: #252526; border: 1px solid #454545; color: #ccc;
+    width: min(720px, 100%); max-height: 85vh; overflow: auto;
+    border-radius: 6px; box-shadow: 4px 8px 24px rgba(0,0,0,0.7);
+}
+body[data-theme="light"] #ide-shortcuts-box { background: #fff; color: #222; border-color: #b8b8b8; }
+body[data-theme="hc"] #ide-shortcuts-box { background: #000; color: #fff; border: 2px solid #ffd700; }
+#ide-shortcuts-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 12px 16px; border-bottom: 1px solid #454545;
+    font-size: 14px; font-weight: 600;
+}
+body[data-theme="light"] #ide-shortcuts-header { border-bottom-color: #ddd; }
+#ide-shortcuts-close {
+    background: none; border: none; color: inherit; cursor: pointer;
+    font-size: 18px; line-height: 1; padding: 4px 8px; border-radius: 3px;
+}
+#ide-shortcuts-close:hover { background: rgba(255,255,255,0.1); }
+#ide-shortcuts-body { padding: 12px 16px 16px; }
+.shortcut-section { margin-bottom: 14px; }
+.shortcut-section h4 {
+    margin: 4px 0 6px; font-size: 11px; text-transform: uppercase;
+    letter-spacing: 1px; color: #9cdcfe;
+}
+body[data-theme="light"] .shortcut-section h4 { color: #006bb3; }
+.shortcut-row {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 4px 0; font-size: 13px;
+    border-bottom: 1px dashed rgba(255,255,255,0.06);
+}
+body[data-theme="light"] .shortcut-row { border-bottom-color: rgba(0,0,0,0.06); }
+.shortcut-keys { display: flex; gap: 4px; }
+.shortcut-keys kbd {
+    background: #3c3c3c; color: #fff;
+    border: 1px solid #555; border-bottom-width: 2px;
+    border-radius: 3px; padding: 1px 6px;
+    font-family: 'Consolas', monospace; font-size: 12px;
+}
+body[data-theme="light"] .shortcut-keys kbd { background: #f5f5f5; color: #222; border-color: #b8b8b8; }
+body[data-theme="hc"] .shortcut-keys kbd { background: #000; color: #ffd700; border: 1px solid #ffd700; }
+
+/* ============================================================
+   RESPONSIVE / COMPACT LAYOUT — narrow screens (~phones / Chromebook portrait)
+   The IDE wasn't designed for phones, but students often READ the exercise on
+   their phone. Below ~900px we hide the activity bar (it's reachable from menus),
+   collapse the sidebar by default, and stack the bottom panel under the editor.
+   ============================================================ */
+@media (max-width: 900px) {
+    body { font-size: 12px; }
+    #ide-titlebar { height: auto; min-height: 30px; flex-wrap: wrap; }
+    #ide-menubar { flex-wrap: wrap; }
+    .menu-item { padding: 0 8px; font-size: 12px; }
+    .menu-shortcut { display: none; }
+    #ide-title-center { display: none; }
+    #ide-activity-bar { display: none; }
+    #ide-sidebar { width: 200px; min-width: 60px; max-width: 80vw; }
+    #ide-sidebar.compact-hidden { display: none; }
+    #sidebar-resize-handle { display: none; }
+    .action-btn { padding: 3px 6px; font-size: 11px; }
+    #ide-bottom-panel { height: 200px; }
+    .bottom-tab { padding: 0 8px; font-size: 10px; }
+}
+@media (max-width: 600px) {
+    .menu-item { padding: 0 6px; }
+    #ide-status-bar { font-size: 10px; }
+    #status-wordwrap { display: none; }
+    #ide-bottom-panel { height: 35vh; }
+}
 
 </style>
 
@@ -552,6 +997,17 @@ button:focus, input:focus, select:focus, .tab:focus {
           <div class="menu-dropdown-item" role="menuitem" tabindex="-1" id="menu-wordwrap-item" onclick="menuToggleWordWrap()">Word Wrap <span class="menu-shortcut" aria-label="Alt Z">Alt+Z</span></div>
           <hr role="separator">
           <div class="menu-dropdown-item" role="menuitem" tabindex="-1" onclick="menuShowInfo()">Exercise Info</div>
+          <hr role="separator">
+          <!-- Preferences (theme / font / reading mode) -->
+          <div class="menu-dropdown-item" role="menuitem" tabindex="-1" onclick="menuCycleTheme()">
+            Theme: <span id="menu-theme-label" class="menu-value">Dark</span>
+          </div>
+          <div class="menu-dropdown-item" role="menuitem" tabindex="-1" onclick="menuCycleFontSize()">
+            Font Size: <span id="menu-fontsize-label" class="menu-value">14px</span>
+          </div>
+          <div class="menu-dropdown-item" role="menuitem" tabindex="-1" onclick="menuToggleReadingMode()">
+            Reading Mode: <span id="menu-readingmode-label" class="menu-value">Default</span>
+          </div>
         </div>
       </div>
 
@@ -566,6 +1022,17 @@ button:focus, input:focus, select:focus, .tab:focus {
           <div class="menu-dropdown-item" role="menuitem" tabindex="-1" onclick="menuSaveAndRun()">Save &amp; Run <span class="menu-shortcut" aria-label="F5">F5</span></div>
           <hr role="separator">
           <div class="menu-dropdown-item" role="menuitem" tabindex="-1" onclick="menuClearOutput()">Clear Output</div>
+        </div>
+      </div>
+
+      <!-- Help menu -->
+      <div class="menu-item" id="menu-help"
+           role="menuitem" tabindex="-1"
+           aria-haspopup="true" aria-expanded="false"
+           aria-label="Help menu">
+        Help
+        <div class="menu-dropdown" role="menu" aria-label="Help">
+          <div class="menu-dropdown-item" role="menuitem" tabindex="-1" onclick="menuShowShortcuts()">Keyboard Shortcuts <span class="menu-shortcut" aria-label="question mark">?</span></div>
         </div>
       </div>
 
@@ -809,6 +1276,9 @@ button:focus, input:focus, select:focus, .tab:focus {
           <button class="bottom-tab"        id="btab-suggestions"
                   role="tab" aria-selected="false" aria-controls="suggestions-panel" tabindex="-1"
                   onclick="switchBottomTab('suggestions')">Suggestions <span id="suggestions-count" aria-label="suggestion count" style="opacity:0.6;"></span></button>
+          <button class="bottom-tab"        id="btab-inspector"
+                  role="tab" aria-selected="false" aria-controls="inspector-panel" tabindex="-1"
+                  onclick="switchBottomTab('inspector')">Inspector</button>
 
           <div id="bottom-panel-actions">
             <button class="icon-btn" id="clear-console" title="Clear Output" aria-label="Clear output">✕ Clear Output</button>
@@ -830,6 +1300,74 @@ button:focus, input:focus, select:focus, .tab:focus {
           <div id="suggestions-list" aria-live="polite" aria-atomic="false">
             <div style="padding:20px; text-align:center; color:#a0a0a0;">
               No suggestions. Code quality feedback will appear here.
+            </div>
+          </div>
+        </div>
+
+        <!-- Inspector Panel: variables, step-through (Python), call-stack tape -->
+        <div id="inspector-panel" class="bottom-content" role="tabpanel" aria-labelledby="btab-inspector" hidden>
+          <div id="inspector-toolbar" role="tablist" aria-label="Inspector views">
+            <button class="inspector-subtab active" id="insub-vars"
+                    role="tab" aria-selected="true" aria-controls="inspector-vars"
+                    onclick="switchInspectorView('vars')">Variables</button>
+            <button class="inspector-subtab" id="insub-steps"
+                    role="tab" aria-selected="false" aria-controls="inspector-steps" tabindex="-1"
+                    onclick="switchInspectorView('steps')">Step-Through</button>
+            <button class="inspector-subtab" id="insub-trace"
+                    role="tab" aria-selected="false" aria-controls="inspector-trace" tabindex="-1"
+                    onclick="switchInspectorView('trace')">Call Tape</button>
+            <div style="margin-left:auto; display:flex; gap:6px; padding:0 6px;">
+              <button id="inspector-step-run" class="action-btn" type="button"
+                      title="Re-run with step instrumentation (Python only)"
+                      style="padding:2px 10px; height:22px; font-size:11px;">↻ Step Run</button>
+            </div>
+          </div>
+          <div id="inspector-body">
+            <div id="inspector-vars" class="inspector-view active" role="tabpanel" aria-labelledby="insub-vars">
+              <div class="inspector-empty">Run your code to inspect variables.</div>
+            </div>
+            <div id="inspector-steps" class="inspector-view" role="tabpanel" aria-labelledby="insub-steps" hidden>
+              <div class="inspector-empty">Click <strong>Step Run</strong> above to record execution steps. Available for Python.</div>
+            </div>
+            <div id="inspector-trace" class="inspector-view" role="tabpanel" aria-labelledby="insub-trace" hidden>
+              <div class="inspector-empty" style="text-align:left; max-width:720px; margin:0 auto;">
+                <p style="text-align:center; margin:0 0 10px;"><strong>Run your code to see the function-call tape.</strong></p>
+                <p>For <strong>Python</strong>, calls are recorded automatically (use <strong>Step Run</strong>
+                on the Inspector toolbar).</p>
+                <p>For <strong>JavaScript</strong> or <strong>Java (Processing)</strong>, you have to record
+                the markers yourself. These helpers are <strong>labels</strong> — they don't call any function,
+                they only annotate this tape.</p>
+
+                <p><strong>Option 1 — sibling log (simple).</strong> Call
+                <code class="code-inline">webideTrace.tap('name', arg1, arg2)</code> once per event.
+                Each <code class="code-inline">tap</code> shows up as a flat sibling. Use this when you just
+                want to know "did this code run?" or "in what order did these run?".</p>
+
+                <p><strong>Option 2 — scope tracking (for nested / recursive calls).</strong>
+                Put <code class="code-inline">webideTrace.call('name', args…)</code> as the
+                <strong>first line inside the function body</strong>, and
+                <code class="code-inline">webideTrace.return(value)</code> immediately
+                <strong>before every return statement</strong> (or once at the end if the function is void).
+                Then call the function normally from outside.</p>
+
+                <pre class="webide-code-block">// JavaScript example
+function fact(n) {
+    <strong>webideTrace.call('fact', n);</strong>          // at the top
+    if (n &lt;= 1) {
+        return <strong>webideTrace.return(1)</strong>;     // wrap every return
+    }
+    let r = n * fact(n - 1);
+    return <strong>webideTrace.return(r)</strong>;
+}
+fact(4);   // now the tape shows fact(4) → fact(3) → fact(2) → fact(1)</pre>
+
+                <p style="font-size:11px; opacity:0.75;">
+                Every <code class="code-inline">call</code> must be matched by a <code class="code-inline">return</code>.
+                If you put three <code class="code-inline">call</code>s in a row without
+                <code class="code-inline">return</code>s, each one ends up nested inside the previous (which
+                is what the IDE will warn about with <em>"no .return"</em>). For that case use
+                <code class="code-inline">tap</code> instead.</p>
+              </div>
             </div>
           </div>
         </div>
@@ -886,6 +1424,52 @@ button:focus, input:focus, select:focus, .tab:focus {
   </div>
 </div>
 
+<!-- Keyboard shortcuts overlay (opened via "?" key or Help > Keyboard Shortcuts) -->
+<div id="ide-shortcuts-overlay"
+     role="dialog"
+     aria-modal="true"
+     aria-labelledby="ide-shortcuts-title"
+     aria-hidden="true">
+  <div id="ide-shortcuts-box">
+    <div id="ide-shortcuts-header">
+      <span id="ide-shortcuts-title">Keyboard Shortcuts</span>
+      <button id="ide-shortcuts-close" aria-label="Close shortcuts dialog">✕</button>
+    </div>
+    <div id="ide-shortcuts-body">
+      <div class="shortcut-section">
+        <h4>Editing &amp; Files</h4>
+        <div class="shortcut-row"><span>Save current file</span><span class="shortcut-keys"><kbd>Ctrl</kbd><kbd>S</kbd></span></div>
+        <div class="shortcut-row"><span>Run code</span><span class="shortcut-keys"><kbd>Ctrl</kbd><kbd>Enter</kbd></span></div>
+        <div class="shortcut-row"><span>Save and Run</span><span class="shortcut-keys"><kbd>F5</kbd></span></div>
+        <div class="shortcut-row"><span>Toggle word wrap</span><span class="shortcut-keys"><kbd>Alt</kbd><kbd>Z</kbd></span></div>
+      </div>
+      <div class="shortcut-section">
+        <h4>View</h4>
+        <div class="shortcut-row"><span>Toggle sidebar</span><span class="shortcut-keys"><kbd>Ctrl</kbd><kbd>B</kbd></span></div>
+        <div class="shortcut-row"><span>Toggle terminal panel</span><span class="shortcut-keys"><kbd>Ctrl</kbd><kbd>`</kbd></span></div>
+        <div class="shortcut-row"><span>Focus Explorer</span><span class="shortcut-keys"><kbd>Ctrl</kbd><kbd>Shift</kbd><kbd>E</kbd></span></div>
+        <div class="shortcut-row"><span>Focus Terminal tab</span><span class="shortcut-keys"><kbd>Ctrl</kbd><kbd>Shift</kbd><kbd>T</kbd></span></div>
+        <div class="shortcut-row"><span>Focus Output tab</span><span class="shortcut-keys"><kbd>Ctrl</kbd><kbd>Shift</kbd><kbd>O</kbd></span></div>
+        <div class="shortcut-row"><span>Focus Suggestions tab</span><span class="shortcut-keys"><kbd>Ctrl</kbd><kbd>Shift</kbd><kbd>P</kbd></span></div>
+      </div>
+      <div class="shortcut-section">
+        <h4>Editor Font</h4>
+        <div class="shortcut-row"><span>Increase font size</span><span class="shortcut-keys"><kbd>Ctrl</kbd><kbd>=</kbd></span></div>
+        <div class="shortcut-row"><span>Decrease font size</span><span class="shortcut-keys"><kbd>Ctrl</kbd><kbd>-</kbd></span></div>
+      </div>
+      <div class="shortcut-section">
+        <h4>Help</h4>
+        <div class="shortcut-row"><span>Show this dialog</span><span class="shortcut-keys"><kbd>?</kbd></span></div>
+        <div class="shortcut-row"><span>Close any dialog</span><span class="shortcut-keys"><kbd>Esc</kbd></span></div>
+      </div>
+      <p style="font-size:11px; opacity:0.7; margin-top:8px;">
+        Tip: Within an input field, "?" types a literal question mark. Press <kbd>Esc</kbd> first
+        to leave the field, then press <kbd>?</kbd> to open this dialog.
+      </p>
+    </div>
+  </div>
+</div>
+
 {% if page.language == "pyodide" %}
 <div id="pyodideBoilerplate" style="display:none;">
 import io, base64
@@ -909,6 +1493,106 @@ def pyodide_print(s):
     global PYODIDE_COUT
     PYODIDE_COUT += s
 
+</div>
+
+<!-- Step-through tracer for Pyodide (full CPython, so sys.settrace works
+     completely). Prepended to user code when Step Run is requested. -->
+<div id="pyodideStepPrologue" style="display:none;">
+import sys as _webide_sys
+_webide_steps = []
+_webide_calltree = {'name': '&lt;module&gt;', 'args': '', 'children': [], 'returnValue': None, 'exception': None, 'lineno': 0}
+_webide_call_stack = [_webide_calltree]
+_webide_STEP_LIMIT = 2000
+_webide_CALL_LIMIT = 2000
+_webide_call_count = [0]
+
+def _webide_safe_repr(v, limit=80):
+    try:
+        if isinstance(v, (int, float, bool)) or v is None: return str(v)
+        if isinstance(v, str):
+            s = v if len(v) &lt; limit else v[:limit] + '...'
+            return repr(s)
+        if callable(v): return '&lt;function ' + getattr(v, '__name__', '?') + '&gt;'
+        s = repr(v)
+        return s if len(s) &lt; limit else s[:limit] + '...'
+    except Exception:
+        return '&lt;unrepresentable&gt;'
+
+def _webide_tracer(frame, event, arg):
+    try:
+        # Pyodide's pyodide.runPython is itself implemented in Python — it
+        # parses, compiles, and AST-walks the student source via eval_code /
+        # generate_tokens / deepcopy / iter_fields / etc. Without a filter,
+        # settrace records all of THAT internal machinery and the tape fills
+        # with hundreds of iter_child_nodes/_make/deepcopy frames before the
+        # student code ever runs. The runPython call site tags student
+        # source with a unique co_filename ('&lt;webide-student&gt;') so we can
+        # accept ONLY those frames here and skip everything else (returning
+        # None from a global trace function tells CPython not to install a
+        # local tracer for that frame, but child frames still pass through
+        # this global tracer — so we filter each one independently).
+        co_fname = frame.f_code.co_filename or ''
+        if co_fname != '&lt;webide-student&gt;':
+            return None
+        fname = frame.f_code.co_name
+        lineno = frame.f_lineno
+        if event == 'line' and len(_webide_steps) &lt; _webide_STEP_LIMIT:
+            locs = {}
+            for k, v in frame.f_locals.items():
+                if k.startswith('_webide') or k.startswith('__'): continue
+                locs[k] = {'type': type(v).__name__, 'value': _webide_safe_repr(v)}
+            _webide_steps.append({'lineno': lineno, 'function': fname, 'locals': locs})
+        elif event == 'call' and _webide_call_count[0] &lt; _webide_CALL_LIMIT:
+            _webide_call_count[0] += 1
+            args = []
+            try:
+                for k, v in frame.f_locals.items():
+                    if k.startswith('__'): continue
+                    args.append(k + '=' + _webide_safe_repr(v, 40))
+            except Exception:
+                pass
+            node = {'name': fname, 'args': ', '.join(args[:6]), 'children': [],
+                    'returnValue': None, 'exception': None, 'lineno': lineno}
+            _webide_call_stack[-1]['children'].append(node)
+            _webide_call_stack.append(node)
+        elif event == 'return':
+            if len(_webide_call_stack) &gt; 1:
+                _webide_call_stack[-1]['returnValue'] = _webide_safe_repr(arg)
+                _webide_call_stack.pop()
+        elif event == 'exception':
+            if len(_webide_call_stack) &gt; 0:
+                try:
+                    _webide_call_stack[-1]['exception'] = _webide_safe_repr(
+                        arg[1] if isinstance(arg, tuple) else arg)
+                except Exception:
+                    _webide_call_stack[-1]['exception'] = '&lt;exception&gt;'
+    except Exception:
+        pass
+    return _webide_tracer
+
+# NOTE: settrace is NOT installed here. The JS-side step runner sets
+# _webide_student_source and runs pyodideStepExec, which installs settrace
+# only around the student code — preventing Pyodide's eval_code / compile /
+# AST machinery from being recorded as part of the call tape.
+</div>
+
+<!-- Wrapper that actually runs the student source under settrace. The
+     JS side calls pyodide.globals.set('_webide_student_source', code)
+     before invoking this. The explicit compile() lets us tag student
+     frames with a unique co_filename. -->
+<div id="pyodideStepExec" style="display:none;">
+_webide_compiled = compile(_webide_student_source, '&lt;webide-student&gt;', 'exec')
+_webide_sys.settrace(_webide_tracer)
+try:
+    exec(_webide_compiled, globals())
+finally:
+    _webide_sys.settrace(None)
+del _webide_compiled, _webide_student_source
+</div>
+
+<div id="pyodideStepEpilogue" style="display:none;">
+# kept for backwards compat with any callers that still invoke it
+_webide_sys.settrace(None)
 </div>
 {% endif %}
 
@@ -935,18 +1619,208 @@ def pyodide_print(s):
                 ret += sep
         return ret + end
 
-    def run_python_code(code):
-        result = ""
+    # ---------- Inspector helpers (variables + call tape + step-through) -----
+    # These mirror state into JS globals (window['__webide_vars'] etc.) where
+    # the IDE renders them in the Inspector panel after each run.
+
+    _WEBIDE_RESERVED = {'window', 'get_formatted', '__name__', '__builtins__'}
+
+    def _webide_safe_repr(v, limit=200):
+        try:
+            if isinstance(v, (int, float, bool)) or v is None:
+                return str(v)
+            if isinstance(v, str):
+                return v if len(v) < limit else v[:limit] + '...'
+            if callable(v):
+                return '<function ' + getattr(v, '__name__', '?') + '>'
+            s = repr(v)
+            return s if len(s) < limit else s[:limit] + '...'
+        except Exception:
+            return '<unrepresentable>'
+
+    def _webide_snapshot_vars(ns):
+        snap = {}
+        for k, v in ns.items():
+            if k in _WEBIDE_RESERVED:
+                continue
+            if k.startswith('__') and k.endswith('__'):
+                continue
+            tname = type(v).__name__
+            snap[k] = {'type': tname, 'value': _webide_safe_repr(v)}
+        return snap
+
+    def _webide_dict_to_js(d):
+        # Convert a Python dict to a JS-side plain object, recursively for one level.
+        obj = window.Object.new()
+        for k, v in d.items():
+            if isinstance(v, dict):
+                inner = window.Object.new()
+                for ik, iv in v.items():
+                    inner[ik] = iv
+                obj[k] = inner
+            else:
+                obj[k] = v
+        return obj
+
+    def _webide_list_to_js(lst):
+        arr = window.Array.new()
+        for item in lst:
+            if isinstance(item, dict):
+                arr.push(_webide_dict_to_js(item))
+            else:
+                arr.push(item)
+        return arr
+
+    # Postlude appended to user code so we can snapshot top-level user names
+    # from the same scope they're assigned in. (Brython's `from browser import
+    # window` doesn't survive being passed via exec's explicit ns dict, so we
+    # use the default exec(code) behavior and inject the snapshot inline.)
+    # All function-local names in the runner are prefixed `_webide_` so we can
+    # filter them out reliably here.
+    _WEBIDE_VAR_POSTLUDE = (
+        "\n\n"
+        "try:\n"
+        "    window['__webide_vars'] = window.Object.new()\n"
+        "    for _wk in list(locals().keys()):\n"
+        "        if _wk.startswith('_webide') or _wk.startswith('__'): continue\n"
+        "        if _wk in ('window','get_formatted','traceback','sys','doc','tb','_WEBIDE_VAR_POSTLUDE',\n"
+        "                   '_WEBIDE_RESERVED','_STEP_LIMIT','_CALL_LIMIT'): continue\n"
+        "        _wv = locals()[_wk]\n"
+        "        try: _ws = repr(_wv)\n"
+        "        except Exception: _ws = '<unrepresentable>'\n"
+        "        if len(_ws) > 200: _ws = _ws[:200] + '...'\n"
+        "        _wo = window.Object.new()\n"
+        "        _wo['type'] = type(_wv).__name__\n"
+        "        _wo['value'] = _ws\n"
+        "        window['__webide_vars'][_wk] = _wo\n"
+        "except Exception as _werr:\n"
+        "    pass\n"
+    )
+
+    def run_python_code(_webide_code):
+        _webide_result = ""
         try:
             window['python_code_result'] = ''
-            code = code.replace("print(", "window['python_code_result'] += get_formatted(")
-            exec(code)
-            result = window['python_code_result']
-        except Exception as exc:
-            result = traceback.format_exc()
-        return result
+            _webide_code = _webide_code.replace("print(", "window['python_code_result'] += get_formatted(")
+            _webide_code = _webide_code + _WEBIDE_VAR_POSTLUDE
+            exec(_webide_code)
+            _webide_result = window['python_code_result']
+        except Exception as _webide_exc:
+            _webide_result = traceback.format_exc()
+        return _webide_result
+
+    # ---------- Step-through + call tape via sys.settrace --------------------
+    # Brython's settrace support is limited and may not fire for all events,
+    # but Pyodide (full CPython) handles it cleanly. The JS side checks the
+    # resulting arrays and shows a graceful fallback message if empty.
+
+    _STEP_LIMIT = 2000   # cap to avoid runaway captures
+    _CALL_LIMIT = 2000
+
+    def run_python_code_traced(_webide_code):
+        steps = []
+        call_root = {'name': '<module>', 'args': '', 'children': [], 'returnValue': None, 'exception': None}
+        call_stack = [call_root]
+        call_count = [0]
+
+        def tracer(frame, event, arg):
+            try:
+                fname = frame.f_code.co_name
+                lineno = frame.f_lineno
+                if event == 'line' and len(steps) < _STEP_LIMIT:
+                    locs = {}
+                    for k, v in frame.f_locals.items():
+                        if k in _WEBIDE_RESERVED: continue
+                        if k.startswith('__'): continue
+                        locs[k] = {'type': type(v).__name__, 'value': _webide_safe_repr(v, 80)}
+                    steps.append({
+                        'lineno': lineno,
+                        'function': fname,
+                        'locals': locs,
+                    })
+                elif event == 'call' and call_count[0] < _CALL_LIMIT:
+                    call_count[0] += 1
+                    args = []
+                    try:
+                        for k, v in frame.f_locals.items():
+                            if k.startswith('__'): continue
+                            args.append(k + '=' + _webide_safe_repr(v, 40))
+                    except Exception:
+                        pass
+                    node = {
+                        'name': fname,
+                        'args': ', '.join(args[:6]),
+                        'children': [],
+                        'returnValue': None,
+                        'exception': None,
+                        'lineno': lineno,
+                    }
+                    call_stack[-1]['children'].append(node)
+                    call_stack.append(node)
+                elif event == 'return':
+                    if len(call_stack) > 1:
+                        call_stack[-1]['returnValue'] = _webide_safe_repr(arg, 80)
+                        call_stack.pop()
+                elif event == 'exception':
+                    if len(call_stack) > 0:
+                        try:
+                            call_stack[-1]['exception'] = _webide_safe_repr(arg[1] if isinstance(arg, tuple) else arg, 80)
+                        except Exception:
+                            call_stack[-1]['exception'] = '<exception>'
+            except Exception:
+                pass
+            return tracer
+
+        _webide_result = ""
+        try:
+            window['python_code_result'] = ''
+            _webide_traced = _webide_code.replace("print(", "window['python_code_result'] += get_formatted(")
+            _webide_traced = _webide_traced + _WEBIDE_VAR_POSTLUDE
+            sys.settrace(tracer)
+            try:
+                exec(_webide_traced)
+            finally:
+                sys.settrace(None)
+            _webide_result = window['python_code_result']
+        except Exception as _webide_exc:
+            _webide_result = traceback.format_exc()
+
+        # Convert nested Python dicts/lists to JS-friendly objects/arrays.
+        def to_js(node):
+            o = window.Object.new()
+            o['name'] = node['name']
+            o['args'] = node['args']
+            o['returnValue'] = node['returnValue']
+            o['exception'] = node['exception']
+            o['lineno'] = node.get('lineno', 0)
+            kids = window.Array.new()
+            for c in node['children']:
+                kids.push(to_js(c))
+            o['children'] = kids
+            return o
+
+        try:
+            steps_js = window.Array.new()
+            for s in steps:
+                obj = window.Object.new()
+                obj['lineno'] = s['lineno']
+                obj['function'] = s['function']
+                inner = window.Object.new()
+                for k, v in s['locals'].items():
+                    cell = window.Object.new()
+                    cell['type'] = v['type']
+                    cell['value'] = v['value']
+                    inner[k] = cell
+                obj['locals'] = inner
+                steps_js.push(obj)
+            window['__webide_steps'] = steps_js
+            window['__webide_calltree'] = to_js(call_root)
+        except Exception:
+            pass
+        return _webide_result
 
     window.run_python_code = run_python_code
+    window.run_python_code_traced = run_python_code_traced
 </script>
 
 <!-- xterm.js (terminal emulator) -->
@@ -1036,15 +1910,197 @@ def pyodide_print(s):
         };
 
         // -- Console output ----------------------------------------------------
+        // Plain-English explanations for common errors across the languages this
+        // IDE supports. Patterns are matched in order; the first match wins.
+        // Keep entries terse — the goal is to nudge a stuck student, not to
+        // replace the official docs.
+        const WEBIDE_ERROR_DICT = [
+            // ---- Python (Brython + Pyodide) ----
+            { lang: 'python', re: /NameError: name '([^']+)' is not defined/,
+              explain: (m) => `Python doesn't recognize "${m[1]}". Either you misspelled it, you forgot to define it before using it, or you forgot to import it (e.g. \`import math\`).` },
+            { lang: 'python', re: /IndentationError: (.*)/,
+              explain: (m) => `Python is strict about indentation. ${m[1]}. Make sure each block (after \`if\`, \`for\`, \`def\`, etc.) is indented by the same number of spaces — most editors use 4.` },
+            { lang: 'python', re: /TabError/,
+              explain: () => `You mixed tabs and spaces for indentation. Pick one and stick with it — most Python style guides recommend 4 spaces.` },
+            { lang: 'python', re: /TypeError: ([^(]+) takes (\d+) positional argument/,
+              explain: (m) => `You're calling \`${m[1].trim()}\` with the wrong number of arguments. It expects ${m[2]}.` },
+            { lang: 'python', re: /TypeError: unsupported operand type\(s\) for ([^:]+): '([^']+)' and '([^']+)'/,
+              explain: (m) => `You tried to use \`${m[1].trim()}\` between a ${m[2]} and a ${m[3]}. Convert one of them first — for example \`int("5")\` or \`str(5)\`.` },
+            { lang: 'python', re: /IndexError: list index out of range/,
+              explain: () => `You asked for an item beyond the end of a list. Lists are 0-indexed: a list of length 5 has valid indices 0..4. Print \`len(your_list)\` to check.` },
+            { lang: 'python', re: /KeyError: '?([^'"]+)'?/,
+              // The captured key is unquoted in the exception message; the
+              // suggested code needs it quoted, otherwise it reads as a bare
+              // identifier (NameError when run).
+              explain: (m) => `The dictionary doesn't have a key called \`'${m[1]}'\`. Check the spelling, or use \`my_dict.get('${m[1]}')\` to get \`None\` instead of an error when the key is missing.` },
+            { lang: 'python', re: /ZeroDivisionError/,
+              explain: () => `You divided by zero. Add a check like \`if denominator != 0:\` before the division.` },
+            { lang: 'python', re: /SyntaxError: (.*)/,
+              explain: (m) => `Python can't parse your code. ${m[1]}. The error usually points one character AFTER the real problem — check for a missing \`)\`, \`:\`, or quote on the previous line.` },
+            { lang: 'python', re: /AttributeError: '([^']+)' object has no attribute '([^']+)'/,
+              explain: (m) => `A ${m[1]} doesn't have a method or property called \`${m[2]}\`. Did you mean a different method? Use \`dir(your_object)\` to see what's available.` },
+            { lang: 'python', re: /RecursionError|maximum recursion depth/,
+              explain: () => `Your function called itself too many times without reaching a base case. Make sure your recursion has an \`if\` that returns without recursing.` },
+            // ---- JavaScript ----
+            { lang: 'javascript', re: /(?:Reference|ReferenceError):? ([^ ]+) is not defined/,
+              explain: (m) => `JavaScript doesn't recognize "${m[1]}". Either you misspelled it or you forgot to declare it with \`let\`, \`const\`, or \`var\`.` },
+            { lang: 'javascript', re: /TypeError: Cannot read propert(?:y|ies) of (undefined|null) \(reading '([^']+)'\)/,
+              explain: (m) => `You tried to read \`.${m[2]}\` on a value that is ${m[1]}. Check that the object exists before using it — e.g. \`if (obj && obj.${m[2]})\`.` },
+            { lang: 'javascript', re: /TypeError: ([^ ]+) is not a function/,
+              explain: (m) => `\`${m[1]}\` is not a function. Either it's the wrong type (maybe an object or undefined), or you misspelled the function name.` },
+            { lang: 'javascript', re: /SyntaxError: (.*)/,
+              explain: (m) => `JavaScript can't parse your code. ${m[1]}. Check for a missing \`}\`, \`)\`, or \`;\`. The error often points one line AFTER the real problem.` },
+            { lang: 'javascript', re: /Maximum call stack size exceeded/,
+              explain: () => `Your function called itself too many times. Make sure recursive functions have a base case that returns without recursing.` },
+            // ---- Java (Processing) ----
+            { lang: 'java', re: /NullPointerException/,
+              explain: () => `You tried to use an object that hasn't been created yet (it's \`null\`). Make sure you call \`new Something()\` and assigned it to your variable before using it.` },
+            { lang: 'java', re: /ArrayIndexOutOfBoundsException:?\s*(-?\d+)?/,
+              explain: (m) => `You asked for index ${m[1] || '?'} of an array, but that's outside the valid range. Java arrays are 0-indexed: \`arr[0]\` to \`arr[arr.length - 1]\`.` },
+            { lang: 'java', re: /cannot find symbol[\s\S]*?symbol:\s*(.+)/,
+              explain: (m) => `The compiler doesn't recognize \`${m[1].trim()}\`. Check spelling, capitalization, and that you've declared it (or imported its class).` },
+            { lang: 'java', re: /\bclass [A-Z]\w* is public, should be declared in a file/,
+              explain: () => `In Java the public class must match the file name. Either rename the class or rename the file.` },
+            { lang: 'java', re: /incompatible types/,
+              explain: () => `You're assigning a value of one type to a variable of another. Java requires explicit conversion — e.g. \`Integer.parseInt("5")\` or \`(int) 3.7\`.` },
+            // ---- C / C++ ----
+            { lang: 'cpp', re: /segmentation fault|SIGSEGV/i,
+              explain: () => `Your program tried to access memory it doesn't own. Common causes: dereferencing a null/uninitialized pointer, going past the end of an array, or recursing too deep.` },
+            { lang: 'cpp', re: /undefined reference to '([^']+)'/,
+              explain: (m) => `The linker can't find \`${m[1]}\`. Did you spell it the same way it was declared? If it's from a library, you may need to include the right header or compile its .cpp file.` },
+            { lang: 'cpp', re: /'([^']+)' was not declared in this scope/,
+              explain: (m) => `\`${m[1]}\` isn't visible at the point where you used it. Either you misspelled it, you forgot to include the header that declares it, or you defined it inside a different function or namespace.` },
+            { lang: 'cpp', re: /expected '([^']+)' before '([^']+)'/,
+              explain: (m) => `The compiler expected \`${m[1]}\` before \`${m[2]}\`. Often you missed a \`;\` or \`)\` on the previous line.` },
+            // ---- SQL ----
+            { lang: 'sql', re: /no such (table|column): (\w+)/i,
+              explain: (m) => `SQL doesn't see a ${m[1]} called \`${m[2]}\`. Check the spelling and the schema — column and table names are case-sensitive in some setups.` },
+            { lang: 'sql', re: /syntax error/i,
+              explain: () => `SQL can't parse your query. Common causes: missing comma between columns, missing quotes around strings, unmatched parentheses, or a reserved word used as an identifier.` },
+            // ---- Scheme ----
+            { lang: 'scheme', re: /Unbound variable: (\S+)/i,
+              explain: (m) => `Scheme doesn't recognize \`${m[1]}\`. Either you misspelled it, or you forgot to \`define\` it before using it.` },
+            { lang: 'scheme', re: /Wrong number of arguments/i,
+              explain: () => `You called a procedure with the wrong number of arguments. Check the procedure's definition for how many parameters it expects.` },
+            { lang: 'scheme', re: /not a (number|pair|procedure)/i,
+              explain: (m) => `Scheme expected a ${m[1]} but got something else. Add a \`(display ...)\` to inspect the actual value.` },
+            // ---- Prolog ----
+            { lang: 'prolog', re: /procedure (\S+) does not exist/i,
+              explain: (m) => `Prolog doesn't have a predicate \`${m[1]}\` defined. Check the spelling and arity — \`foo/2\` is a different predicate than \`foo/3\`.` },
+            { lang: 'prolog', re: /Syntax error/i,
+              explain: () => `Prolog can't parse your code. Make sure each clause ends with a period (\`.\`), variables start with capital letters, and atoms start with lowercase letters.` },
+            // ---- Generic catch-alls (last-resort) ----
+            { lang: '*', re: /Permission denied/,
+              explain: () => `The browser blocked something — usually localStorage being full, IndexedDB locked by another tab, or a CORS issue. Try closing other browser tabs of this exercise.` },
+            { lang: '*', re: /Failed to fetch/,
+              explain: () => `A network request failed. Check your internet connection. If you're offline, the exercise should still work for everything except submission.` },
+        ];
+
+        const _PAGE_LANG = '{{ page.language | default: "" }}';
+        const _LANG_FAMILY = (() => {
+            // Map page.language to dictionary 'lang' codes
+            if (_PAGE_LANG === 'python' || _PAGE_LANG === 'pyodide') return 'python';
+            if (_PAGE_LANG === 'cpp') return 'cpp';
+            if (_PAGE_LANG === 'java' || _PAGE_LANG === 'graphics_view' || _PAGE_LANG === 'graphics_shader') return 'java';
+            if (_PAGE_LANG === 'javascript') return 'javascript';
+            if (_PAGE_LANG === 'sql') return 'sql';
+            if (_PAGE_LANG === 'scheme') return 'scheme';
+            if (_PAGE_LANG === 'prolog') return 'prolog';
+            return '*';
+        })();
+
+        function findErrorExplanation(message) {
+            // Try language-specific patterns first, then generic ones.
+            const ordered = WEBIDE_ERROR_DICT
+                .filter(e => e.lang === _LANG_FAMILY)
+                .concat(WEBIDE_ERROR_DICT.filter(e => e.lang === '*'));
+            for (const entry of ordered) {
+                const m = message.match(entry.re);
+                if (m) {
+                    try { return entry.explain(m); }
+                    catch (e) { return null; }
+                }
+            }
+            return null;
+        }
+
+        // Heuristic: does this output line look like an error / traceback / exception?
+        // Note: many Python error class names embed "Error" without a word
+        // boundary (IndentationError, RecursionError, AttributeError, etc.)
+        // so the regex deliberately does NOT use \b around "Error".
+        function looksLikeError(message) {
+            if (!message) return false;
+            return /(?:Error|Exception|Traceback|undefined reference|segmentation fault|SIGSEGV|cannot find symbol|no such (?:table|column)|Unbound variable|procedure .* does not exist|Wrong number of arguments)/i.test(message);
+        }
+
         function logToConsole(message) {
             const newLine = document.createElement('div');
             newLine.textContent = message + '\n';
+            // For likely error lines, attach an inline "What does this mean?" affordance
+            // that expands a plain-English explanation drawn from WEBIDE_ERROR_DICT.
+            if (looksLikeError(String(message))) {
+                const explanation = findErrorExplanation(String(message));
+                if (explanation) {
+                    newLine.style.borderLeft = '3px solid #f48771';
+                    newLine.style.paddingLeft = '6px';
+                    newLine.style.margin = '4px 0';
+                    const btn = document.createElement('button');
+                    btn.type = 'button';
+                    btn.textContent = '? What does this mean?';
+                    btn.className = 'webide-explain-btn';
+                    btn.setAttribute('aria-expanded', 'false');
+                    btn.style.cssText = 'display:inline-block; margin-left:8px; margin-top:2px; padding:1px 8px; background:#3a3a3a; color:#9cdcfe; border:1px solid #555; border-radius:3px; cursor:pointer; font-size:11px; font-family:inherit;';
+                    const expl = document.createElement('div');
+                    expl.className = 'webide-explain-body';
+                    expl.style.cssText = 'display:none; margin:4px 0 4px 6px; padding:6px 8px; background:#1e1e1e; border-left:3px solid #75beff; color:#cccccc; font-size:12px; line-height:1.5; white-space:normal;';
+                    expl.textContent = explanation;
+                    btn.addEventListener('click', () => {
+                        const open = expl.style.display !== 'none';
+                        expl.style.display = open ? 'none' : 'block';
+                        btn.setAttribute('aria-expanded', open ? 'false' : 'true');
+                        btn.textContent = open ? '? What does this mean?' : '✕ Hide explanation';
+                    });
+                    newLine.appendChild(btn);
+                    newLine.appendChild(expl);
+                    // Also surface in the Suggestions tab for discoverability
+                    try { addExplanationToSuggestions(String(message), explanation); } catch (e) {}
+                }
+            }
             consoleOutput.appendChild(newLine);
             newLine.scrollIntoView({ behavior: "smooth" });
             // If terminal panel is not active, auto-switch to output
             switchBottomTab('output');
         }
 
+        // Mirror error explanations into the existing Suggestions panel so
+        // students who closed the output without reading it can still find help.
+        function addExplanationToSuggestions(errorLine, explanation) {
+            const list = document.getElementById('suggestions-list');
+            if (!list) return;
+            // Clear placeholder text on first real entry
+            const placeholder = list.querySelector('div[style*="text-align"]');
+            if (placeholder) placeholder.remove();
+            const item = document.createElement('button');
+            item.type = 'button';
+            item.className = 'suggestion-item error';
+            item.innerHTML = `
+                <span class="suggestion-icon" aria-hidden="true">!</span>
+                <span class="suggestion-content">
+                  <span class="suggestion-message"></span>
+                  <span class="suggestion-hint"></span>
+                </span>`;
+            item.querySelector('.suggestion-message').textContent = errorLine.split('\n')[0].slice(0, 200);
+            item.querySelector('.suggestion-hint').textContent = explanation;
+            list.appendChild(item);
+            // Update count badge
+            const count = list.querySelectorAll('.suggestion-item').length;
+            const badge = document.getElementById('suggestions-count');
+            if (badge) badge.textContent = count > 0 ? '(' + count + ')' : '';
+        }
+
+        // Expose logToConsole on window so other scripts (and the browser
+        // console) can write into the IDE output the same way the runtime does.
+        window.logToConsole = logToConsole;
         logToConsole("Console output...");
 
         // -- Processing / Java boilerplate -------------------------------------
@@ -2261,6 +3317,163 @@ def pyodide_print(s):
         // Initialize accessibility features
         setupAccessibilityShortcuts();
 
+        // -- Preferences (theme, font size, reading mode) ---------------------
+        // Persisted in localStorage under 'webide.prefs' as a JSON object.
+        // Applied to <body> via data-attributes that CSS selectors target.
+        const PREFS_KEY = 'webide.prefs';
+        const PREFS_DEFAULTS = { theme: 'dark', fontSize: 14, readingMode: 'default' };
+        const THEMES = ['dark', 'light', 'hc'];
+        const THEME_LABELS = { dark: 'Dark', light: 'Light', hc: 'High Contrast' };
+        const FONT_STEPS = [11, 12, 13, 14, 16, 18, 20, 24];
+        const READING_MODES = ['default', 'dyslexia'];
+        const READING_LABELS = { default: 'Default', dyslexia: 'Dyslexia-Friendly' };
+
+        function loadPrefs() {
+            try {
+                const raw = localStorage.getItem(PREFS_KEY);
+                if (!raw) return { ...PREFS_DEFAULTS };
+                return { ...PREFS_DEFAULTS, ...JSON.parse(raw) };
+            } catch (e) {
+                return { ...PREFS_DEFAULTS };
+            }
+        }
+        function savePrefs(p) {
+            try { localStorage.setItem(PREFS_KEY, JSON.stringify(p)); }
+            catch (e) { /* localStorage may be full or disabled — silently ignore */ }
+        }
+
+        let _prefs = loadPrefs();
+
+        function applyPrefs() {
+            // Theme — sets body[data-theme]; CSS rules handle the visuals.
+            const theme = THEMES.includes(_prefs.theme) ? _prefs.theme : 'dark';
+            document.body.dataset.theme = theme;
+            // ACE theme: keep monokai for dark (existing default), use CSS
+            // overrides for light/hc so we don't need to ship extra theme files.
+            if (ace_editor) {
+                ace_editor.setTheme('ace/theme/monokai');
+                ace_editor.setFontSize(_prefs.fontSize);
+                // Force re-render so token classes pick up new colors
+                try { ace_editor.renderer.updateText(); } catch (e) {}
+            }
+            // Apply font size to any other ace instances that exist (file tabs etc.)
+            document.querySelectorAll('.ace_editor').forEach(el => {
+                try {
+                    const ed = ace.edit(el);
+                    ed.setFontSize(_prefs.fontSize);
+                } catch (e) {}
+            });
+            // Reading mode (dyslexia)
+            const mode = READING_MODES.includes(_prefs.readingMode) ? _prefs.readingMode : 'default';
+            document.body.dataset.readingmode = mode;
+            // Sync menu labels
+            const tLab = document.getElementById('menu-theme-label');
+            const fLab = document.getElementById('menu-fontsize-label');
+            const rLab = document.getElementById('menu-readingmode-label');
+            if (tLab) tLab.textContent = THEME_LABELS[theme] || 'Dark';
+            if (fLab) fLab.textContent = _prefs.fontSize + 'px';
+            if (rLab) rLab.textContent = READING_LABELS[mode] || 'Default';
+        }
+
+        window.menuCycleTheme = () => {
+            const idx = THEMES.indexOf(_prefs.theme);
+            _prefs.theme = THEMES[(idx + 1) % THEMES.length];
+            savePrefs(_prefs); applyPrefs();
+            if (typeof ideNotify === 'function') ideNotify('Theme: ' + THEME_LABELS[_prefs.theme]);
+        };
+        window.menuCycleFontSize = () => {
+            const cur = parseInt(_prefs.fontSize, 10) || 14;
+            const next = FONT_STEPS.find(s => s > cur) || FONT_STEPS[0];
+            _prefs.fontSize = next;
+            savePrefs(_prefs); applyPrefs();
+            if (typeof ideNotify === 'function') ideNotify('Font size: ' + next + 'px');
+        };
+        window.menuToggleReadingMode = () => {
+            const idx = READING_MODES.indexOf(_prefs.readingMode);
+            _prefs.readingMode = READING_MODES[(idx + 1) % READING_MODES.length];
+            savePrefs(_prefs); applyPrefs();
+            if (typeof ideNotify === 'function') ideNotify('Reading mode: ' + READING_LABELS[_prefs.readingMode]);
+        };
+
+        // Ensure any later editor created via ace.edit() also picks up font size
+        // and any future theme change (the existing Ctrl+= / Ctrl+- handlers
+        // already mutate setFontSize directly; we also persist the change).
+        document.addEventListener('keydown', (e) => {
+            if ((e.ctrlKey || e.metaKey) && (e.key === '=' || e.key === '+')) {
+                const cur = parseInt(_prefs.fontSize, 10) || 14;
+                _prefs.fontSize = Math.min(40, cur + 1);
+                savePrefs(_prefs);
+            } else if ((e.ctrlKey || e.metaKey) && e.key === '-') {
+                const cur = parseInt(_prefs.fontSize, 10) || 14;
+                _prefs.fontSize = Math.max(8, cur - 1);
+                savePrefs(_prefs);
+            }
+        });
+
+        // Apply on load — also re-applies once ace_editor is created later
+        // (loadPrefsAndApply is called again after ace.edit("editor-container")).
+        applyPrefs();
+        window.__webideApplyPrefs = applyPrefs;  // exposed so ace init can call it
+
+        // -- Keyboard shortcut overlay ---------------------------------------
+        let _shortcutsPreviousFocus = null;
+        function isTypingTarget(el) {
+            if (!el) return false;
+            const tag = el.tagName;
+            if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return true;
+            if (el.isContentEditable) return true;
+            // ACE renders into a div with a hidden textarea; treat .ace_text-input as typing target
+            if (el.classList && el.classList.contains('ace_text-input')) return true;
+            return false;
+        }
+        window.menuShowShortcuts = () => {
+            const dialog = document.getElementById('ide-shortcuts-overlay');
+            const closeBtn = document.getElementById('ide-shortcuts-close');
+            if (!dialog) return;
+            _shortcutsPreviousFocus = document.activeElement;
+            dialog.classList.add('visible');
+            dialog.setAttribute('aria-hidden', 'false');
+            setTimeout(() => closeBtn && closeBtn.focus(), 30);
+
+            const focusableSelectors = 'a[href], button:not([disabled]), input, [tabindex]:not([tabindex="-1"])';
+            const trapFocus = e => {
+                if (e.key !== 'Tab') return;
+                const focusable = Array.from(dialog.querySelectorAll(focusableSelectors));
+                if (!focusable.length) { e.preventDefault(); return; }
+                const first = focusable[0], last = focusable[focusable.length - 1];
+                if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+                else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+            };
+            const close = () => {
+                dialog.classList.remove('visible');
+                dialog.setAttribute('aria-hidden', 'true');
+                dialog.removeEventListener('keydown', trapFocus);
+                dialog.removeEventListener('keydown', escHandler);
+                if (closeBtn) closeBtn.removeEventListener('click', close);
+                dialog.removeEventListener('click', backdropClose);
+                if (_shortcutsPreviousFocus && _shortcutsPreviousFocus.focus) {
+                    try { _shortcutsPreviousFocus.focus(); } catch (e) {}
+                }
+            };
+            const escHandler = e => { if (e.key === 'Escape') { e.preventDefault(); close(); } };
+            const backdropClose = e => { if (e.target === dialog) close(); };
+            dialog.addEventListener('keydown', trapFocus);
+            dialog.addEventListener('keydown', escHandler);
+            if (closeBtn) closeBtn.addEventListener('click', close);
+            dialog.addEventListener('click', backdropClose);
+        };
+
+        // "?" opens the shortcut overlay — unless the user is typing in a field.
+        // Shift+/ is the same key on US keyboards; both events fire e.key === '?'.
+        document.addEventListener('keydown', e => {
+            if (e.key !== '?') return;
+            if (isTypingTarget(e.target)) return;
+            // Don't trigger when modifier keys other than Shift are held
+            if (e.ctrlKey || e.altKey || e.metaKey) return;
+            e.preventDefault();
+            window.menuShowShortcuts();
+        });
+
         // -- Enhanced Terminal Commands (Proposals 3, 4) ----------------------
         // These integrate with the existing handleCommand function
         // Added: gdb, pdb, pytest, unittest commands for debugging and testing
@@ -2303,13 +3516,552 @@ def pyodide_print(s):
         });
 
         let _runGuard = false;
+
+        // -- Infinite-loop watchdog ------------------------------------------
+        // Many student programs accidentally enter an infinite loop. Most
+        // languages here run on the main thread (Brython exec, JS eval,
+        // Processing.js), so we cannot truly KILL the loop without the user
+        // reloading. But we can warn them that something is wrong instead of
+        // letting the tab look frozen with no explanation.
+        const RUN_WATCHDOG_SOFT_MS  = 5000;   // first warning
+        const RUN_WATCHDOG_HARD_MS  = 15000;  // strong warning + reload prompt
+        let _runWatchdogTimers = [];
+        let _runningBanner = null;
+        function clearRunWatchdog() {
+            _runWatchdogTimers.forEach(t => clearTimeout(t));
+            _runWatchdogTimers = [];
+            if (_runningBanner) { _runningBanner.remove(); _runningBanner = null; }
+        }
+        function startRunWatchdog() {
+            clearRunWatchdog();
+            // Immediate visible banner — works even if the runtime synchronously
+            // freezes the main thread. The banner is removed once runCode settles.
+            try {
+                _runningBanner = document.createElement('div');
+                _runningBanner.style.cssText = 'border-left:3px solid #75beff; padding:6px 8px; margin:6px 0; background:#1a2733; color:#9cdcfe; font-size:12px;';
+                _runningBanner.innerHTML = '<strong>▶ Running…</strong> If the page freezes for more than ~10 seconds, your code may have an infinite loop. Your file work is saved automatically — refresh the tab (Ctrl/Cmd+R) to recover.';
+                consoleOutput.appendChild(_runningBanner);
+                _runningBanner.scrollIntoView({ behavior: 'smooth' });
+            } catch (e) {}
+            const softT = setTimeout(() => {
+                if (typeof ideNotify === 'function') {
+                    ideNotify('Code is still running after 5 seconds. If your tab feels frozen it may be an infinite loop — your work is auto-saved, you can refresh to recover.', 'error');
+                }
+            }, RUN_WATCHDOG_SOFT_MS);
+            const hardT = setTimeout(() => {
+                // After the hard threshold, also write a permanent message into
+                // the console so the warning is visible after the toast fades.
+                try {
+                    const div = document.createElement('div');
+                    div.style.cssText = 'border-left:3px solid #f48771; padding:6px 8px; margin:6px 0; background:#2d1f1f; color:#f48771;';
+                    div.innerHTML = '<strong>⚠ Infinite loop suspected.</strong> Code has been running for 15+ seconds. ';
+                    const reloadBtn = document.createElement('button');
+                    reloadBtn.type = 'button';
+                    reloadBtn.textContent = 'Reload page';
+                    reloadBtn.style.cssText = 'margin-left:8px; padding:2px 10px; background:#f48771; color:#000; border:none; border-radius:3px; cursor:pointer; font-size:11px;';
+                    reloadBtn.addEventListener('click', () => location.reload());
+                    div.appendChild(reloadBtn);
+                    consoleOutput.appendChild(div);
+                    div.scrollIntoView({ behavior: 'smooth' });
+                    switchBottomTab('output');
+                } catch (e) {}
+            }, RUN_WATCHDOG_HARD_MS);
+            _runWatchdogTimers.push(softT, hardT);
+        }
+
         runBtn.addEventListener('click', () => {
             if (_runGuard) return;
             _runGuard = true;
             setTimeout(() => { _runGuard = false; }, 1000);
             saveActiveTabs();
-            runCode();  // runCode handles compile-if-needed, logging, and tab switching
+            startRunWatchdog();
+            _beforeRun();
+            // runCode is async; clear the watchdog when it settles, success or fail.
+            // Wrapped in Promise.resolve so non-Promise return values don't crash.
+            Promise.resolve()
+                .then(() => runCode())
+                .finally(() => { clearRunWatchdog(); _afterRun(); });
         });
+
+        // -- Inspector (variables, step-through, call tape) --------------------
+        // Populated after each run from window.__webide_vars / __webide_steps /
+        // __webide_calltree (Python) or by diffing window keys (JavaScript) plus
+        // the optional window.webideTrace API students can call from JS code.
+        const _inspectorState = {
+            vars: null,        // { name: { type, value }, ... }
+            steps: null,       // [ { lineno, function, locals } ]
+            callTree: null,    // root call node
+            currentStep: 0,
+            hasRun: false,     // flipped to true the first time _afterRun fires
+            _lineMarkerId: null,
+        };
+        let _stepRunRequested = false;
+
+        // Public API students can use to record call-stack entries from JS.
+        //
+        //   webideTrace.tap('name', arg1, arg2);
+        //       Record a single sibling entry in the call tape. Use this for
+        //       simple logging — no push/pop, no nesting.
+        //
+        //   webideTrace.call('fact', n);  ...;  return webideTrace.return(result);
+        //       Record a scope. .call opens a frame, .return closes it. Use
+        //       this when you want to see recursion or nested calls. EVERY
+        //       .call must have a matching .return — otherwise later .call()s
+        //       end up appearing nested inside it. (The renderer adds a
+        //       "(no return)" marker on unclosed frames to make this obvious.)
+        function _webideFormatArgs(args) {
+            return Array.prototype.map.call(args, a => {
+                try {
+                    if (typeof a === 'string') return JSON.stringify(a).slice(0, 40);
+                    if (typeof a === 'object' && a !== null) return JSON.stringify(a).slice(0, 40);
+                    return String(a);
+                } catch (e) { return '?'; }
+            }).join(', ');
+        }
+        function _webideFormatReturn(value) {
+            try {
+                if (typeof value === 'string') return JSON.stringify(value).slice(0, 80);
+                if (typeof value === 'object' && value !== null) return JSON.stringify(value).slice(0, 80);
+                return String(value);
+            } catch (e) { return '?'; }
+        }
+        window.webideTrace = {
+            _root: { name: '<top>', args: '', children: [], returnValue: null, exception: null },
+            _stack: null,
+            _reset: function() {
+                this._root = { name: '<top>', args: '', children: [], returnValue: null, exception: null };
+                this._stack = [this._root];
+            },
+            // Sibling logger — no stack manipulation. Best default for
+            // "I just want to see when this function ran".
+            tap: function(name) {
+                if (!this._stack) this._reset();
+                const argStr = _webideFormatArgs(Array.prototype.slice.call(arguments, 1));
+                const node = {
+                    name: String(name), args: argStr, children: [],
+                    returnValue: null, exception: null, isTap: true,
+                };
+                this._stack[this._stack.length - 1].children.push(node);
+            },
+            // Scope open — pushes a new frame. Must be paired with .return().
+            call: function(name) {
+                if (!this._stack) this._reset();
+                const argStr = _webideFormatArgs(Array.prototype.slice.call(arguments, 1));
+                const node = { name: String(name), args: argStr, children: [], returnValue: null, exception: null };
+                this._stack[this._stack.length - 1].children.push(node);
+                this._stack.push(node);
+            },
+            // Scope close — pops the topmost frame and records the return.
+            return: function(value) {
+                if (!this._stack || this._stack.length <= 1) return value;
+                const node = this._stack.pop();
+                node.returnValue = _webideFormatReturn(value);
+                return value;
+            }
+        };
+
+        // JS-only: capture top-level globals before/after eval to compute a diff
+        let _windowKeysBaseline = null;
+        function snapshotJsGlobalsBefore() {
+            try { _windowKeysBaseline = new Set(Object.keys(window)); }
+            catch (e) { _windowKeysBaseline = null; }
+        }
+        function snapshotJsGlobalsAfter() {
+            if (!_windowKeysBaseline) return null;
+            const newKeys = Object.keys(window).filter(k => !_windowKeysBaseline.has(k));
+            const out = {};
+            for (const k of newKeys) {
+                // Skip our own internals and conventional Python-style dunders,
+                // but allow leading-underscore names like _count / _word that
+                // students might legitimately use.
+                if (k.startsWith('__webide') || k.startsWith('_webide')) continue;
+                if (k.startsWith('webideTrace')) continue;
+                if (k === 'feedbackString' || k === 'PROCESSING_CODE_BEGIN' || k === 'PROCESSING_CODE_END') continue;
+                try {
+                    const v = window[k];
+                    let tname, strVal;
+                    if (v === null) { tname = 'null'; strVal = 'null'; }
+                    else if (Array.isArray(v)) {
+                        tname = 'array';
+                        try { strVal = JSON.stringify(v).slice(0, 200); } catch (e) { strVal = '[Array]'; }
+                    }
+                    else if (typeof v === 'function') { tname = 'function'; strVal = '<function ' + (v.name || '?') + '>'; }
+                    else if (typeof v === 'object') {
+                        tname = 'object';
+                        try { strVal = JSON.stringify(v).slice(0, 200); } catch (e) { strVal = '[Object]'; }
+                    }
+                    else { tname = typeof v; strVal = String(v); }
+                    if (strVal && strVal.length > 200) strVal = strVal.slice(0, 200) + '...';
+                    out[k] = { type: tname, value: strVal };
+                } catch (e) {}
+            }
+            return out;
+        }
+
+        function _beforeRun() {
+            if (window.webideTrace) window.webideTrace._reset();
+            window.__webide_vars = null;
+            window.__webide_steps = null;
+            window.__webide_calltree = null;
+            snapshotJsGlobalsBefore();
+            // Step Run mode: swap in the traced Python runner for this one call
+            if (_stepRunRequested && _LANG_FAMILY === 'python' && window.run_python_code_traced) {
+                window._webide_orig_run_python = window.run_python_code;
+                window.run_python_code = window.run_python_code_traced;
+            }
+        }
+        function _afterRun() {
+            if (window._webide_orig_run_python) {
+                window.run_python_code = window._webide_orig_run_python;
+                window._webide_orig_run_python = null;
+            }
+            _stepRunRequested = false;
+            _inspectorState.hasRun = true;
+            refreshInspectorFromRun();
+        }
+
+        function refreshInspectorFromRun() {
+            // Variables: prefer Python's __webide_vars, else JS-side diff.
+            // The JS diff is only meaningful for JavaScript exercises — on
+            // Java (Processing.js) or Graphics pages it would surface
+            // unhelpful runtime internals like $P, so skip it there.
+            let vars = null;
+            if (window.__webide_vars && typeof window.__webide_vars === 'object') {
+                vars = {};
+                for (const k of Object.keys(window.__webide_vars)) {
+                    const v = window.__webide_vars[k];
+                    vars[k] = (v && typeof v === 'object' && 'type' in v) ? v : { type: typeof v, value: String(v) };
+                }
+            } else if (_PAGE_LANG === 'javascript') {
+                vars = snapshotJsGlobalsAfter();
+            }
+            _inspectorState.vars = vars;
+
+            // Steps (Python traced run only)
+            if (window.__webide_steps && window.__webide_steps.length) {
+                const steps = [];
+                for (let i = 0; i < window.__webide_steps.length; i++) {
+                    const s = window.__webide_steps[i];
+                    const locals = {};
+                    if (s.locals) {
+                        for (const k of Object.keys(s.locals)) {
+                            const cell = s.locals[k];
+                            locals[k] = { type: cell.type, value: cell.value };
+                        }
+                    }
+                    steps.push({ lineno: s.lineno, function: s.function, locals });
+                }
+                _inspectorState.steps = steps;
+                _inspectorState.currentStep = 0;
+            }
+
+            // Call tree: Python settrace, or JS webideTrace
+            if (window.__webide_calltree) {
+                _inspectorState.callTree = jsifyCallTree(window.__webide_calltree);
+            } else if (window.webideTrace && window.webideTrace._root && window.webideTrace._root.children.length) {
+                _inspectorState.callTree = window.webideTrace._root;
+            }
+            renderInspector();
+        }
+
+        function jsifyCallTree(node) {
+            const out = {
+                name: node.name, args: node.args,
+                returnValue: node.returnValue, exception: node.exception,
+                lineno: node.lineno || 0, children: []
+            };
+            if (node.children) {
+                for (let i = 0; i < node.children.length; i++) {
+                    out.children.push(jsifyCallTree(node.children[i]));
+                }
+            }
+            return out;
+        }
+
+        function renderInspector() {
+            renderInspectorVars();
+            renderInspectorSteps();
+            renderInspectorTree();
+        }
+        // Exposed so external callers (browser console, tests) can re-render
+        // the Inspector after manually populating webideTrace or
+        // window.__webide_vars from outside the normal Run pipeline.
+        window.refreshInspectorFromRun = refreshInspectorFromRun;
+        window.renderInspector = renderInspector;
+
+        function renderInspectorVars() {
+            const view = document.getElementById('inspector-vars');
+            if (!view) return;
+            const vars = _inspectorState.vars;
+            if (!vars || Object.keys(vars).length === 0) {
+                let msg;
+                if (!_inspectorState.hasRun) {
+                    msg = 'Run your code to inspect variables.';
+                } else if (_LANG_FAMILY === 'python' || _LANG_FAMILY === 'javascript') {
+                    msg = 'No top-level variables were captured this run. '
+                        + '(Assignments inside functions are local to those functions and don\'t show here.)';
+                } else {
+                    msg = 'Variable inspection is currently supported for Python and JavaScript exercises only.';
+                }
+                view.innerHTML = '<div class="inspector-empty">' + msg + '</div>';
+                return;
+            }
+            view.innerHTML = '';
+            for (const k of Object.keys(vars)) {
+                const v = vars[k];
+                const row = document.createElement('div');
+                row.className = 'inspector-var-row';
+                const nameEl = document.createElement('span');
+                nameEl.className = 'inspector-var-name';
+                nameEl.textContent = k;
+                const typeEl = document.createElement('span');
+                typeEl.className = 'inspector-var-type';
+                typeEl.textContent = (v && v.type) ? v.type : typeof v;
+                const valEl = document.createElement('span');
+                valEl.className = 'inspector-var-value';
+                valEl.textContent = (v && 'value' in v) ? v.value : String(v);
+                row.appendChild(nameEl);
+                row.appendChild(typeEl);
+                row.appendChild(valEl);
+                view.appendChild(row);
+            }
+        }
+
+        function renderInspectorSteps() {
+            const view = document.getElementById('inspector-steps');
+            if (!view) return;
+            const steps = _inspectorState.steps;
+            if (!steps || steps.length === 0) {
+                const msg = (_LANG_FAMILY === 'python')
+                    ? 'Click <strong>Step Run</strong> above to record execution steps.'
+                    : 'Step-Through is available for Python.';
+                view.innerHTML = '<div class="inspector-empty">' + msg + '</div>';
+                return;
+            }
+            let cur = _inspectorState.currentStep | 0;
+            if (cur < 0) cur = 0;
+            if (cur >= steps.length) cur = steps.length - 1;
+            _inspectorState.currentStep = cur;
+
+            view.innerHTML =
+                '<div class="step-controls">' +
+                  '<button class="step-btn" id="step-first" aria-label="Jump to first step" title="First">⏮</button>' +
+                  '<button class="step-btn" id="step-prev" aria-label="Previous step" title="Previous">◀</button>' +
+                  '<button class="step-btn" id="step-next" aria-label="Next step" title="Next">▶</button>' +
+                  '<button class="step-btn" id="step-last" aria-label="Jump to last step" title="Last">⏭</button>' +
+                  '<span class="step-progress" id="step-progress"></span>' +
+                '</div>' +
+                '<div class="step-display">' +
+                  '<div class="step-pane">' +
+                    '<h5>Where</h5>' +
+                    '<div>Function: <strong class="step-fn"></strong></div>' +
+                    '<div class="step-line-display">' +
+                      '<span class="step-line-num"></span><span class="step-line-code"></span>' +
+                    '</div>' +
+                  '</div>' +
+                  '<div class="step-pane step-locals">' +
+                    '<h5>Local Variables</h5>' +
+                    '<div class="step-locals-list"></div>' +
+                  '</div>' +
+                '</div>';
+
+            const updateStep = () => {
+                const i = _inspectorState.currentStep;
+                const s = steps[i];
+                view.querySelector('#step-progress').textContent = 'Step ' + (i + 1) + ' of ' + steps.length;
+                view.querySelector('.step-fn').textContent = s.function || '<module>';
+                view.querySelector('.step-line-num').textContent = 'Line ' + s.lineno + '  ';
+                view.querySelector('.step-line-code').textContent = getEditorLine(s.lineno) || '';
+                const list = view.querySelector('.step-locals-list');
+                list.innerHTML = '';
+                const locals = s.locals || {};
+                const keys = Object.keys(locals);
+                if (keys.length === 0) {
+                    list.innerHTML = '<div style="color:#888; font-style:italic;">(no locals)</div>';
+                } else {
+                    for (const k of keys) {
+                        const v = locals[k];
+                        const row = document.createElement('div');
+                        row.className = 'inspector-var-row';
+                        const n = document.createElement('span'); n.className = 'inspector-var-name'; n.textContent = k;
+                        const t = document.createElement('span'); t.className = 'inspector-var-type'; t.textContent = v.type;
+                        const vEl = document.createElement('span'); vEl.className = 'inspector-var-value'; vEl.textContent = v.value;
+                        row.appendChild(n); row.appendChild(t); row.appendChild(vEl);
+                        list.appendChild(row);
+                    }
+                }
+                // ACE highlight the line for visual feedback
+                try {
+                    if (ace_editor) {
+                        if (_inspectorState._lineMarkerId) {
+                            ace_editor.session.removeMarker(_inspectorState._lineMarkerId);
+                            _inspectorState._lineMarkerId = null;
+                        }
+                        const Range = ace.require('ace/range').Range;
+                        _inspectorState._lineMarkerId = ace_editor.session.addMarker(
+                            new Range(s.lineno - 1, 0, s.lineno - 1, 1),
+                            'webide-step-marker', 'fullLine');
+                        ace_editor.gotoLine(s.lineno, 0, false);
+                    }
+                } catch (e) {}
+            };
+            view.querySelector('#step-first').addEventListener('click', () => { _inspectorState.currentStep = 0; updateStep(); });
+            view.querySelector('#step-last').addEventListener('click',  () => { _inspectorState.currentStep = steps.length - 1; updateStep(); });
+            view.querySelector('#step-prev').addEventListener('click',  () => { if (_inspectorState.currentStep > 0) { _inspectorState.currentStep--; updateStep(); } });
+            view.querySelector('#step-next').addEventListener('click',  () => { if (_inspectorState.currentStep < steps.length - 1) { _inspectorState.currentStep++; updateStep(); } });
+            updateStep();
+        }
+
+        function renderInspectorTree() {
+            const view = document.getElementById('inspector-trace');
+            if (!view) return;
+            const tree = _inspectorState.callTree;
+            if (!tree || !tree.children || tree.children.length === 0) {
+                const hint = (_LANG_FAMILY === 'python')
+                    ? 'Use <strong>Step Run</strong> to capture function calls.'
+                    : 'These helpers are <strong>markers, not invokers</strong> — they only label this tape.<br>'
+                        + '<strong>tap:</strong> '
+                        + '<code class="code-inline">webideTrace.tap(\'fname\', arg1)</code> '
+                        + 'adds one sibling entry (simple log).<br>'
+                        + '<strong>call/return:</strong> put '
+                        + '<code class="code-inline">webideTrace.call(\'fname\', args)</code> as the '
+                        + 'first line <em>inside</em> the function, and '
+                        + '<code class="code-inline">return webideTrace.return(value)</code> at every '
+                        + 'return statement. Then call the function normally. (Three call()s with no '
+                        + 'return()s in between end up nested — use tap() for that.)';
+                view.innerHTML = '<div class="inspector-empty">No call tape recorded.<br>' + hint + '</div>';
+                return;
+            }
+            view.innerHTML = '';
+            // Count calls, max depth, and unclosed call() frames so we can warn
+            let totalCalls = 0, maxDepth = 0, unclosed = 0;
+            const count = (node, depth) => {
+                totalCalls++;
+                if (depth > maxDepth) maxDepth = depth;
+                // A node is "unclosed" if it was created by .call() (not .tap()),
+                // has no recorded return, has no exception, and yet has children
+                // — that means another call() was issued before the matching
+                // return(). True leaves with no children and no return are
+                // ambiguous (could be in-progress or just never called .return),
+                // but tap() nodes explicitly set isTap and are excluded here.
+                if (!node.isTap && node.returnValue == null && !node.exception
+                        && node.children && node.children.length > 0) {
+                    unclosed++;
+                }
+                for (const c of (node.children || [])) count(c, depth + 1);
+            };
+            for (const c of tree.children) count(c, 1);
+            const summary = document.createElement('div');
+            summary.className = 'calltape-summary';
+            summary.textContent = totalCalls + ' call' + (totalCalls === 1 ? '' : 's')
+                + ', max depth ' + maxDepth
+                + (unclosed > 0 ? '  ·  ' + unclosed + ' unclosed (missing .return)' : '');
+            view.appendChild(summary);
+
+            const root = document.createElement('div');
+            root.className = 'calltape-tree';
+            const renderNode = (node, container, depth) => {
+                const wrap = document.createElement('div');
+                wrap.className = 'calltape-node';
+                if (depth === 0) wrap.style.marginLeft = '0';
+                const line = document.createElement('div');
+                line.className = 'calltape-call';
+                const hasKids = node.children && node.children.length > 0;
+                const tog = document.createElement('span');
+                tog.className = 'calltape-toggle';
+                tog.textContent = hasKids ? '▼' : ' ';
+                line.appendChild(tog);
+                const fname = document.createElement('span');
+                fname.className = 'calltape-fname';
+                fname.textContent = node.name;
+                line.appendChild(fname);
+                line.appendChild(document.createTextNode('(' + (node.args || '') + ')'));
+                if (node.exception) {
+                    const ex = document.createElement('span');
+                    ex.className = 'calltape-throw';
+                    ex.textContent = '  ⚡ ' + node.exception;
+                    line.appendChild(ex);
+                } else if (node.returnValue != null && node.returnValue !== 'None' && node.returnValue !== 'undefined') {
+                    const arrow = document.createElement('span');
+                    arrow.className = 'calltape-arrow';
+                    arrow.textContent = '→';
+                    const ret = document.createElement('span');
+                    ret.className = 'calltape-return';
+                    ret.textContent = node.returnValue;
+                    line.appendChild(arrow);
+                    line.appendChild(ret);
+                } else if (!node.isTap && node.returnValue == null && hasKids) {
+                    // call() that never .return()'d — flag it so the user
+                    // knows the visible nesting under it is an artifact of
+                    // the missing return, not real recursion. Common cause:
+                    // calling webideTrace.call('foo') three times in a row
+                    // thinking it invokes foo() — it doesn't, it just pushes
+                    // a label that needs a matching .return.
+                    const warn = document.createElement('span');
+                    warn.className = 'calltape-unclosed';
+                    warn.textContent = '  (no .return — try webideTrace.tap() for sibling logging)';
+                    line.appendChild(warn);
+                }
+                wrap.appendChild(line);
+                if (hasKids) {
+                    const kids = document.createElement('div');
+                    kids.className = 'calltape-children';
+                    for (const c of node.children) renderNode(c, kids, depth + 1);
+                    wrap.appendChild(kids);
+                    tog.style.cursor = 'pointer';
+                    tog.addEventListener('click', () => {
+                        const coll = kids.classList.toggle('collapsed');
+                        tog.textContent = coll ? '▶' : '▼';
+                    });
+                }
+                container.appendChild(wrap);
+            };
+            for (const c of tree.children) renderNode(c, root, 0);
+            view.appendChild(root);
+        }
+
+        function getEditorLine(lineno) {
+            try {
+                if (!ace_editor) return '';
+                const sess = ace_editor.session;
+                if (lineno < 1 || lineno > sess.getLength()) return '';
+                return sess.getLine(lineno - 1);
+            } catch (e) { return ''; }
+        }
+        window.getEditorLine = getEditorLine;
+
+        // Inspector sub-tab switching
+        window.switchInspectorView = (name) => {
+            document.querySelectorAll('.inspector-subtab').forEach(t => {
+                const isActive = t.id === 'insub-' + name;
+                t.classList.toggle('active', isActive);
+                t.setAttribute('aria-selected', isActive ? 'true' : 'false');
+                t.setAttribute('tabindex', isActive ? '0' : '-1');
+            });
+            document.querySelectorAll('.inspector-view').forEach(v => {
+                const isActive = v.id === 'inspector-' + name;
+                v.classList.toggle('active', isActive);
+                if (isActive) v.removeAttribute('hidden');
+                else          v.setAttribute('hidden', '');
+            });
+        };
+
+        // Step Run button: re-runs in Python tracing mode
+        const _stepRunBtn = document.getElementById('inspector-step-run');
+        if (_stepRunBtn) {
+            // Hide for non-Python languages
+            if (_LANG_FAMILY !== 'python') _stepRunBtn.style.display = 'none';
+            _stepRunBtn.addEventListener('click', () => {
+                if (_LANG_FAMILY !== 'python') {
+                    if (typeof ideNotify === 'function') ideNotify('Step Run is currently available for Python.', 'error');
+                    return;
+                }
+                _stepRunRequested = true;
+                if (!runBtn.disabled) runBtn.click();
+                switchBottomTab('inspector');
+                setTimeout(() => switchInspectorView('steps'), 80);
+            });
+        }
 
         function saveActiveTabs() {
             logToConsole("Saving open tabs...");
@@ -2634,6 +4386,10 @@ def pyodide_print(s):
                 enableBasicAutocompletion: true,
                 enableSnippets: true
             });
+            // Re-apply persisted preferences once the editor exists
+            if (typeof window.__webideApplyPrefs === 'function') {
+                try { window.__webideApplyPrefs(); } catch (e) {}
+            }
             // Screen reader mode provides a textarea that screen readers can interact with
             ace_editor.setOption('enableEmmet', false);
             try { ace_editor.renderer.setOption('screenReaderMode', true); } catch(e) {}
@@ -3021,6 +4777,10 @@ def pyodide_print(s):
 
         async function setupPyodide() {
             pyodide = await loadPyodide();
+            // Expose on window so other scripts, the browser console, and the
+            // test suite can interact with Pyodide directly (e.g. to invoke
+            // Step Run tracer machinery without going through the file system).
+            window.pyodide = pyodide;
             logToConsole("Importing packages {{page.info.packages}}...");
             for (let i = 0; i < packages.length; i++) await pyodide.loadPackage(packages[i]);
             logToConsole("Finished loading packages. You can run your code now.");
@@ -3194,7 +4954,63 @@ def pyodide_print(s):
                 {% elsif page.language == "pyodide" %}
                 if (!pyodideLoaded) await pyodidePromise;
                 let student_code = editorText + "\n\n" + document.getElementById("pyodideBoilerplate").innerHTML + "\n\n" + mainText;
-                pyodide.runPython(student_code);
+                const _webideStepMode = _stepRunRequested;
+                if (_webideStepMode) {
+                    try {
+                        // 1) Load the tracer + state. Does NOT install settrace —
+                        //    that happens inside the student wrapper.
+                        pyodide.runPython(document.getElementById('pyodideStepPrologue').textContent);
+                        // 2) Hand the student source to Python as a variable.
+                        pyodide.globals.set('_webide_student_source', student_code);
+                        // 3) Run a small Python wrapper that compile()s the
+                        //    student source with a unique co_filename, installs
+                        //    settrace, exec's the compiled code, and uninstalls
+                        //    settrace via try/finally. This guarantees that the
+                        //    only frames seen by the tracer are student frames.
+                        pyodide.runPython(document.getElementById('pyodideStepExec').textContent);
+                    } catch (e) {
+                        console.error('Step Run failed:', e);
+                    }
+                } else {
+                    pyodide.runPython(student_code);
+                }
+                if (_webideStepMode) {
+                    try {
+                        // Read out steps + call tree as JS objects
+                        const stepsPy = pyodide.globals.get('_webide_steps');
+                        const treePy  = pyodide.globals.get('_webide_calltree');
+                        if (stepsPy) {
+                            window.__webide_steps = stepsPy.toJs({ dict_converter: Object.fromEntries });
+                            stepsPy.destroy && stepsPy.destroy();
+                        }
+                        if (treePy) {
+                            window.__webide_calltree = treePy.toJs({ dict_converter: Object.fromEntries });
+                            treePy.destroy && treePy.destroy();
+                        }
+                    } catch (e) { console.error('Step epilogue failed:', e); }
+                }
+                // Inspector: snapshot Pyodide globals for the Variables tab
+                try {
+                    const skip = new Set(['__name__', '__doc__', '__package__', '__loader__', '__spec__', '__builtins__',
+                                          'img_str', 'audio_sav_arr', 'audio_sav_sr', 'PYODIDE_COUT',
+                                          'save_figure_js', 'save_audio_js', 'pyodide_print', 'io', 'base64']);
+                    const out = {};
+                    const keys = pyodide.globals.toJs().keys ? Array.from(pyodide.globals.toJs().keys()) : [];
+                    for (const k of keys) {
+                        if (skip.has(k) || (k.startsWith('__') && k.endsWith('__'))) continue;
+                        if (k.startsWith('_webide')) continue;  // trace-mode internals
+                        try {
+                            const v = pyodide.globals.get(k);
+                            const tname = (v && v.constructor && v.constructor.name) || typeof v;
+                            let strVal;
+                            try { strVal = String(v); } catch (e) { strVal = '<unrepresentable>'; }
+                            if (strVal && strVal.length > 200) strVal = strVal.slice(0, 200) + '...';
+                            out[k] = { type: tname, value: strVal };
+                            if (typeof v === 'object' && v && typeof v.destroy === 'function') v.destroy();
+                        } catch (e) { /* skip */ }
+                    }
+                    window.__webide_vars = out;
+                } catch (e) { /* ignore */ }
                 imgStr = pyodide.globals.get("img_str");
                 if (imgStr.length > 0) displayImage(imgStr, true);
                 audioStr = "";
