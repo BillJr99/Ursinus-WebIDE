@@ -76,8 +76,10 @@ export default async function run() {
 
     await step('"?" key inside an input field types literal "?" instead', async () => {
         await withPage(PRIMARY, async (page) => {
-            // Open the input dialog so we have a focusable text input
-            await page.evaluate(() => idePrompt('test'));
+            // Open the input dialog. idePrompt returns a Promise that doesn't
+            // resolve until Enter/Escape; fire-and-forget by wrapping in a
+            // void IIFE so page.evaluate doesn't await it.
+            await page.evaluate(() => { void idePrompt('test'); });
             await page.waitForTimeout(150);
             await page.locator('#ide-input-field').focus();
             await page.keyboard.press('?');
@@ -86,6 +88,8 @@ export default async function run() {
             expect.equal(value, '?', 'input should contain a literal "?"');
             const overlayCount = await page.locator('#ide-shortcuts-overlay.visible').count();
             expect.equal(overlayCount, 0, 'overlay must not open while typing');
+            // Dismiss the dialog so we leave a clean state for downstream tests
+            await page.keyboard.press('Escape');
         });
     });
 
@@ -98,17 +102,22 @@ export default async function run() {
 
     // Visual reference for the report
     setSpec('02_preferences_screens');
-    for (const [step_, fn] of [
-        ['light',         async (p) => { await p.evaluate(() => { _prefs?.theme; menuCycleTheme(); }); }],
-        ['high_contrast', async (p) => { await p.evaluate(() => { menuCycleTheme(); menuCycleTheme(); }); }],
-        ['dyslexia',      async (p) => { await p.evaluate(() => menuToggleReadingMode()); }],
-        ['shortcuts',     async (p) => { await p.evaluate(() => document.activeElement && document.activeElement.blur()); await p.keyboard.press('?'); await p.waitForTimeout(150); }],
-    ]) {
-        await step(`screenshot ${step_}`, async () => {
+    const screenshotCases = [
+        { label: 'light',         setup: async (p) => { await p.evaluate(() => menuCycleTheme()); } },
+        { label: 'high_contrast', setup: async (p) => { await p.evaluate(() => { menuCycleTheme(); menuCycleTheme(); }); } },
+        { label: 'dyslexia',      setup: async (p) => { await p.evaluate(() => menuToggleReadingMode()); } },
+        { label: 'shortcuts',     setup: async (p) => {
+            await p.evaluate(() => document.activeElement && document.activeElement.blur());
+            await p.keyboard.press('?');
+            await p.waitForTimeout(150);
+        } },
+    ];
+    for (const c of screenshotCases) {
+        await step(`screenshot ${c.label}`, async () => {
             await withPage(PRIMARY, async (page) => {
-                await fn(page);
+                await c.setup(page);
                 await page.waitForTimeout(200);
-                await snap(page, step_);
+                await snap(page, c.label);
             });
         });
     }

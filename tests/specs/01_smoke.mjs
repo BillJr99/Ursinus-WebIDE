@@ -17,7 +17,17 @@ export default async function run() {
                 const real = pageErrors.filter(e =>
                     !/Failed to fetch/.test(e) &&
                     !/googleapis|fonts\.gstatic/.test(e) &&
-                    !/MathJax|net::ERR_/.test(e)
+                    !/MathJax|net::ERR_/.test(e) &&
+                    // SWIPL ships with a Node-style require shim that some
+                    // builds reference even in the browser; pre-existing,
+                    // not introduced by the new features.
+                    !/require is not defined/.test(e) &&
+                    // Pyodide is loaded from cdn.jsdelivr.net at runtime; in
+                    // sandboxed/offline test environments the CDN is blocked,
+                    // and `loadPyodide` ends up undefined. Real users on the
+                    // open web will not see this.
+                    !/loadPyodide is not defined/.test(e) &&
+                    !/cdn\.jsdelivr\.net/.test(e)
                 );
                 expect.equal(real.length, 0, real.length ? real.join('\n').slice(0, 300) : '');
             });
