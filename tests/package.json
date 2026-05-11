@@ -1,0 +1,12 @@
+{
+  "name": "ursinus-webide-tests",
+  "private": true,
+  "type": "module",
+  "description": "Headless-browser test suite for _layouts/exercise.html",
+  "scripts": {
+    "test": "./run.sh"
+  },
+  "dependencies": {
+    "playwright": "^1.56.0"
+  }
+}

@@ -1,6 +1,6 @@
 reports/
 node_modules/
-package.json
+package-lock.json
 
 # The repo root's .gitignore globs *.sh, so we explicitly un-ignore the
 # test runner here.

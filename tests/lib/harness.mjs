@@ -16,8 +16,19 @@ import path from 'node:path';
 import { mkdirSync } from 'node:fs';
 
 export const BASE_URL = process.env.WEBIDE_TEST_BASE || 'http://localhost:8765';
-const CHROMIUM_EXE = process.env.WEBIDE_TEST_CHROMIUM
-    || '/opt/pw-browsers/chromium-1194/chrome-linux/chrome';
+
+// Browser executable resolution order:
+//   1. WEBIDE_TEST_CHROMIUM env var (sandbox, custom installs)
+//   2. /opt/pw-browsers/chromium-1194/chrome-linux/chrome (this sandbox)
+//   3. undefined  ⇒ Playwright finds its own installed browser, the way it
+//      does after `npx playwright install chromium` (GitHub Actions, local
+//      `npm install playwright && npx playwright install`)
+import { existsSync } from 'node:fs';
+let CHROMIUM_EXE = process.env.WEBIDE_TEST_CHROMIUM || null;
+if (!CHROMIUM_EXE) {
+    const sandbox = '/opt/pw-browsers/chromium-1194/chrome-linux/chrome';
+    if (existsSync(sandbox)) CHROMIUM_EXE = sandbox;
+}
 
 export const results = [];
 let _browser = null;
@@ -35,11 +46,9 @@ export function setShotsDir(dir) {
 }
 
 export async function launchBrowser() {
-    _browser = await chromium.launch({
-        executablePath: CHROMIUM_EXE,
-        headless: true,
-        args: ['--no-sandbox'],
-    });
+    const opts = { headless: true, args: ['--no-sandbox'] };
+    if (CHROMIUM_EXE) opts.executablePath = CHROMIUM_EXE;
+    _browser = await chromium.launch(opts);
     return _browser;
 }
 
