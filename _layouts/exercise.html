@@ -1304,11 +1304,15 @@ body[data-theme="hc"] .shortcut-keys kbd { background: #000; color: #ffd700; bor
             <div id="inspector-trace" class="inspector-view" role="tabpanel" aria-labelledby="insub-trace" hidden>
               <div class="inspector-empty">
                 Run your code to see the function-call tape.<br>
-                <span style="font-size:11px;">For Python, calls are recorded automatically. For JavaScript, the simple form is
-                <code class="code-inline">webideTrace.tap('name', arg1)</code> (each tap shows as a sibling).
-                For nested/recursive scopes, use
-                <code class="code-inline">webideTrace.call('name', arg1)</code> /
-                <code class="code-inline">webideTrace.return(value)</code> in matching pairs.</span>
+                <span style="font-size:11px;">For Python, calls are recorded automatically. For JavaScript / Java
+                (Processing) you have to <strong>record markers yourself</strong> — the helpers below do
+                <strong>not</strong> invoke any function, they only label entries on this tape.<br><br>
+                <strong>Simple log:</strong> <code class="code-inline">webideTrace.tap('name', arg1)</code> — one
+                sibling entry per call. Best when you just want to see "did this run?".<br><br>
+                <strong>Scoped (nested / recursive):</strong> put
+                <code class="code-inline">webideTrace.call('name', arg1)</code> at every entry to a function
+                and <code class="code-inline">return webideTrace.return(value)</code> at every exit, in matching
+                pairs. Recursion produces nested entries; sequential calls produce siblings.</span>
               </div>
             </div>
           </div>
@@ -3821,11 +3825,15 @@ _webide_sys.settrace(None)
             if (!tree || !tree.children || tree.children.length === 0) {
                 const hint = (_LANG_FAMILY === 'python')
                     ? 'Use <strong>Step Run</strong> to capture function calls.'
-                    : 'For simple sibling logging, call '
-                        + '<code class="code-inline">webideTrace.tap(\'fname\', arg1)</code>. '
-                        + 'For nested/recursive scopes, wrap calls with '
-                        + '<code class="code-inline">webideTrace.call(\'fname\', arg1)</code> at entry and '
-                        + '<code class="code-inline">return webideTrace.return(result)</code> at every exit.';
+                    : 'These helpers are <strong>markers, not invokers</strong> — they label this tape, '
+                        + 'they do not call any function for you. '
+                        + 'For a simple "did this run?" log, use '
+                        + '<code class="code-inline">webideTrace.tap(\'fname\', arg1)</code> '
+                        + '(each call adds a sibling). '
+                        + 'For nested/recursive scopes, place '
+                        + '<code class="code-inline">webideTrace.call(\'fname\', arg1)</code> at the start of a function '
+                        + 'and <code class="code-inline">return webideTrace.return(result)</code> at every exit, in '
+                        + '<strong>matching pairs</strong>. Mismatched pairs end up nested even when you didn\'t recurse.';
                 view.innerHTML = '<div class="inspector-empty">No call tape recorded.<br>' + hint + '</div>';
                 return;
             }
@@ -3890,10 +3898,13 @@ _webide_sys.settrace(None)
                 } else if (!node.isTap && node.returnValue == null && hasKids) {
                     // call() that never .return()'d — flag it so the user
                     // knows the visible nesting under it is an artifact of
-                    // the missing return, not real recursion.
+                    // the missing return, not real recursion. Common cause:
+                    // calling webideTrace.call('foo') three times in a row
+                    // thinking it invokes foo() — it doesn't, it just pushes
+                    // a label that needs a matching .return.
                     const warn = document.createElement('span');
                     warn.className = 'calltape-unclosed';
-                    warn.textContent = '  (no .return — children may be misnested)';
+                    warn.textContent = '  (no .return — try webideTrace.tap() for sibling logging)';
                     line.appendChild(warn);
                 }
                 wrap.appendChild(line);
