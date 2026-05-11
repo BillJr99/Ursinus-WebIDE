@@ -3555,6 +3555,11 @@ def pyodide_print(s):
             renderInspectorSteps();
             renderInspectorTree();
         }
+        // Exposed so external callers (browser console, tests) can re-render
+        // the Inspector after manually populating webideTrace or
+        // window.__webide_vars from outside the normal Run pipeline.
+        window.refreshInspectorFromRun = refreshInspectorFromRun;
+        window.renderInspector = renderInspector;
 
         function renderInspectorVars() {
             const view = document.getElementById('inspector-vars');
