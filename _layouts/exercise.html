@@ -570,6 +570,30 @@ body[data-theme="light"] .calltape-return { color: #098658; }
     margin-bottom: 8px; font-size: 11px; color: #a0a0a0;
 }
 body[data-theme="light"] .calltape-summary { background: #f0f0f0; color: #444; }
+
+/* Inline code chip used in UI hints (empty-states, menus). The default cyan
+   reads fine on the dark theme but disappears on the light-theme white
+   background, so we set a theme-appropriate fg+bg here. */
+.code-inline {
+    font-family: 'Consolas', 'Courier New', monospace;
+    font-size: 11px;
+    color: #9cdcfe;
+    background: rgba(255, 255, 255, 0.08);
+    padding: 1px 5px;
+    border-radius: 3px;
+    white-space: nowrap;
+}
+body[data-theme="light"] .code-inline { color: #006bb3; background: rgba(0, 0, 0, 0.06); }
+body[data-theme="hc"]    .code-inline { color: #ffd700; background: #000; border: 1px solid #ffd700; }
+
+/* Right-aligned menu-item value (Theme: Dark, Font Size: 14, etc.). Same
+   problem as code-inline — the dropdown's background flips between themes. */
+.menu-value {
+    color: #9cdcfe;
+    margin-left: 4px;
+}
+body[data-theme="light"] .menu-value { color: #006bb3; }
+body[data-theme="hc"]    .menu-value { color: #ffd700; }
 /* ACE marker for the currently-stepped line */
 .ace_editor .webide-step-marker {
     position: absolute; background: rgba(255, 215, 0, 0.18); z-index: 4;
@@ -945,13 +969,13 @@ body[data-theme="hc"] .shortcut-keys kbd { background: #000; color: #ffd700; bor
           <hr role="separator">
           <!-- Preferences (theme / font / reading mode) -->
           <div class="menu-dropdown-item" role="menuitem" tabindex="-1" onclick="menuCycleTheme()">
-            Theme: <span id="menu-theme-label" style="margin-left:4px; color:#9cdcfe;">Dark</span>
+            Theme: <span id="menu-theme-label" class="menu-value">Dark</span>
           </div>
           <div class="menu-dropdown-item" role="menuitem" tabindex="-1" onclick="menuCycleFontSize()">
-            Font Size: <span id="menu-fontsize-label" style="margin-left:4px; color:#9cdcfe;">14px</span>
+            Font Size: <span id="menu-fontsize-label" class="menu-value">14px</span>
           </div>
           <div class="menu-dropdown-item" role="menuitem" tabindex="-1" onclick="menuToggleReadingMode()">
-            Reading Mode: <span id="menu-readingmode-label" style="margin-left:4px; color:#9cdcfe;">Default</span>
+            Reading Mode: <span id="menu-readingmode-label" class="menu-value">Default</span>
           </div>
         </div>
       </div>
@@ -1277,9 +1301,9 @@ body[data-theme="hc"] .shortcut-keys kbd { background: #000; color: #ffd700; bor
             <div id="inspector-trace" class="inspector-view" role="tabpanel" aria-labelledby="insub-trace" hidden>
               <div class="inspector-empty">
                 Run your code to see the function-call tape.<br>
-                <span style="color:#888; font-size:11px;">For Python, calls are recorded automatically. For JavaScript, wrap calls with
-                <code style="color:#9cdcfe;">webideTrace.call('name', args)</code> /
-                <code style="color:#9cdcfe;">webideTrace.return(value)</code>.</span>
+                <span style="font-size:11px;">For Python, calls are recorded automatically. For JavaScript, wrap calls with
+                <code class="code-inline">webideTrace.call('name', args)</code> /
+                <code class="code-inline">webideTrace.return(value)</code>.</span>
               </div>
             </div>
           </div>
@@ -3750,7 +3774,7 @@ _webide_sys.settrace(None)
             if (!tree || !tree.children || tree.children.length === 0) {
                 const hint = (_LANG_FAMILY === 'python')
                     ? 'Use <strong>Step Run</strong> to capture function calls.'
-                    : 'Wrap recursive calls with <code>webideTrace.call(\'fname\', arg1, arg2)</code> and <code>return webideTrace.return(result)</code> to record them.';
+                    : 'Wrap recursive calls with <code class="code-inline">webideTrace.call(\'fname\', arg1, arg2)</code> and <code class="code-inline">return webideTrace.return(result)</code> to record them.';
                 view.innerHTML = '<div class="inspector-empty">No call tape recorded.<br>' + hint + '</div>';
                 return;
             }
