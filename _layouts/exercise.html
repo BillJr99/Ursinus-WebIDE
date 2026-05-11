@@ -1484,25 +1484,42 @@ def pyodide_print(s):
                 arr.push(item)
         return arr
 
-    def run_python_code(code):
-        result = ""
-        # Pre-populate user_ns with the helpers our injected print uses, then
-        # use the SAME dict as globals AND locals so top-level definitions are
-        # visible to functions defined in user code (Python scoping rule).
-        user_ns = {'__name__': '__main__', 'window': window, 'get_formatted': get_formatted}
+    # Postlude appended to user code so we can snapshot top-level user names
+    # from the same scope they're assigned in. (Brython's `from browser import
+    # window` doesn't survive being passed via exec's explicit ns dict, so we
+    # use the default exec(code) behavior and inject the snapshot inline.)
+    # All function-local names in the runner are prefixed `_webide_` so we can
+    # filter them out reliably here.
+    _WEBIDE_VAR_POSTLUDE = (
+        "\n\n"
+        "try:\n"
+        "    window['__webide_vars'] = window.Object.new()\n"
+        "    for _wk in list(locals().keys()):\n"
+        "        if _wk.startswith('_w') or _wk.startswith('__'): continue\n"
+        "        if _wk in ('window','get_formatted','traceback','sys','doc','tb'): continue\n"
+        "        _wv = locals()[_wk]\n"
+        "        try: _ws = repr(_wv)\n"
+        "        except Exception: _ws = '<unrepresentable>'\n"
+        "        if len(_ws) > 200: _ws = _ws[:200] + '...'\n"
+        "        _wo = window.Object.new()\n"
+        "        _wo['type'] = type(_wv).__name__\n"
+        "        _wo['value'] = _ws\n"
+        "        window['__webide_vars'][_wk] = _wo\n"
+        "except Exception as _werr:\n"
+        "    pass\n"
+    )
+
+    def run_python_code(_webide_code):
+        _webide_result = ""
         try:
             window['python_code_result'] = ''
-            code = code.replace("print(", "window['python_code_result'] += get_formatted(")
-            exec(code, user_ns)
-            result = window['python_code_result']
-        except Exception as exc:
-            result = traceback.format_exc()
-        # Always snapshot user variables for the Inspector panel.
-        try:
-            window['__webide_vars'] = _webide_dict_to_js(_webide_snapshot_vars(user_ns))
-        except Exception:
-            pass
-        return result
+            _webide_code = _webide_code.replace("print(", "window['python_code_result'] += get_formatted(")
+            _webide_code = _webide_code + _WEBIDE_VAR_POSTLUDE
+            exec(_webide_code)
+            _webide_result = window['python_code_result']
+        except Exception as _webide_exc:
+            _webide_result = traceback.format_exc()
+        return _webide_result
 
     # ---------- Step-through + call tape via sys.settrace --------------------
     # Brython's settrace support is limited and may not fire for all events,
@@ -1512,13 +1529,11 @@ def pyodide_print(s):
     _STEP_LIMIT = 2000   # cap to avoid runaway captures
     _CALL_LIMIT = 2000
 
-    def run_python_code_traced(code):
+    def run_python_code_traced(_webide_code):
         steps = []
         call_root = {'name': '<module>', 'args': '', 'children': [], 'returnValue': None, 'exception': None}
         call_stack = [call_root]
         call_count = [0]
-
-        user_ns = {'__name__': '__main__', 'window': window, 'get_formatted': get_formatted}
 
         def tracer(frame, event, arg):
             try:
@@ -1568,18 +1583,19 @@ def pyodide_print(s):
                 pass
             return tracer
 
-        result = ""
+        _webide_result = ""
         try:
             window['python_code_result'] = ''
-            traced = code.replace("print(", "window['python_code_result'] += get_formatted(")
+            _webide_traced = _webide_code.replace("print(", "window['python_code_result'] += get_formatted(")
+            _webide_traced = _webide_traced + _WEBIDE_VAR_POSTLUDE
             sys.settrace(tracer)
             try:
-                exec(traced, user_ns)
+                exec(_webide_traced)
             finally:
                 sys.settrace(None)
-            result = window['python_code_result']
-        except Exception as exc:
-            result = traceback.format_exc()
+            _webide_result = window['python_code_result']
+        except Exception as _webide_exc:
+            _webide_result = traceback.format_exc()
 
         # Convert nested Python dicts/lists to JS-friendly objects/arrays.
         def to_js(node):
@@ -1596,7 +1612,6 @@ def pyodide_print(s):
             return o
 
         try:
-            window['__webide_vars'] = _webide_dict_to_js(_webide_snapshot_vars(user_ns))
             steps_js = window.Array.new()
             for s in steps:
                 obj = window.Object.new()
@@ -1614,7 +1629,7 @@ def pyodide_print(s):
             window['__webide_calltree'] = to_js(call_root)
         except Exception:
             pass
-        return result
+        return _webide_result
 
     window.run_python_code = run_python_code
     window.run_python_code_traced = run_python_code_traced
@@ -1875,6 +1890,9 @@ def pyodide_print(s):
             if (badge) badge.textContent = count > 0 ? '(' + count + ')' : '';
         }
 
+        // Expose logToConsole on window so other scripts (and the browser
+        // console) can write into the IDE output the same way the runtime does.
+        window.logToConsole = logToConsole;
         logToConsole("Console output...");
 
         // -- Processing / Java boilerplate -------------------------------------
