@@ -631,6 +631,39 @@ body[data-theme="hc"]    .menu-value { color: #ffd700; }
 }
 body[data-theme="hc"] .ace_editor .webide-step-marker { background: rgba(255, 215, 0, 0.5); }
 
+/* Gutter breakpoint dot. Ace's setBreakpoint(row, cls) puts our class on the
+   gutter cell; we draw a red circle inside it. Color-blind users also see a
+   thin border outline + tooltip. The cell becomes click-target via .ace_gutter
+   pointer-events:auto (Ace's default already allows clicks). */
+.ace_editor .ace_gutter-cell.webide-breakpoint {
+    position: relative;
+}
+.ace_editor .ace_gutter-cell.webide-breakpoint::before {
+    content: '';
+    position: absolute;
+    left: 4px; top: 50%;
+    width: 10px; height: 10px;
+    margin-top: -5px;
+    border-radius: 50%;
+    background: #e51400;
+    box-shadow: 0 0 0 1px rgba(0,0,0,0.3);
+}
+body[data-theme="hc"] .ace_editor .ace_gutter-cell.webide-breakpoint::before {
+    background: #ffd700;
+    box-shadow: 0 0 0 2px #000;
+}
+body[data-colorblind="true"] .ace_editor .ace_gutter-cell.webide-breakpoint::before {
+    background: #cc3311;
+    border: 2px solid #fff;
+}
+/* Hover affordance on the gutter so students know it's clickable. */
+.ace_editor .ace_gutter:hover { cursor: pointer; }
+/* The "paused at this line" highlight is a brighter version of the step marker. */
+.ace_editor .webide-pause-marker {
+    position: absolute; background: rgba(229, 20, 0, 0.22); z-index: 5;
+}
+body[data-theme="hc"] .ace_editor .webide-pause-marker { background: rgba(255, 215, 0, 0.55); }
+
 /* ============================================================
    PREFERENCES — Themes, font size, reading mode (dyslexia-friendly)
    Driven by data-attributes on <body> set by applyPrefs() in JS.
@@ -1020,6 +1053,9 @@ body[data-theme="hc"] .shortcut-keys kbd { background: #000; color: #ffd700; bor
         <div class="menu-dropdown" role="menu" aria-label="Run">
           <div class="menu-dropdown-item" role="menuitem" tabindex="-1" onclick="document.getElementById('run').click()">Run Code <span class="menu-shortcut" aria-label="Ctrl Enter">Ctrl+Enter</span></div>
           <div class="menu-dropdown-item" role="menuitem" tabindex="-1" onclick="menuSaveAndRun()">Save &amp; Run <span class="menu-shortcut" aria-label="F5">F5</span></div>
+          <hr role="separator">
+          <div class="menu-dropdown-item" role="menuitem" tabindex="-1" onclick="window.toggleBreakpointAtCursor()">Toggle Breakpoint <span class="menu-shortcut" aria-label="F9">F9</span></div>
+          <div class="menu-dropdown-item" role="menuitem" tabindex="-1" onclick="window.clearAllBreakpoints()">Clear All Breakpoints</div>
           <hr role="separator">
           <div class="menu-dropdown-item" role="menuitem" tabindex="-1" onclick="menuClearOutput()">Clear Output</div>
         </div>
@@ -1441,6 +1477,7 @@ fact(4);   // now the tape shows fact(4) → fact(3) → fact(2) → fact(1)</pr
         <div class="shortcut-row"><span>Save current file</span><span class="shortcut-keys"><kbd>Ctrl</kbd><kbd>S</kbd></span></div>
         <div class="shortcut-row"><span>Run code</span><span class="shortcut-keys"><kbd>Ctrl</kbd><kbd>Enter</kbd></span></div>
         <div class="shortcut-row"><span>Save and Run</span><span class="shortcut-keys"><kbd>F5</kbd></span></div>
+        <div class="shortcut-row"><span>Toggle breakpoint on current line</span><span class="shortcut-keys"><kbd>F9</kbd></span></div>
         <div class="shortcut-row"><span>Toggle word wrap</span><span class="shortcut-keys"><kbd>Alt</kbd><kbd>Z</kbd></span></div>
       </div>
       <div class="shortcut-section">
@@ -2346,6 +2383,12 @@ _webide_sys.settrace(None)
             saveBtn.disabled = openFiles[path].readOnly;
             setTabAceProperties(path);
             ace_editor.resize();
+            // Re-apply any breakpoints stored for this file. The session is
+            // shared across tabs but its breakpoint set isn't, so we sync on
+            // every tab switch.
+            if (typeof _applyBreakpointsToSession === 'function') {
+                _applyBreakpointsToSession(path, ace_editor.session);
+            }
             // Trigger static analysis immediately when a file is displayed
             _triggerAnalysis();
         }
@@ -3597,6 +3640,98 @@ _webide_sys.settrace(None)
         };
         let _stepRunRequested = false;
 
+        // -- Breakpoints ------------------------------------------------------
+        // Persisted in localStorage under 'webide.breakpoints' as
+        //   { "<filepath>": [lineno, lineno, ...] }
+        // Lines are 1-based to match what students see in the gutter.
+        // The in-memory _breakpoints mirror is what the runtime queries.
+        const BREAKPOINTS_KEY = 'webide.breakpoints';
+        let _breakpoints = (() => {
+            try {
+                const raw = localStorage.getItem(BREAKPOINTS_KEY);
+                return raw ? JSON.parse(raw) : {};
+            } catch (e) { return {}; }
+        })();
+        function _saveBreakpoints() {
+            try { localStorage.setItem(BREAKPOINTS_KEY, JSON.stringify(_breakpoints)); }
+            catch (e) { /* quota — silently drop */ }
+        }
+        function _getActivePath() {
+            const t = document.querySelector('.tab.active');
+            return (t && t.id && t.id !== SUBMIT_TAB_ID) ? t.id : null;
+        }
+        function getBreakpointsForPath(path) {
+            if (!path) return [];
+            return (_breakpoints[path] || []).slice();
+        }
+        // Exposed so the runtime hooks (Pyodide tracer, source-instrumenter)
+        // can ask "is line N of file P a breakpoint?" and so tests can drive
+        // the toggle without depending on cursor position.
+        window.webideBreakpoints = {
+            get: (path) => getBreakpointsForPath(path),
+            getForActive: () => getBreakpointsForPath(_getActivePath()),
+            has: (path, line) => (_breakpoints[path] || []).includes(line),
+            toggle: (path, line) => toggleBreakpoint(path, line),
+        };
+
+        function _applyBreakpointsToSession(path, session) {
+            if (!session) return;
+            session.clearBreakpoints();
+            for (const ln of getBreakpointsForPath(path)) {
+                // Ace rows are 0-based; we store 1-based to match the gutter.
+                session.setBreakpoint(ln - 1, 'webide-breakpoint');
+            }
+        }
+
+        function toggleBreakpoint(path, line) {
+            if (!path) return;
+            const arr = _breakpoints[path] || [];
+            const i = arr.indexOf(line);
+            if (i >= 0) arr.splice(i, 1);
+            else        arr.push(line);
+            if (arr.length === 0) delete _breakpoints[path];
+            else { arr.sort((a, b) => a - b); _breakpoints[path] = arr; }
+            _saveBreakpoints();
+            if (path === _getActivePath() && typeof ace_editor !== 'undefined' && ace_editor) {
+                _applyBreakpointsToSession(path, ace_editor.session);
+            }
+        }
+
+        function clearAllBreakpoints(path) {
+            if (path === undefined) {
+                _breakpoints = {};
+                _saveBreakpoints();
+                if (typeof ace_editor !== 'undefined' && ace_editor) {
+                    ace_editor.session.clearBreakpoints();
+                }
+                if (typeof ideNotify === 'function') ideNotify('Cleared all breakpoints');
+            } else {
+                delete _breakpoints[path];
+                _saveBreakpoints();
+                if (path === _getActivePath() && typeof ace_editor !== 'undefined' && ace_editor) {
+                    ace_editor.session.clearBreakpoints();
+                }
+            }
+        }
+        window.clearAllBreakpoints = clearAllBreakpoints;
+
+        // F9 toggles a breakpoint on the cursor line.
+        window.toggleBreakpointAtCursor = () => {
+            if (typeof ace_editor === 'undefined' || !ace_editor) return;
+            const path = _getActivePath();
+            if (!path) {
+                if (typeof ideNotify === 'function') ideNotify('Open a file first to set a breakpoint', 'error');
+                return;
+            }
+            const row  = ace_editor.getCursorPosition().row;  // 0-based
+            const line = row + 1;
+            toggleBreakpoint(path, line);
+            if (typeof ideNotify === 'function') {
+                const has = window.webideBreakpoints.has(path, line);
+                ideNotify((has ? 'Breakpoint set' : 'Breakpoint removed') + ' on line ' + line);
+            }
+        };
+
         // Public API students can use to record call-stack entries from JS.
         //
         //   webideTrace.tap('name', arg1, arg2);
@@ -4377,6 +4512,10 @@ _webide_sys.settrace(None)
             await waitForElement('#editor-container');
 
             ace_editor = ace.edit("editor-container");
+            // Expose for tests + extensions (parallels the pattern used for
+            // pyodide / refreshInspectorFromRun). Internal callers still use
+            // the let-binding above; this is a one-way mirror.
+            window.ace_editor = ace_editor;
             ace_editor.setTheme("ace/theme/monokai");
             ace_editor.setFontSize(14);
             ace_editor.setOptions({
@@ -4403,12 +4542,28 @@ _webide_sys.settrace(None)
             ace_editor.session.on('change', function() {
                 // Don't mark as modified if we're programmatically setting the value
                 if (window._settingEditorValue) return;
-                
+
                 const activeTab = document.querySelector('.tab.active');
                 if (activeTab && openFiles[activeTab.id]) {
                     openFiles[activeTab.id].content = ace_editor.getValue();
                     openFiles[activeTab.id].modified = true;
                 }
+            });
+
+            // -- Breakpoint gutter handler ---------------------------------
+            // Click a gutter row to toggle a red-dot breakpoint. Right-click
+            // is reserved for the host browser's context menu, so we use the
+            // F9 shortcut + Run menu for "clear all".
+            ace_editor.on('guttermousedown', function(e) {
+                const target = e.domEvent.target;
+                // Ignore folding widgets and other non-line clicks
+                if (!target.classList.contains('ace_gutter-cell')) return;
+                if (e.clientX > target.getBoundingClientRect().left + 18) return;
+                const row = e.getDocumentPosition().row;  // 0-based
+                const path = _getActivePath();
+                if (!path) return;
+                toggleBreakpoint(path, row + 1);
+                e.stop();
             });
 
             // Update status bar line/col
@@ -6583,6 +6738,10 @@ _webide_sys.settrace(None)
                 if ((e.ctrlKey || e.metaKey) && e.key === 'b') { e.preventDefault(); menuToggleSidebar(); }
                 if ((e.ctrlKey || e.metaKey) && e.key === '`') { e.preventDefault(); menuToggleTerminal(); }
                 if (e.altKey && e.key === 'z') { e.preventDefault(); menuToggleWordWrap(); }
+                if (e.key === 'F9' && !e.ctrlKey && !e.metaKey && !e.altKey) {
+                    e.preventDefault();
+                    window.toggleBreakpointAtCursor();
+                }
             });
         }
 
