@@ -38,6 +38,12 @@ tests/
     05_watchdog.mjs
     06_original_features.mjs
     07_language_runs.mjs
+    08_breakpoints.mjs        # gutter dots, F9, persistence, per-file isolation
+    09_breakpoints_ui.mjs     # menu items, shortcut overlay, CSS, per-lang smoke
+    10_trace_on_hit.mjs       # source-instrumenter + __webide_bp helper
+    11_tests_panel.mjs        # student-runnable tests bottom-tab + Alt+T
+    12_learning_aids.mjs      # profiler, visualizer, hints, show-me-where
+    13_recovery_offline.mjs   # run history, submission preflight, service worker
   report.mjs          # produces report.md + report.html
   reports/            # generated output (gitignored)
 ```
@@ -55,22 +61,38 @@ tests/
 | Feature                     | Java | C++ | Brython | Pyodide | JS  | SQL | Scheme | Prolog | Graphics |
 |-----------------------------|:----:|:---:|:-------:|:-------:|:---:|:---:|:------:|:------:|:--------:|
 | Theme / font / dyslexia     |  ✓   |  ✓  |   ✓     |   ✓     |  ✓  |  ✓  |   ✓    |   ✓    |    ✓     |
+| Color-blind mode (new)      |  ✓   |  ✓  |   ✓     |   ✓     |  ✓  |  ✓  |   ✓    |   ✓    |    ✓     |
 | Shortcut overlay (`?`)      |  ✓   |  ✓  |   ✓     |   ✓     |  ✓  |  ✓  |   ✓    |   ✓    |    ✓     |
 | Responsive / compact        |  ✓   |  ✓  |   ✓     |   ✓     |  ✓  |  ✓  |   ✓    |   ✓    |    ✓     |
 | Explain-this-error          |  ✓   |  ✓  |   ✓     |   ✓     |  ✓  |  ✓  |   ✓    |   ✓    |    ✓     |
 | Infinite-loop banner        |  ✓   |  ✓  |   ✓     |   ✓     |  ✓  |  ✓  |   ✓    |   ✓    |    ✓     |
+| Show-me-where button (new)  |  ✓   |  ✓  |   ✓     |   ✓     |  ✓  |  ✓  |   ✓    |   ✓    |    ✓     |
 | Variable inspector          |  ·   |  ·  |   ✓     |   ✓     |  ✓  |  ·  |   ·    |   ·    |    ·     |
 | Step-through visualizer     |  ·   |  ·  |   ~     |   ✓     |  ·  |  ·  |   ·    |   ·    |    ·     |
 | Call-stack tape             |  ·   |  ·  |   ~     |   ✓     |  ✓* |  ·  |   ·    |   ·    |    ·     |
+| Profile sub-tab (new)       |  ·   |  ·  |   ·     |   ✓     |  ✓* |  ·  |   ·    |   ·    |    ·     |
+| Visualize sub-tab (new)     |  ·   |  ·  |   ✓     |   ✓     |  ✓  |  ·  |   ·    |   ·    |    ·     |
+| **Gutter breakpoints** (new)|  s   |  c  |   ✓     |   ✓     |  ✓  |  ✓  |   ✓    |   s    |    ✓     |
+| **Tests panel** (new)       |  ·   |  ·  |   ✓     |   ✓     |  ✓  |  ✓  |   ✓    |   ·    |    ✓     |
+| Hint ladder (new)           |  ✓   |  ✓  |   ✓     |   ✓     |  ✓  |  ✓  |   ✓    |   ✓    |    ✓     |
+| Run history (new)           |  ✓   |  ✓  |   ✓     |   ✓     |  ✓  |  ✓  |   ✓    |   ✓    |    ✓     |
+| Submission preflight (new)  |  ✓   |  ✓  |   ✓     |   ✓     |  ✓  |  ✓  |   ✓    |   ✓    |    ✓     |
+| Offline service worker (new)|  ✓   |  ✓  |   ✓     |   ✓     |  ✓  |  ✓  |   ✓    |   ✓    |    ✓     |
 
 - ✓ = supported   · = not available, graceful empty-state shown
 - ~ = best-effort: Brython's `sys.settrace` doesn't fire on `exec()`'d code,
   so the Steps view will be empty and the empty-state hint shows. Use a
   Pyodide variant of the exercise for a real step-through experience.
-- ✓\* (JS call-tape) requires the student to wrap recursive calls in the
-  `webideTrace.call(name, ...args)` / `webideTrace.return(value)` helper.
-  Automatic instrumentation would need an AST parser (e.g. acorn) and isn't
-  implemented today.
+- ✓\* (JS call-tape / Profile) requires the student to wrap recursive
+  calls in the `webideTrace.call(name, ...args)` /
+  `webideTrace.return(value)` helper. Automatic instrumentation would need
+  an AST parser (e.g. acorn) and isn't implemented today.
+- **s** (Java/Prolog breakpoints) = synthetic hits emitted at run-start
+  rather than real mid-execution traps; sufficient for "show me which lines
+  I plan to inspect" but not for true step-on-pause semantics.
+- **c** (C++ breakpoints) = compile-time injection of `printf("__BP %d\n",
+  line)` markers; the runtime worker strips them out of stdout and emits
+  hits to the Inspector. Line-level only; no locals.
 
 ### Why some languages aren't deeper
 

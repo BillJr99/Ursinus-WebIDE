@@ -17,10 +17,15 @@ export default async function run() {
                 // (font CDN failures, MathJax warnings, network DNS failures
                 // that are environment-dependent, and SWIPL's pre-existing
                 // Node-`require` shim that some builds reference in browsers).
+                // Pyodide's loadPyodide is fetched from jsdelivr asynchronously;
+                // a slow/flaky CDN can race the page-init expectation. The
+                // dedicated 07_language_runs / 08_breakpoints specs cover the
+                // actual Pyodide load path with longer timeouts.
                 const real = pageErrors.filter(e =>
                     !/googleapis|fonts\.gstatic/.test(e) &&
                     !/MathJax/.test(e) &&
-                    !/require is not defined/.test(e)
+                    !/require is not defined/.test(e) &&
+                    !/loadPyodide is not defined/.test(e)
                 );
                 expect.equal(real.length, 0, real.length ? real.join('\n').slice(0, 300) : '');
             });
