@@ -2130,10 +2130,22 @@ del _webide_compiled, _webide_student_source
         const projectName = `{{page.canvasasmtid}}`;
         let rootBasePath = `/${user}/${projectName}`;
         let openFiles = {};
+        // Expose for tests / extensions (parallels window.ace_editor).
+        // The let-binding is the source of truth; this is a Proxy mirror
+        // so window-side reads/writes affect the same object.
+        try { Object.defineProperty(window, 'openFiles', { get: () => openFiles, set: v => { openFiles = v; }, configurable: true }); } catch (e) {}
         const publicKey = `{% if layout.publickey %}{{ layout.publickey }}{% else %}{{ site.publickey }}{% endif %}`;
         let numAttempts = 0;
         let correctlyAnswered = false;
+        // Expose for tests / extensions (parallels window.openFiles).
+        try {
+            Object.defineProperty(window, 'numAttempts', { get: () => numAttempts, set: v => { numAttempts = v; }, configurable: true });
+            Object.defineProperty(window, 'correctlyAnswered', { get: () => correctlyAnswered, set: v => { correctlyAnswered = v; }, configurable: true });
+        } catch (e) {}
         let feedbackString = "";
+        try {
+            Object.defineProperty(window, 'feedbackString', { get: () => feedbackString, set: v => { feedbackString = v; }, configurable: true });
+        } catch (e) {}
 
         const initialFiles = [
             {% for file in page.files %}
@@ -2568,6 +2580,9 @@ del _webide_compiled, _webide_student_source
             fileNames.forEach(fileName => openFile(`${rootBasePath}/${fileName}`, fileName));
         }
 
+        // Exposed for tests / extensions.
+        window.setActiveTab = setActiveTab;
+        window.saveActiveTabs = () => saveActiveTabs();
         async function setActiveTab(path) {
             // ARIA tab pattern: roving tabindex + aria-selected
             document.querySelectorAll('.tab').forEach(t => {
