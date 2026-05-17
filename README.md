@@ -123,9 +123,120 @@ sub-views, populated automatically after every Run:
       `(no .return — try webideTrace.tap() for sibling logging)` and the
       summary line counts unclosed frames.
 
+  - **Profile** *(new)* — per-function call counts and self/total/longest
+    times. Populated automatically for **Pyodide** (via `sys.settrace`
+    timing) and for any JavaScript / Java run that uses
+    `webideTrace.call(...) / webideTrace.return(...)`.
+  - **Visualize** *(new)* — pure-SVG renderer that draws each variable in
+    the current step (or run-end snapshot) as a colored box. Useful for
+    data-structures exercises where seeing the shape of a value matters.
+
+### Gutter breakpoints *(new)*
+
+Click any line number in the editor gutter to drop a red breakpoint. `F9`
+toggles a breakpoint on the cursor line. **Run › Clear All Breakpoints**
+removes every breakpoint for the page. Breakpoints persist across reloads
+in `localStorage` under `webide.breakpoints` and are per-file.
+
+When a run hits a breakpoint, the **Inspector › Step-Through** sub-tab
+records the line + locals at that moment, so students can see exactly
+what was in scope. Behaviour per runtime:
+
+| Runtime | Semantic |
+|---|---|
+| **Pyodide** | Real `sys.settrace`-based tracer records only the breakpoint lines (separate from full Step Run mode). |
+| **Brython** | Source-instrumentation: a `__webide_bp_py(line, vars())` call is injected before each breakpoint line. |
+| **JavaScript / Graphics** | Source-instrumentation: `__webide_bp(line, {…locals})` is injected before each breakpoint line; locals are TDZ-safe via try/catch wrappers. |
+| **Scheme** | `(webide-bp N)` injected at each line; registered as a BiwaScheme primitive that records the hit. |
+| **SQL** | `-- __BP N` marker comments survive the comment-strip pass; the SQL runner emits a hit with rowcount + column list after each marked statement. |
+| **Prolog, Java/Processing** | Synthetic hits emitted at run-start (these runtimes don't accept mid-execution callbacks without rewriting their parser). |
+| **C/C++** | `printf("__BP %d\n", line)` injected pre-compile; the runtime worker parses markers out of stdout. |
+
+### Tests panel *(new)*
+
+A **Tests** bottom-tab next to Output / Inspector / Suggestions shows
+per-exercise unit tests authored by the instructor in the page
+front-matter:
+
+```yaml
+processor:
+  tests:
+    - name: "fact(0) == 1"
+      code: "console.log(fact(0))"
+      expect: { stdout: "1" }
+    - name: "fact(5) doesn't throw"
+      code: "fact(5)"
+      expect: { throws: false }
+```
+
+`expect` accepts `stdout` (regex), `throws` (boolean), `returns` (deep
+equality), and `vars` ({name: expectedValue}). Click **▶ Run Tests** or
+press `Alt+T` to execute. Failures expand inline with stdout + diff.
+
+### Hint ladder *(new)*
+
+Instructor-authored hints unlock progressively as the student accrues
+failed Run attempts:
+
+```yaml
+processor:
+  hints:
+    - after: 1
+      text: "Have you defined `n` before using it?"
+    - after: 3
+      text: "Remember that `range(n)` stops *before* n."
+    - after: 5
+      text: "Try printing `i` inside your loop to watch it evolve."
+```
+
+Hints render in the Instructions panel; the attempt counter is stored
+per-exercise in `localStorage.webide.hintCounts`.
+
+### "Show me where I'm stuck" *(new)*
+
+When the watchdog soft-fires at 5 seconds, the Running banner grows a
+**Show me where** button. Clicking it jumps the editor to the most
+recently traced line (from breakpoint hits, the Pyodide tracer, or JS
+instrumentation) and opens the Inspector. Works for every language that
+has populated `window.__webide_steps`.
+
+### Color-blind mode *(new)*
+
+**View › Color-Blind Mode** swaps the palette for breakpoint dots and
+test pass/fail icons so the meaning carries through grayscale rendering
+without conflicting with the high-contrast theme. Persisted as
+`webide.prefs.colorblind`.
+
+### Run history *(new)*
+
+**View › Run History…** opens a modal listing the last 20 runs for the
+current exercise (pass/fail/error icon, time, file count). Click
+**Restore** to open the snapshot's files as read-only `(restored:HH:MM:SS)`
+tabs so the live work isn't overwritten. Stored in
+`localStorage.webide.runHistory[<exerciseId>]`.
+
+### Submission preflight *(new)*
+
+Before posting code to the autograder / Canvas, a modal runs the tests,
+scans for stray `console.log` / `print` debug noise, and flags any
+unsaved tabs. Students see ✓/✗ per check with a **Submit anyway** /
+**Fix and review** choice. The original `postCode` is preserved
+(`window._origPostCode`) so the modal can be bypassed when no issues are
+found.
+
+### Offline shell *(new)*
+
+A service worker at the site root caches the IDE shell (HTML + `/assets/*`)
+on first visit so the IDE keeps booting on flaky WiFi. Language runtime
+bundles (Pyodide, Brython, SWI-Prolog, sql.js, etc.) are network-first
+with cache fallback so updates land as soon as you reconnect.
+
 Other helpers also exposed on `window` for in-browser debugging:
 `window.logToConsole(msg)`, `window.refreshInspectorFromRun()`,
-`window.menuCycleTheme()`, `window.menuShowShortcuts()`.
+`window.menuCycleTheme()`, `window.menuShowShortcuts()`,
+`window.toggleBreakpointAtCursor()`, `window.clearAllBreakpoints()`,
+`window.webideBreakpoints.{get,getForActive,has,toggle}`,
+`window.runAllTests()`, `window.menuShowRunHistory()`.
 
 ### Test suite
 

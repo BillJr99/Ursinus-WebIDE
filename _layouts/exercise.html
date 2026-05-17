@@ -664,6 +664,22 @@ body[data-colorblind="true"] .ace_editor .ace_gutter-cell.webide-breakpoint::bef
 }
 body[data-theme="hc"] .ace_editor .webide-pause-marker { background: rgba(255, 215, 0, 0.55); }
 
+/* Run-history + Preflight dialogs — same modal scaffolding as the
+   shortcuts overlay so they pick up theme + reading-mode CSS. */
+#run-history-dialog, #preflight-dialog {
+    position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.55); z-index: 9998;
+    display: none; align-items: center; justify-content: center; padding: 20px;
+}
+#run-history-dialog.visible, #preflight-dialog.visible { display: flex; }
+.webide-modal-box {
+    background: #252526; border: 1px solid #454545; color: #ccc;
+    width: min(640px, 100%); max-height: 85vh; overflow: auto;
+    border-radius: 6px; box-shadow: 4px 8px 24px rgba(0,0,0,0.7);
+}
+body[data-theme="light"] .webide-modal-box { background: #fff; color: #222; border-color: #b8b8b8; }
+body[data-theme="hc"] .webide-modal-box { background: #000; color: #fff; border: 2px solid #ffd700; }
+
 /* Tests panel rows — pass/fail with shape-distinguishable icons that
    read well even in color-blind mode. */
 .test-row {
@@ -1067,6 +1083,8 @@ body[data-theme="hc"] .shortcut-keys kbd { background: #000; color: #ffd700; bor
           <div class="menu-dropdown-item" role="menuitem" tabindex="-1" onclick="menuToggleColorblind()">
             Color-Blind Mode: <span id="menu-colorblind-label" class="menu-value">Off</span>
           </div>
+          <hr role="separator">
+          <div class="menu-dropdown-item" role="menuitem" tabindex="-1" onclick="if(typeof menuShowRunHistory==='function')menuShowRunHistory()">Run History…</div>
         </div>
       </div>
 
@@ -1527,6 +1545,35 @@ fact(4);   // now the tape shows fact(4) → fact(3) → fact(2) → fact(1)</pr
 </div>
 
 <!-- Keyboard shortcuts overlay (opened via "?" key or Help > Keyboard Shortcuts) -->
+<!-- Run history modal -->
+<div id="run-history-dialog" role="dialog" aria-modal="true" aria-hidden="true" aria-labelledby="run-history-title">
+  <div class="webide-modal-box">
+    <div style="display:flex; align-items:center; justify-content:space-between; padding:12px 16px; border-bottom:1px solid #454545;">
+      <span id="run-history-title" style="font-weight:600;">Run history</span>
+      <button type="button" onclick="document.getElementById('run-history-dialog').classList.remove('visible');"
+              style="background:none; border:none; color:inherit; cursor:pointer; font-size:18px;">✕</button>
+    </div>
+    <div id="run-history-list" style="padding:8px 0;"></div>
+    <div style="padding:8px 16px; opacity:0.6; font-size:11px;">
+      Up to 20 most recent runs are kept per exercise. "Restore" opens the snapshot in a new read-only tab so your current work isn't overwritten.
+    </div>
+  </div>
+</div>
+
+<!-- Submission preflight modal -->
+<div id="preflight-dialog" role="dialog" aria-modal="true" aria-hidden="true" aria-labelledby="preflight-title">
+  <div class="webide-modal-box">
+    <div style="display:flex; align-items:center; justify-content:space-between; padding:12px 16px; border-bottom:1px solid #454545;">
+      <span id="preflight-title" style="font-weight:600;">Before you submit…</span>
+    </div>
+    <div id="preflight-body" style="padding:16px;"></div>
+    <div style="display:flex; gap:8px; padding:8px 16px; justify-content:flex-end; border-top:1px solid #454545;">
+      <button id="preflight-cancel" class="form-btn" type="button">Fix and review</button>
+      <button id="preflight-submit" class="form-btn" type="button">Submit anyway</button>
+    </div>
+  </div>
+</div>
+
 <div id="ide-shortcuts-overlay"
      role="dialog"
      aria-modal="true"
@@ -3533,6 +3580,17 @@ del _webide_compiled, _webide_student_source
         // Render hint ladder on load (no-op when there are no hints).
         setTimeout(() => { try { _renderHintLadder(); } catch (e) {} }, 0);
 
+        // -- Register offline service worker --------------------------------
+        // Cache-first for the IDE shell, network-first for language runtime
+        // bundles. Lives at site root; jekyll copies it as-is.
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('{{site.baseurl}}/service-worker.js', { scope: '{{site.baseurl}}/' })
+                    .then(reg => { window.__webide_sw_registered = true; })
+                    .catch(err => { console.warn('Service worker registration failed:', err); });
+            });
+        }
+
         // -- Wire the Tests panel after the helpers are defined ------------
         // _initTestsPanel + runAllTests live further down the file (next to
         // checkAnswer); the DOM is ready by the time this runs, and the
@@ -4240,6 +4298,15 @@ del _webide_compiled, _webide_student_source
             try {
                 _setHintAttempts(_getHintAttempts() + 1);
                 _renderHintLadder();
+            } catch (e) {}
+            // Snapshot run history so students can restore any of the last 20
+            // attempts. We swallow errors because losing one snapshot must
+            // never break the Run flow.
+            try {
+                if (typeof recordRunSnapshot === 'function') {
+                    // Async fire-and-forget — fileystem read may take a moment
+                    recordRunSnapshot();
+                }
             } catch (e) {}
         }
 
@@ -5908,6 +5975,163 @@ del _webide_compiled, _webide_student_source
             runtime.resetText();
             runtime.process.worker.postMessage({ function: 'run', wasmBinary: clangOutput });
         }
+
+        // -- Run history ------------------------------------------------------
+        // On every Run, snapshot { ts, files[], outcome, message } to
+        // localStorage (keyed per exercise). Last 20 entries kept; older
+        // ones discarded FIFO. A menu item opens a modal listing them and
+        // letting students restore a snapshot back into a new tab.
+        const RUN_HISTORY_KEY = 'webide.runHistory';
+        const RUN_HISTORY_CAP = 20;
+        function _runHistoryExId() {
+            try { return location.pathname || '/'; } catch (e) { return '/'; }
+        }
+        function _getRunHistory() {
+            try {
+                const all = JSON.parse(localStorage.getItem(RUN_HISTORY_KEY) || '{}');
+                return all[_runHistoryExId()] || [];
+            } catch (e) { return []; }
+        }
+        function _setRunHistory(entries) {
+            try {
+                const all = JSON.parse(localStorage.getItem(RUN_HISTORY_KEY) || '{}');
+                all[_runHistoryExId()] = entries;
+                localStorage.setItem(RUN_HISTORY_KEY, JSON.stringify(all));
+            } catch (e) { /* quota — silently drop */ }
+        }
+        async function recordRunSnapshot() {
+            try {
+                const files = await getAllFilesRecursively(rootBasePath);
+                const slim = files
+                    .filter(f => !f.excludeFromExport)
+                    .map(f => ({ path: f.path, content: typeof f.content === 'string' ? f.content : '' }));
+                const entry = {
+                    ts: Date.now(),
+                    files: slim,
+                    outcome: window.__webide_lastRunOutcome || 'unknown',
+                    message: window.__webide_lastRunMessage || '',
+                };
+                let entries = _getRunHistory();
+                entries.push(entry);
+                if (entries.length > RUN_HISTORY_CAP) {
+                    entries = entries.slice(-RUN_HISTORY_CAP);
+                }
+                _setRunHistory(entries);
+            } catch (e) { /* never break Run on history failure */ }
+        }
+        window.recordRunSnapshot = recordRunSnapshot;
+        window.menuShowRunHistory = () => {
+            const entries = _getRunHistory();
+            const dialog = document.getElementById('run-history-dialog');
+            const list   = document.getElementById('run-history-list');
+            if (!dialog || !list) return;
+            if (!entries.length) {
+                list.innerHTML = '<div style="padding:20px; text-align:center; opacity:0.7;">No run history yet.</div>';
+            } else {
+                list.innerHTML = entries.slice().reverse().map((e, i) => {
+                    const realIdx = entries.length - 1 - i;
+                    const date = new Date(e.ts);
+                    const time = date.toLocaleTimeString();
+                    const icon = e.outcome === 'pass' ? '✓' : e.outcome === 'fail' ? '✗' : e.outcome === 'error' ? '!' : '○';
+                    const color = e.outcome === 'pass' ? '#3fb950' : e.outcome === 'fail' ? '#f85149' : e.outcome === 'error' ? '#f85149' : '#a0a0a0';
+                    const fileCount = (e.files || []).length;
+                    return '<div class="run-history-item" style="display:flex; gap:8px; padding:6px 8px; border-bottom:1px solid rgba(255,255,255,0.06); align-items:center;">'
+                        + '<span style="color:' + color + '; font-weight:700; width:14px;">' + icon + '</span>'
+                        + '<span style="font-family:Consolas,monospace; font-size:11px; opacity:0.8;">' + time + '</span>'
+                        + '<span style="flex:1; font-size:11px; opacity:0.7;">' + fileCount + ' file' + (fileCount === 1 ? '' : 's') + '</span>'
+                        + '<button class="action-btn" type="button" data-restore-idx="' + realIdx + '"'
+                        + '  style="padding:2px 10px; font-size:11px;">Restore</button>'
+                        + '</div>';
+                }).join('');
+                list.querySelectorAll('button[data-restore-idx]').forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        const idx = parseInt(btn.getAttribute('data-restore-idx'), 10);
+                        const entry = entries[idx];
+                        if (entry) _restoreRunSnapshot(entry);
+                    });
+                });
+            }
+            dialog.classList.add('visible');
+            dialog.setAttribute('aria-hidden', 'false');
+        };
+        function _restoreRunSnapshot(entry) {
+            // Open every file as a new "restored:HH:MM:SS" tab so the live
+            // work isn't overwritten. We can't easily re-save into IndexedDB
+            // without conflicting; show as virtual tabs only.
+            const stamp = new Date(entry.ts).toLocaleTimeString();
+            for (const f of (entry.files || [])) {
+                const virtPath = f.path + ' (restored:' + stamp + ')';
+                if (openFiles[virtPath]) continue;
+                openFiles[virtPath] = { content: f.content, modified: false, readOnly: true };
+                createTab(virtPath, f.path.split('/').pop() + ' (restored:' + stamp + ')');
+            }
+            const dialog = document.getElementById('run-history-dialog');
+            if (dialog) { dialog.classList.remove('visible'); dialog.setAttribute('aria-hidden', 'true'); }
+            if (typeof ideNotify === 'function') ideNotify('Restored ' + (entry.files || []).length + ' file(s) from ' + stamp);
+        }
+
+        // -- Submission preflight --------------------------------------------
+        // Wraps the existing postCode() with a checklist modal. The student
+        // confirms (or overrides) before their work is uploaded.
+        window._origPostCode = null;
+        function _installPreflight() {
+            if (typeof postCode !== 'function' || window._origPostCode) return;
+            window._origPostCode = postCode;
+            window.postCode = async function(halfcredit, downloadblob, points) {
+                const issues = [];
+                // Check 1: tests panel — run them silently and collect failures
+                if ((window.WEBIDE_TESTS || []).length) {
+                    try { await window.runAllTests(); } catch (e) {}
+                    const failed = Array.from(document.querySelectorAll('.test-row.fail, .test-row.error'));
+                    if (failed.length) {
+                        issues.push(failed.length + ' test(s) are failing.');
+                    }
+                }
+                // Check 2: debug prints — scan editor for stray console.log/print
+                try {
+                    const code = window.ace_editor ? window.ace_editor.getValue() : '';
+                    const dlogs = (code.match(/console\.log\(/g) || []).length;
+                    const prints = (code.match(/^\s*print\(/gm) || []).length;
+                    if (dlogs > 5) issues.push('Many console.log calls (' + dlogs + ') — clean these up?');
+                    if (prints > 10) issues.push('Many print() calls (' + prints + ') — leftover debug output?');
+                } catch (e) {}
+                // Check 3: unsaved tabs
+                const unsaved = Object.values(openFiles).filter(f => f && f.modified).length;
+                if (unsaved) issues.push(unsaved + ' tab(s) have unsaved changes.');
+
+                if (!issues.length) {
+                    return window._origPostCode(halfcredit, downloadblob, points);
+                }
+                // Show the preflight modal
+                const ok = await _showPreflightModal(issues);
+                if (ok) return window._origPostCode(halfcredit, downloadblob, points);
+            };
+        }
+        function _showPreflightModal(issues) {
+            return new Promise(resolve => {
+                const dialog = document.getElementById('preflight-dialog');
+                const body   = document.getElementById('preflight-body');
+                const okBtn  = document.getElementById('preflight-submit');
+                const cancel = document.getElementById('preflight-cancel');
+                if (!dialog || !body || !okBtn || !cancel) { resolve(true); return; }
+                body.innerHTML = '<p>Heads up before submitting:</p><ul style="padding-left:20px;">'
+                    + issues.map(i => '<li>' + i + '</li>').join('') + '</ul>';
+                dialog.classList.add('visible');
+                dialog.setAttribute('aria-hidden', 'false');
+                const onOk = () => { close(); resolve(true);  };
+                const onNo = () => { close(); resolve(false); };
+                function close() {
+                    dialog.classList.remove('visible');
+                    dialog.setAttribute('aria-hidden', 'true');
+                    okBtn.removeEventListener('click', onOk);
+                    cancel.removeEventListener('click', onNo);
+                }
+                okBtn.addEventListener('click', onOk);
+                cancel.addEventListener('click', onNo);
+            });
+        }
+        // Install at idle — postCode is defined later in this script block.
+        setTimeout(() => { try { _installPreflight(); } catch (e) {} }, 50);
 
         // -- Hint ladder ------------------------------------------------------
         // Instructor-authored hints unlock progressively as the student fails
