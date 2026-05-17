@@ -664,6 +664,29 @@ body[data-colorblind="true"] .ace_editor .ace_gutter-cell.webide-breakpoint::bef
 }
 body[data-theme="hc"] .ace_editor .webide-pause-marker { background: rgba(255, 215, 0, 0.55); }
 
+/* Tests panel rows — pass/fail with shape-distinguishable icons that
+   read well even in color-blind mode. */
+.test-row {
+    display: flex; align-items: flex-start; gap: 6px;
+    padding: 4px 0; border-bottom: 1px solid rgba(255,255,255,0.06);
+    font-size: 12px; line-height: 1.4;
+}
+.test-row.pass .test-icon { color: #3fb950; }
+.test-row.fail .test-icon { color: #f85149; }
+.test-row.pending .test-icon { color: #d29922; }
+.test-row.error .test-icon { color: #f85149; }
+body[data-colorblind="true"] .test-row.pass .test-icon::after { content: " (PASS)"; font-size: 10px; }
+body[data-colorblind="true"] .test-row.fail .test-icon::after { content: " (FAIL)"; font-size: 10px; }
+.test-icon { width: 14px; text-align: center; font-weight: 700; flex-shrink: 0; }
+.test-name { flex: 1; word-break: break-word; }
+.test-detail {
+    margin: 4px 0 4px 22px; padding: 4px 6px;
+    background: rgba(0,0,0,0.25); border-left: 2px solid #f85149;
+    font-family: 'Consolas', 'Courier New', monospace; font-size: 11px;
+    white-space: pre-wrap; word-break: break-word;
+}
+body[data-theme="light"] .test-detail { background: #fff5f5; color: #5a1d1d; }
+
 /* ============================================================
    PREFERENCES — Themes, font size, reading mode (dyslexia-friendly)
    Driven by data-attributes on <body> set by applyPrefs() in JS.
@@ -1041,6 +1064,9 @@ body[data-theme="hc"] .shortcut-keys kbd { background: #000; color: #ffd700; bor
           <div class="menu-dropdown-item" role="menuitem" tabindex="-1" onclick="menuToggleReadingMode()">
             Reading Mode: <span id="menu-readingmode-label" class="menu-value">Default</span>
           </div>
+          <div class="menu-dropdown-item" role="menuitem" tabindex="-1" onclick="menuToggleColorblind()">
+            Color-Blind Mode: <span id="menu-colorblind-label" class="menu-value">Off</span>
+          </div>
         </div>
       </div>
 
@@ -1056,6 +1082,8 @@ body[data-theme="hc"] .shortcut-keys kbd { background: #000; color: #ffd700; bor
           <hr role="separator">
           <div class="menu-dropdown-item" role="menuitem" tabindex="-1" onclick="window.toggleBreakpointAtCursor()">Toggle Breakpoint <span class="menu-shortcut" aria-label="F9">F9</span></div>
           <div class="menu-dropdown-item" role="menuitem" tabindex="-1" onclick="window.clearAllBreakpoints()">Clear All Breakpoints</div>
+          <hr role="separator">
+          <div class="menu-dropdown-item" role="menuitem" tabindex="-1" onclick="if(typeof runAllTests==='function')runAllTests()">Run Tests <span class="menu-shortcut" aria-label="Alt T">Alt+T</span></div>
           <hr role="separator">
           <div class="menu-dropdown-item" role="menuitem" tabindex="-1" onclick="menuClearOutput()">Clear Output</div>
         </div>
@@ -1315,6 +1343,9 @@ body[data-theme="hc"] .shortcut-keys kbd { background: #000; color: #ffd700; bor
           <button class="bottom-tab"        id="btab-inspector"
                   role="tab" aria-selected="false" aria-controls="inspector-panel" tabindex="-1"
                   onclick="switchBottomTab('inspector')">Inspector</button>
+          <button class="bottom-tab"        id="btab-tests"
+                  role="tab" aria-selected="false" aria-controls="tests-panel" tabindex="-1"
+                  onclick="switchBottomTab('tests')">Tests <span id="tests-count" aria-label="test count" style="opacity:0.6;"></span></button>
 
           <div id="bottom-panel-actions">
             <button class="icon-btn" id="clear-console" title="Clear Output" aria-label="Clear output">✕ Clear Output</button>
@@ -1336,6 +1367,22 @@ body[data-theme="hc"] .shortcut-keys kbd { background: #000; color: #ffd700; bor
           <div id="suggestions-list" aria-live="polite" aria-atomic="false">
             <div style="padding:20px; text-align:center; color:#a0a0a0;">
               No suggestions. Code quality feedback will appear here.
+            </div>
+          </div>
+        </div>
+
+        <!-- Tests Panel: student-runnable per-exercise tests -->
+        <div id="tests-panel" class="bottom-content" role="tabpanel" aria-labelledby="btab-tests" hidden>
+          <div id="tests-toolbar" style="display:flex; gap:6px; padding:4px 8px; border-bottom:1px solid #2d2d2d; background:#252526;">
+            <button id="tests-run-all" class="action-btn" type="button"
+                    style="padding:2px 10px; height:22px; font-size:11px;">▶ Run Tests</button>
+            <span id="tests-summary" style="font-size:11px; opacity:0.7; align-self:center;"></span>
+          </div>
+          <div id="tests-body" style="flex:1; overflow:auto; padding:6px 8px;"
+               role="status" aria-live="polite" aria-atomic="false">
+            <div class="tests-empty" style="text-align:center; color:#a0a0a0; padding:20px;">
+              No tests for this exercise. Instructors can add tests in the page front-matter under
+              <code>processor.tests:</code>.
             </div>
           </div>
         </div>
@@ -1478,6 +1525,7 @@ fact(4);   // now the tape shows fact(4) → fact(3) → fact(2) → fact(1)</pr
         <div class="shortcut-row"><span>Run code</span><span class="shortcut-keys"><kbd>Ctrl</kbd><kbd>Enter</kbd></span></div>
         <div class="shortcut-row"><span>Save and Run</span><span class="shortcut-keys"><kbd>F5</kbd></span></div>
         <div class="shortcut-row"><span>Toggle breakpoint on current line</span><span class="shortcut-keys"><kbd>F9</kbd></span></div>
+        <div class="shortcut-row"><span>Run Tests panel</span><span class="shortcut-keys"><kbd>Alt</kbd><kbd>T</kbd></span></div>
         <div class="shortcut-row"><span>Toggle word wrap</span><span class="shortcut-keys"><kbd>Alt</kbd><kbd>Z</kbd></span></div>
       </div>
       <div class="shortcut-section">
@@ -2128,6 +2176,7 @@ del _webide_compiled, _webide_student_source
         ];
 
         const _PAGE_LANG = '{{ page.language | default: "" }}';
+        window._PAGE_LANG = _PAGE_LANG;  // tests panel + future helpers read this
         const _LANG_FAMILY = (() => {
             // Map page.language to dictionary 'lang' codes
             if (_PAGE_LANG === 'python' || _PAGE_LANG === 'pyodide') return 'python';
@@ -3454,11 +3503,27 @@ del _webide_compiled, _webide_student_source
         // Initialize accessibility features
         setupAccessibilityShortcuts();
 
+        // -- Wire the Tests panel after the helpers are defined ------------
+        // _initTestsPanel + runAllTests live further down the file (next to
+        // checkAnswer); the DOM is ready by the time this runs, and the
+        // helpers will be hoisted into scope because they're function
+        // declarations. We use setTimeout(...,0) so the button binding
+        // happens after the second pass over the script.
+        setTimeout(() => {
+            try {
+                if (typeof _initTestsPanel === 'function') _initTestsPanel();
+                const btn = document.getElementById('tests-run-all');
+                if (btn) btn.addEventListener('click', () => {
+                    if (typeof runAllTests === 'function') runAllTests();
+                });
+            } catch (e) { console.warn('tests panel init failed', e); }
+        }, 0);
+
         // -- Preferences (theme, font size, reading mode) ---------------------
         // Persisted in localStorage under 'webide.prefs' as a JSON object.
         // Applied to <body> via data-attributes that CSS selectors target.
         const PREFS_KEY = 'webide.prefs';
-        const PREFS_DEFAULTS = { theme: 'dark', fontSize: 14, readingMode: 'default' };
+        const PREFS_DEFAULTS = { theme: 'dark', fontSize: 14, readingMode: 'default', colorblind: false };
         const THEMES = ['dark', 'light', 'hc'];
         const THEME_LABELS = { dark: 'Dark', light: 'Light', hc: 'High Contrast' };
         const FONT_STEPS = [11, 12, 13, 14, 16, 18, 20, 24];
@@ -3503,13 +3568,20 @@ del _webide_compiled, _webide_student_source
             // Reading mode (dyslexia)
             const mode = READING_MODES.includes(_prefs.readingMode) ? _prefs.readingMode : 'default';
             document.body.dataset.readingmode = mode;
+            // Color-blind mode — separate from high-contrast theme; tweaks
+            // semantic colors (pass/fail/error) so the meaning carries
+            // through without depending solely on hue.
+            if (_prefs.colorblind) document.body.dataset.colorblind = 'true';
+            else                   delete document.body.dataset.colorblind;
             // Sync menu labels
             const tLab = document.getElementById('menu-theme-label');
             const fLab = document.getElementById('menu-fontsize-label');
             const rLab = document.getElementById('menu-readingmode-label');
+            const cLab = document.getElementById('menu-colorblind-label');
             if (tLab) tLab.textContent = THEME_LABELS[theme] || 'Dark';
             if (fLab) fLab.textContent = _prefs.fontSize + 'px';
             if (rLab) rLab.textContent = READING_LABELS[mode] || 'Default';
+            if (cLab) cLab.textContent = _prefs.colorblind ? 'On' : 'Off';
         }
 
         window.menuCycleTheme = () => {
@@ -3530,6 +3602,11 @@ del _webide_compiled, _webide_student_source
             _prefs.readingMode = READING_MODES[(idx + 1) % READING_MODES.length];
             savePrefs(_prefs); applyPrefs();
             if (typeof ideNotify === 'function') ideNotify('Reading mode: ' + READING_LABELS[_prefs.readingMode]);
+        };
+        window.menuToggleColorblind = () => {
+            _prefs.colorblind = !_prefs.colorblind;
+            savePrefs(_prefs); applyPrefs();
+            if (typeof ideNotify === 'function') ideNotify('Color-blind mode: ' + (_prefs.colorblind ? 'On' : 'Off'));
         };
 
         // Ensure any later editor created via ace.edit() also picks up font size
@@ -5649,6 +5726,192 @@ del _webide_compiled, _webide_student_source
             runtime.process.worker.postMessage({ function: 'run', wasmBinary: clangOutput });
         }
 
+        // -- Tests panel ------------------------------------------------------
+        // Front-matter schema (under page.processor.tests) shape:
+        //   - name: "factorial(0) == 1"
+        //     code: "assert fact(0) == 1"
+        //     expect: { throws: false }
+        //
+        // Runs each test against the student source by appending the test
+        // body to the student source and evaluating it in the same runtime.
+        // Captures stdout, return value, and any thrown exception, then
+        // matches against the expect spec.
+        window.WEBIDE_TESTS = [
+            {% if page.processor.tests %}
+            {% for t in page.processor.tests %}
+            {
+                name: {{ t.name | jsonify }},
+                code: {{ t.code | jsonify }},
+                expect: {% if t.expect %}{{ t.expect | jsonify }}{% else %}{}{% endif %}
+            }{% unless forloop.last %},{% endunless %}
+            {% endfor %}
+            {% endif %}
+        ];
+
+        function _testIconFor(status) {
+            // Shape-distinguishable glyphs so color-blind mode reads right
+            switch (status) {
+                case 'pass':    return '✓';
+                case 'fail':    return '✗';
+                case 'error':   return '!';
+                case 'pending': return '○';
+                default:        return '?';
+            }
+        }
+
+        // Initialize the Tests panel — fills the count badge, replaces the
+        // empty-state with a pending row per test (or leaves the empty
+        // message if WEBIDE_TESTS is empty).
+        function _initTestsPanel() {
+            const body  = document.getElementById('tests-body');
+            const count = document.getElementById('tests-count');
+            const sum   = document.getElementById('tests-summary');
+            if (!body) return;
+            const tests = window.WEBIDE_TESTS || [];
+            if (count) count.textContent = tests.length ? '(' + tests.length + ')' : '';
+            if (sum)   sum.textContent   = tests.length ? '0 / ' + tests.length + ' run' : '';
+            if (!tests.length) return;
+            body.innerHTML = '';
+            tests.forEach((t, idx) => {
+                const row = document.createElement('div');
+                row.className = 'test-row pending';
+                row.id = '_test_row_' + idx;
+                row.innerHTML = '<span class="test-icon" aria-hidden="true">○</span>' +
+                                '<span class="test-name"></span>';
+                row.querySelector('.test-name').textContent = t.name;
+                body.appendChild(row);
+            });
+        }
+
+        function _setTestStatus(idx, status, detail) {
+            const row = document.getElementById('_test_row_' + idx);
+            if (!row) return;
+            row.className = 'test-row ' + status;
+            const icon = row.querySelector('.test-icon');
+            if (icon) icon.textContent = _testIconFor(status);
+            // Remove any prior detail block
+            const prev = row.parentElement.querySelector('#_test_detail_' + idx);
+            if (prev) prev.remove();
+            if (detail) {
+                const det = document.createElement('div');
+                det.className = 'test-detail';
+                det.id = '_test_detail_' + idx;
+                det.textContent = detail;
+                row.parentElement.insertBefore(det, row.nextSibling);
+            }
+        }
+
+        function _updateTestsSummary(passed, total) {
+            const sum = document.getElementById('tests-summary');
+            if (!sum) return;
+            const failed = total - passed;
+            sum.textContent = passed + ' / ' + total + ' passing' + (failed ? ' (' + failed + ' failed)' : '');
+            sum.style.color = failed ? '#f85149' : (passed ? '#3fb950' : 'inherit');
+        }
+
+        // Evaluate one test against the student source. The runtime varies
+        // per page.language; we centralize the dispatch here so the Tests
+        // panel is one block of code rather than four.
+        async function _runOneTest(studentSrc, t) {
+            const expect = t.expect || {};
+            let stdout = '', threw = null, returned = undefined;
+            const composed = studentSrc + '\n' + t.code + '\n';
+            const lang = (window._PAGE_LANG || '').toLowerCase();
+            try {
+                if (lang === 'javascript' || lang === 'graphics_view' || lang === 'graphics_shader') {
+                    // Capture console.log into stdout, then eval at module scope
+                    const _origLog = console.log;
+                    console.log = (...args) => { stdout += args.map(String).join(' ') + '\n'; };
+                    try {
+                        returned = (new Function('return (' + composed + '\n)'))();
+                    } catch (firstErr) {
+                        try { (new Function(composed))(); }
+                        catch (e2) { threw = e2; }
+                    } finally {
+                        console.log = _origLog;
+                    }
+                } else if (lang === 'python') {
+                    // Brython
+                    if (typeof window.run_python_code === 'function') {
+                        try { stdout = window.run_python_code(composed); }
+                        catch (e) { threw = e; }
+                    } else { threw = new Error('Brython not loaded'); }
+                } else if (lang === 'pyodide') {
+                    if (!window.pyodide) { threw = new Error('Pyodide not loaded'); }
+                    else {
+                        try {
+                            window.pyodide.runPython('PYODIDE_COUT = ""');
+                            window.pyodide.runPython(composed);
+                            stdout = window.pyodide.globals.get('PYODIDE_COUT') || '';
+                        } catch (e) { threw = e; }
+                    }
+                } else if (lang === 'sql') {
+                    if (typeof doSql === 'function') {
+                        try { stdout = await doSql('', composed); }
+                        catch (e) { threw = e; }
+                    } else { threw = new Error('SQL runtime not loaded'); }
+                } else if (lang === 'scheme') {
+                    if (typeof doScheme === 'function') {
+                        try { returned = await doScheme('', composed); }
+                        catch (e) { threw = e; }
+                    } else { threw = new Error('Scheme runtime not loaded'); }
+                } else {
+                    return { status: 'error', detail: 'Tests not yet supported for language: ' + lang };
+                }
+            } catch (e) {
+                threw = e;
+            }
+            // Match expect spec
+            if (expect.throws === true)  return threw ? { status: 'pass' } : { status: 'fail', detail: 'expected to throw, did not' };
+            if (expect.throws === false) {
+                if (threw) return { status: 'fail', detail: 'unexpectedly threw: ' + (threw.message || String(threw)) };
+            }
+            if (typeof expect.stdout === 'string') {
+                try {
+                    const re = new RegExp(expect.stdout);
+                    if (!re.test(stdout)) return { status: 'fail', detail: 'stdout did not match /' + expect.stdout + '/\n--- got ---\n' + stdout };
+                } catch (e) { return { status: 'error', detail: 'bad regex in expect.stdout: ' + e.message }; }
+            }
+            if (expect.returns !== undefined) {
+                if (JSON.stringify(returned) !== JSON.stringify(expect.returns)) {
+                    return { status: 'fail', detail: 'expected returns=' + JSON.stringify(expect.returns) + ', got ' + JSON.stringify(returned) };
+                }
+            }
+            if (expect.vars && typeof expect.vars === 'object') {
+                const actual = window.__webide_vars || {};
+                for (const k of Object.keys(expect.vars)) {
+                    const a = actual[k];
+                    const want = expect.vars[k];
+                    if (!a || String(a.value) !== String(want)) {
+                        return { status: 'fail', detail: 'expected ' + k + '=' + want + ', got ' + (a ? a.value : '<missing>') };
+                    }
+                }
+            }
+            return { status: 'pass' };
+        }
+
+        async function runAllTests() {
+            const tests = window.WEBIDE_TESTS || [];
+            if (!tests.length) return;
+            switchBottomTab('tests');
+            saveActiveTabs();
+            let editorText = '', mainText = '';
+            try {
+                editorText = await getCodeText();
+                mainText   = await getMainCodeText();
+            } catch (e) {}
+            const studentSrc = editorText + '\n\n' + mainText;
+            let passed = 0;
+            for (let i = 0; i < tests.length; i++) {
+                _setTestStatus(i, 'pending');
+                const r = await _runOneTest(studentSrc, tests[i]);
+                _setTestStatus(i, r.status, r.detail);
+                if (r.status === 'pass') passed++;
+                _updateTestsSummary(passed, tests.length);
+            }
+        }
+        window.runAllTests = runAllTests;
+
         async function checkAnswer() {
             console.log("Got feedback string: " + feedbackString);
             const points = {% if page.info.points %}{{page.info.points}}{% else %}0{% endif %};
@@ -7119,6 +7382,10 @@ del _webide_compiled, _webide_student_source
                 if (e.key === 'F9' && !e.ctrlKey && !e.metaKey && !e.altKey) {
                     e.preventDefault();
                     window.toggleBreakpointAtCursor();
+                }
+                if (e.altKey && !e.ctrlKey && !e.metaKey && !e.shiftKey && (e.key === 't' || e.key === 'T')) {
+                    e.preventDefault();
+                    if (typeof runAllTests === 'function') runAllTests();
                 }
             });
         }
