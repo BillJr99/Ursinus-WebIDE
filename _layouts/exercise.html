@@ -1266,6 +1266,13 @@ body[data-theme="hc"] .shortcut-keys kbd { background: #000; color: #ffd700; bor
           {{ page.info.instructions }}
           <hr class="info-divider">
           {% endif %}
+
+          <!-- Hint ladder — populated by JS as the student accrues failed runs.
+               Lives in the info panel so it stays visible while they work. -->
+          <div id="hint-ladder" hidden>
+            <h3>Hints</h3>
+            <div id="hint-ladder-list" style="font-size:11px;"></div>
+          </div>
           {{ content }}
           <hr class="info-divider" style="margin-top:16px;">
           <p style="font-size:10px; color:#a0a0a0; margin:8px 0 0;">
@@ -1399,6 +1406,12 @@ body[data-theme="hc"] .shortcut-keys kbd { background: #000; color: #ffd700; bor
             <button class="inspector-subtab" id="insub-trace"
                     role="tab" aria-selected="false" aria-controls="inspector-trace" tabindex="-1"
                     onclick="switchInspectorView('trace')">Call Tape</button>
+            <button class="inspector-subtab" id="insub-profile"
+                    role="tab" aria-selected="false" aria-controls="inspector-profile" tabindex="-1"
+                    onclick="switchInspectorView('profile')">Profile</button>
+            <button class="inspector-subtab" id="insub-visualize"
+                    role="tab" aria-selected="false" aria-controls="inspector-visualize" tabindex="-1"
+                    onclick="switchInspectorView('visualize')">Visualize</button>
             <div style="margin-left:auto; display:flex; gap:6px; padding:0 6px;">
               <button id="inspector-step-run" class="action-btn" type="button"
                       title="Re-run with step instrumentation (Python only)"
@@ -1411,6 +1424,12 @@ body[data-theme="hc"] .shortcut-keys kbd { background: #000; color: #ffd700; bor
             </div>
             <div id="inspector-steps" class="inspector-view" role="tabpanel" aria-labelledby="insub-steps" hidden>
               <div class="inspector-empty">Click <strong>Step Run</strong> above to record execution steps. Available for Python.</div>
+            </div>
+            <div id="inspector-profile" class="inspector-view" role="tabpanel" aria-labelledby="insub-profile" hidden>
+              <div class="inspector-empty">Run your code to see a profile. Pyodide records timing automatically; JavaScript uses <code class="code-inline">webideTrace.call()</code> / <code class="code-inline">webideTrace.return()</code>.</div>
+            </div>
+            <div id="inspector-visualize" class="inspector-view" role="tabpanel" aria-labelledby="insub-visualize" hidden>
+              <div class="inspector-empty">Step through your code to visualize the heap. Variables containing lists, dicts, or objects are rendered as graphs.</div>
             </div>
             <div id="inspector-trace" class="inspector-view" role="tabpanel" aria-labelledby="insub-trace" hidden>
               <div class="inspector-empty" style="text-align:left; max-width:720px; margin:0 auto;">
@@ -1603,6 +1622,8 @@ def _webide_safe_repr(v, limit=80):
     except Exception:
         return '&lt;unrepresentable&gt;'
 
+import time as _webide_time
+
 def _webide_tracer(frame, event, arg):
     try:
         # Pyodide's pyodide.runPython is itself implemented in Python — it
@@ -1637,12 +1658,18 @@ def _webide_tracer(frame, event, arg):
             except Exception:
                 pass
             node = {'name': fname, 'args': ', '.join(args[:6]), 'children': [],
-                    'returnValue': None, 'exception': None, 'lineno': lineno}
+                    'returnValue': None, 'exception': None, 'lineno': lineno,
+                    't_start': _webide_time.monotonic(), 'duration_ms': 0}
             _webide_call_stack[-1]['children'].append(node)
             _webide_call_stack.append(node)
         elif event == 'return':
             if len(_webide_call_stack) &gt; 1:
                 _webide_call_stack[-1]['returnValue'] = _webide_safe_repr(arg)
+                try:
+                    _webide_call_stack[-1]['duration_ms'] = \
+                        (_webide_time.monotonic() - _webide_call_stack[-1].get('t_start', 0)) * 1000.0
+                except Exception:
+                    pass
                 _webide_call_stack.pop()
         elif event == 'exception':
             if len(_webide_call_stack) &gt; 0:
@@ -3503,6 +3530,9 @@ del _webide_compiled, _webide_student_source
         // Initialize accessibility features
         setupAccessibilityShortcuts();
 
+        // Render hint ladder on load (no-op when there are no hints).
+        setTimeout(() => { try { _renderHintLadder(); } catch (e) {} }, 0);
+
         // -- Wire the Tests panel after the helpers are defined ------------
         // _initTestsPanel + runAllTests live further down the file (next to
         // checkAnswer); the DOM is ready by the time this runs, and the
@@ -3761,6 +3791,34 @@ del _webide_compiled, _webide_student_source
                 if (typeof ideNotify === 'function') {
                     ideNotify('Code is still running after 5 seconds. If your tab feels frozen it may be an infinite loop — your work is auto-saved, you can refresh to recover.', 'error');
                 }
+                // "Show me where I'm stuck" affordance — append a button to the
+                // running banner that jumps the editor to the last-traced
+                // line. Works whenever the runtime has populated
+                // __webide_steps (Pyodide tracer, JS instrumentation, etc.).
+                try {
+                    if (_runningBanner && !_runningBanner.querySelector('.webide-stuck-btn')) {
+                        const btn = document.createElement('button');
+                        btn.type = 'button';
+                        btn.className = 'webide-stuck-btn';
+                        btn.textContent = 'Show me where';
+                        btn.style.cssText = 'margin-left:8px; padding:2px 10px; background:#75beff; color:#000; border:none; border-radius:3px; cursor:pointer; font-size:11px;';
+                        btn.addEventListener('click', () => {
+                            const steps = (window.__webide_steps || []);
+                            const last  = steps.length ? steps[steps.length - 1] : null;
+                            if (!last) {
+                                ideNotify('No traced steps yet — try setting a breakpoint (F9) on a suspect line.', 'info');
+                                return;
+                            }
+                            if (window.ace_editor) {
+                                window.ace_editor.gotoLine(last.lineno, 0, true);
+                                window.ace_editor.focus();
+                            }
+                            switchBottomTab('inspector');
+                            try { switchInspectorView('steps'); } catch (e) {}
+                        });
+                        _runningBanner.appendChild(btn);
+                    }
+                } catch (e) {}
             }, RUN_WATCHDOG_SOFT_MS);
             const hardT = setTimeout(() => {
                 // After the hard threshold, also write a permanent message into
@@ -4098,7 +4156,12 @@ del _webide_compiled, _webide_student_source
             call: function(name) {
                 if (!this._stack) this._reset();
                 const argStr = _webideFormatArgs(Array.prototype.slice.call(arguments, 1));
-                const node = { name: String(name), args: argStr, children: [], returnValue: null, exception: null };
+                const node = {
+                    name: String(name), args: argStr, children: [],
+                    returnValue: null, exception: null,
+                    t_start: (typeof performance !== 'undefined' ? performance.now() : Date.now()),
+                    duration_ms: 0,
+                };
                 this._stack[this._stack.length - 1].children.push(node);
                 this._stack.push(node);
             },
@@ -4107,6 +4170,8 @@ del _webide_compiled, _webide_student_source
                 if (!this._stack || this._stack.length <= 1) return value;
                 const node = this._stack.pop();
                 node.returnValue = _webideFormatReturn(value);
+                const now = (typeof performance !== 'undefined' ? performance.now() : Date.now());
+                node.duration_ms = now - (node.t_start || now);
                 return value;
             }
         };
@@ -4169,6 +4234,13 @@ del _webide_compiled, _webide_student_source
             _stepRunRequested = false;
             _inspectorState.hasRun = true;
             refreshInspectorFromRun();
+            // Bump attempt counter for the hint ladder. We bump here (not
+            // in checkAnswer) so that even runs that error out before reaching
+            // the autograder count as "tried it".
+            try {
+                _setHintAttempts(_getHintAttempts() + 1);
+                _renderHintLadder();
+            } catch (e) {}
         }
 
         function refreshInspectorFromRun() {
@@ -4233,6 +4305,117 @@ del _webide_compiled, _webide_student_source
             renderInspectorVars();
             renderInspectorSteps();
             renderInspectorTree();
+            renderInspectorProfile();
+            renderInspectorVisualize();
+        }
+
+        // -- Profile sub-tab: aggregate call-tree timing per function ---------
+        function _flattenProfile(node, agg) {
+            if (!node) return;
+            for (const c of (node.children || [])) {
+                const dur = (c.duration_ms || 0);
+                let childrenDur = 0;
+                for (const cc of (c.children || [])) childrenDur += (cc.duration_ms || 0);
+                const self = Math.max(0, dur - childrenDur);
+                const e = agg[c.name] || { name: c.name, calls: 0, self_ms: 0, total_ms: 0, longest_ms: 0 };
+                e.calls   += 1;
+                e.self_ms += self;
+                e.total_ms += dur;
+                if (dur > e.longest_ms) e.longest_ms = dur;
+                agg[c.name] = e;
+                _flattenProfile(c, agg);
+            }
+        }
+        function renderInspectorProfile() {
+            const view = document.getElementById('inspector-profile');
+            if (!view) return;
+            const tree = _inspectorState.callTree;
+            if (!tree || !tree.children || !tree.children.length) {
+                let hint = 'Run your code to see a profile.';
+                if (_inspectorState.hasRun) {
+                    hint = 'No call events recorded. Pyodide records automatically — for JavaScript or Java/Processing, add <code class="code-inline">webideTrace.call()</code> / <code class="code-inline">webideTrace.return()</code> around the function you want to time.';
+                }
+                view.innerHTML = '<div class="inspector-empty">' + hint + '</div>';
+                return;
+            }
+            const agg = {};
+            _flattenProfile(tree, agg);
+            const rows = Object.values(agg).sort((a, b) => b.self_ms - a.self_ms);
+            const fmt = (ms) => ms < 1 ? ms.toFixed(2) + ' ms' : ms.toFixed(1) + ' ms';
+            let html = '<table style="width:100%; font-size:11px; border-collapse:collapse;">'
+                + '<thead><tr style="text-align:left; opacity:0.7;">'
+                + '<th style="padding:4px 6px;">function</th>'
+                + '<th style="padding:4px 6px;">calls</th>'
+                + '<th style="padding:4px 6px;">self</th>'
+                + '<th style="padding:4px 6px;">total</th>'
+                + '<th style="padding:4px 6px;">longest</th>'
+                + '</tr></thead><tbody>';
+            for (const r of rows) {
+                html += '<tr style="border-top:1px solid rgba(255,255,255,0.06);">'
+                    + '<td style="padding:3px 6px; color:#9cdcfe;">' + r.name + '</td>'
+                    + '<td style="padding:3px 6px;">' + r.calls + '</td>'
+                    + '<td style="padding:3px 6px;">' + fmt(r.self_ms) + '</td>'
+                    + '<td style="padding:3px 6px;">' + fmt(r.total_ms) + '</td>'
+                    + '<td style="padding:3px 6px;">' + fmt(r.longest_ms) + '</td>'
+                    + '</tr>';
+            }
+            html += '</tbody></table>';
+            view.innerHTML = html;
+        }
+
+        // -- Visualize sub-tab: render locals from the current step as SVG.
+        // Walks the step's locals dict; lists become indexed boxes, dicts
+        // become key:value rows. Pure SVG — no d3 dependency.
+        function _vizNodeForValue(name, value, x, y) {
+            // Returns an <svg fragment> string. y is the top y-coord.
+            const w = 220;
+            const head = name + ' = ';
+            let body, color;
+            if (value && typeof value === 'object' && 'type' in value && 'value' in value) {
+                color = value.type === 'list' || value.type === 'array' ? '#ce9178'
+                      : value.type === 'dict'  || value.type === 'object' ? '#9cdcfe'
+                      : '#dcdcaa';
+                body = head + (value.value || '');
+            } else {
+                color = '#dcdcaa';
+                body = head + String(value);
+            }
+            const safe = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+            return '<g transform="translate(' + x + ',' + y + ')">'
+                +    '<rect width="' + w + '" height="34" rx="4" '
+                +    'fill="rgba(80,80,90,0.25)" stroke="' + color + '" stroke-width="1.5"/>'
+                +    '<text x="8" y="22" font-family="Consolas,monospace" font-size="12" '
+                +    'fill="' + color + '">' + safe(body.slice(0, 32)) + '</text>'
+                + '</g>';
+        }
+        function renderInspectorVisualize() {
+            const view = document.getElementById('inspector-visualize');
+            if (!view) return;
+            // Take the locals of the current step (if any); else the variables.
+            let locals = null;
+            const steps = _inspectorState.steps || [];
+            if (steps.length) locals = steps[_inspectorState.currentStep | 0]?.locals || null;
+            else if (_inspectorState.vars) locals = _inspectorState.vars;
+            if (!locals || !Object.keys(locals).length) {
+                let hint = 'Run your code (with a breakpoint or Step Run) to visualize variables.';
+                if (_inspectorState.hasRun) hint = 'No variables in scope at the current step.';
+                view.innerHTML = '<div class="inspector-empty">' + hint + '</div>';
+                return;
+            }
+            const keys = Object.keys(locals);
+            const rows = keys.length;
+            const cols = 2;
+            const cellW = 240, cellH = 44, padX = 12, padY = 8;
+            const W = cellW * cols + padX;
+            const H = Math.ceil(rows / cols) * cellH + padY;
+            let svg = '<svg width="' + W + '" height="' + H + '" xmlns="http://www.w3.org/2000/svg" '
+                + 'style="font-family:Consolas,monospace; max-width:100%;">';
+            keys.forEach((k, i) => {
+                const col = i % cols, row = Math.floor(i / cols);
+                svg += _vizNodeForValue(k, locals[k], col * cellW, row * cellH);
+            });
+            svg += '</svg>';
+            view.innerHTML = svg;
         }
         // Exposed so external callers (browser console, tests) can re-render
         // the Inspector after manually populating webideTrace or
@@ -5725,6 +5908,59 @@ del _webide_compiled, _webide_student_source
             runtime.resetText();
             runtime.process.worker.postMessage({ function: 'run', wasmBinary: clangOutput });
         }
+
+        // -- Hint ladder ------------------------------------------------------
+        // Instructor-authored hints unlock progressively as the student fails
+        // runs. Stored as a sorted list of {after, text}: a hint is visible
+        // once numAttempts >= after.
+        window.WEBIDE_HINTS = [
+            {% if page.processor.hints %}
+            {% for h in page.processor.hints %}
+            { after: {{ h.after | default: 1 }}, text: {{ h.text | jsonify }} }{% unless forloop.last %},{% endunless %}
+            {% endfor %}
+            {% endif %}
+        ];
+        const HINTS_KEY = 'webide.hintCounts';
+        function _hintExerciseId() {
+            // Use the page URL path as the per-exercise key. Stable across reloads.
+            try { return location.pathname || '/'; } catch (e) { return '/'; }
+        }
+        function _getHintAttempts() {
+            try {
+                const m = JSON.parse(localStorage.getItem(HINTS_KEY) || '{}');
+                return m[_hintExerciseId()] | 0;
+            } catch (e) { return 0; }
+        }
+        function _setHintAttempts(n) {
+            try {
+                const m = JSON.parse(localStorage.getItem(HINTS_KEY) || '{}');
+                m[_hintExerciseId()] = n;
+                localStorage.setItem(HINTS_KEY, JSON.stringify(m));
+            } catch (e) {}
+        }
+        function _renderHintLadder() {
+            const wrap = document.getElementById('hint-ladder');
+            const list = document.getElementById('hint-ladder-list');
+            if (!wrap || !list) return;
+            const hints = (window.WEBIDE_HINTS || []).slice().sort((a, b) => (a.after | 0) - (b.after | 0));
+            if (!hints.length) { wrap.hidden = true; return; }
+            const attempts = _getHintAttempts();
+            const unlocked = hints.filter(h => attempts >= (h.after | 0));
+            if (!unlocked.length) {
+                wrap.hidden = false;
+                list.innerHTML = '<p style="opacity:0.7;">Hints will appear here as you make attempts. ('
+                    + attempts + ' so far; next at attempt ' + hints[0].after + ').</p>';
+                return;
+            }
+            wrap.hidden = false;
+            list.innerHTML = unlocked.map((h, i) =>
+                '<details ' + (i === unlocked.length - 1 ? 'open' : '') + ' style="margin:4px 0;">'
+                + '<summary style="cursor:pointer; color:#ce9178;">Hint ' + (i + 1) + ' (unlocked after attempt ' + h.after + ')</summary>'
+                + '<div style="padding:4px 0 4px 12px;">' + h.text + '</div>'
+                + '</details>'
+            ).join('');
+        }
+        window.refreshHintLadder = _renderHintLadder;
 
         // -- Tests panel ------------------------------------------------------
         // Front-matter schema (under page.processor.tests) shape:

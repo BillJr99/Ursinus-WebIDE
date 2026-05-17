@@ -193,7 +193,9 @@ export default async function run() {
             await page.waitForTimeout(7000);  // Java/Processing.js takes a moment
             await page.evaluate(() => { switchBottomTab('inspector'); switchInspectorView('vars'); });
             const msg = await page.locator('#inspector-vars .inspector-empty').textContent();
-            expect.matches(msg, /Python and JavaScript/i,
+            // New copy (PR 1 step 6): non-Python/JS pages point students at
+            // F9/breakpoints instead of saying "not supported".
+            expect.matches(msg, /breakpoint|F9|Python and JavaScript/i,
                 `expected language-aware message, got "${msg.trim()}"`);
         });
     });
