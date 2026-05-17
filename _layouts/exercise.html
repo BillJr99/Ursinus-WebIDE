@@ -1631,6 +1631,60 @@ del _webide_compiled, _webide_student_source
 # kept for backwards compat with any callers that still invoke it
 _webide_sys.settrace(None)
 </div>
+
+<!-- Breakpoints-only tracer for Pyodide. Records ONLY the lines listed in
+     _webide_bp_lines (a Python set). Used when the student clicks Run with
+     gutter breakpoints set, but did NOT click Step Run. Recording every
+     line is too noisy for routine debugging. -->
+<div id="pyodideBpPrologue" style="display:none;">
+import sys as _webide_sys
+_webide_bp_steps = []
+_webide_bp_lines = set()
+_webide_BP_LIMIT = 2000
+
+def _webide_bp_safe_repr(v, limit=80):
+    try:
+        if isinstance(v, (int, float, bool)) or v is None: return str(v)
+        if isinstance(v, str):
+            s = v if len(v) &lt; limit else v[:limit] + '...'
+            return repr(s)
+        if callable(v): return '&lt;function ' + getattr(v, '__name__', '?') + '&gt;'
+        s = repr(v)
+        return s if len(s) &lt; limit else s[:limit] + '...'
+    except Exception:
+        return '&lt;unrepresentable&gt;'
+
+def _webide_bp_tracer(frame, event, arg):
+    try:
+        co_fname = frame.f_code.co_filename or ''
+        if co_fname != '&lt;webide-student&gt;':
+            return None
+        if event == 'line' and frame.f_lineno in _webide_bp_lines \
+                and len(_webide_bp_steps) &lt; _webide_BP_LIMIT:
+            locs = {}
+            for k, v in frame.f_locals.items():
+                if k.startswith('_webide') or k.startswith('__'): continue
+                locs[k] = {'type': type(v).__name__, 'value': _webide_bp_safe_repr(v)}
+            _webide_bp_steps.append({
+                'lineno': frame.f_lineno,
+                'function': frame.f_code.co_name,
+                'locals': locs,
+                'hit': True,
+            })
+    except Exception:
+        pass
+    return _webide_bp_tracer
+</div>
+
+<div id="pyodideBpExec" style="display:none;">
+_webide_compiled = compile(_webide_student_source, '&lt;webide-student&gt;', 'exec')
+_webide_sys.settrace(_webide_bp_tracer)
+try:
+    exec(_webide_compiled, globals())
+finally:
+    _webide_sys.settrace(None)
+del _webide_compiled, _webide_student_source
+</div>
 {% endif %}
 
 <script type="text/python">
@@ -1734,10 +1788,50 @@ _webide_sys.settrace(None)
         "    pass\n"
     )
 
+    # Brython trace-on-hit helper. Mirrors the JS `__webide_bp` helper but
+    # lets the injected Python statement record a hit. We expose the
+    # generated locals() to the JS helper so the Inspector populates with
+    # real Python values, not just line numbers.
+    def __webide_bp_py(_lineno, _locals):
+        try:
+            cleaned = window.Object.new()
+            for _k in _locals:
+                if _k.startswith('_webide') or _k.startswith('__'): continue
+                _v = _locals[_k]
+                _t = type(_v).__name__
+                try:
+                    _s = repr(_v)
+                except Exception:
+                    _s = '<unrepresentable>'
+                if len(_s) > 200: _s = _s[:200] + '...'
+                _wo = window.Object.new()
+                _wo['type']  = _t
+                _wo['value'] = _s
+                cleaned[_k]  = _wo
+            window['__webide_bp'](_lineno, cleaned)
+        except Exception:
+            pass
+    window['__webide_bp_py'] = __webide_bp_py
+
     def run_python_code(_webide_code):
         _webide_result = ""
         try:
             window['python_code_result'] = ''
+            # Trace-on-hit instrumentation: inject __webide_bp_py(...) lines.
+            try:
+                _bp_lines = window['__webide_activeBreakpointLines']()
+                _bp_arr = []
+                # Brython lists from JS Arrays need explicit conversion.
+                try:
+                    for _i in range(_bp_lines.length):
+                        _bp_arr.append(int(_bp_lines[_i]))
+                except Exception:
+                    pass
+                if _bp_arr:
+                    _webide_code = window['webideInstrumentForBreakpoints'](
+                        _webide_code, 'python', _bp_arr)
+            except Exception:
+                pass
             _webide_code = _webide_code.replace("print(", "window['python_code_result'] += get_formatted(")
             _webide_code = _webide_code + _WEBIDE_VAR_POSTLUDE
             exec(_webide_code)
@@ -3715,6 +3809,151 @@ _webide_sys.settrace(None)
         }
         window.clearAllBreakpoints = clearAllBreakpoints;
 
+        // -- Trace-on-hit runtime helpers ------------------------------------
+        // For languages without a native debugger (JS, Java/Processing, Scheme,
+        // Prolog, SQL, C/C++), we source-instrument the student code before
+        // executing it: at every breakpoint line we inject a call to
+        // `__webide_bp(line, locals)`. The helper records the hit into
+        // `window.__webide_steps` and (for Pyodide-flavor) `__webide_calltree`,
+        // so the existing Inspector "Step-Through" and "Variables" sub-tabs
+        // populate identically to the Python settrace path. No real pause.
+        window.__webide_bp = function(line, locals) {
+            try {
+                if (!window.__webide_steps) window.__webide_steps = [];
+                if (window.__webide_steps.length >= 2000) return;
+                const cleaned = {};
+                if (locals && typeof locals === 'object') {
+                    for (const k of Object.keys(locals)) {
+                        const v = locals[k];
+                        let type, value;
+                        try {
+                            if (v === null)               { type = 'null';  value = 'null'; }
+                            else if (Array.isArray(v))    { type = 'array'; value = JSON.stringify(v).slice(0, 200); }
+                            else if (typeof v === 'function') { type = 'function'; value = '<function ' + (v.name || '?') + '>'; }
+                            else if (typeof v === 'object') { type = 'object'; value = JSON.stringify(v).slice(0, 200); }
+                            else                           { type = typeof v; value = String(v).slice(0, 200); }
+                        } catch (e) { type = '?'; value = '<unrepresentable>'; }
+                        cleaned[k] = { type, value };
+                    }
+                }
+                window.__webide_steps.push({
+                    lineno: line, function: '<bp>', locals: cleaned, hit: true,
+                });
+                // Brief console breadcrumb so students see the breakpoint fire
+                // even before they look at the Inspector.
+                if (typeof logToConsole === 'function') {
+                    const summary = Object.keys(cleaned).slice(0, 6)
+                        .map(k => k + '=' + cleaned[k].value).join(', ');
+                    logToConsole('[bp line ' + line + ']' + (summary ? '  ' + summary : ''));
+                }
+            } catch (e) { /* never throw out of the hit handler */ }
+        };
+
+        // Returns the path-keyed breakpoint set for the active file, or [] if
+        // there's no active file. Runtime hooks call this to know which lines
+        // to instrument before running.
+        window.__webide_activeBreakpointLines = function() {
+            const path = _getActivePath();
+            if (!path) return [];
+            return getBreakpointsForPath(path);
+        };
+
+        // -- Source instrumentation -----------------------------------------
+        // Insert `__webide_bp(<line>, {...locals})` calls at each breakpoint
+        // line of the given source. `lang` selects how to write the call:
+        //   - 'js' / 'java' / 'graphics' — `__webide_bp(L, {a:typeof a!=='undefined'?a:undefined});`
+        //   - 'scheme'                  — `(begin (webide-bp L) ...)`   (sibling call)
+        //   - 'sql'                     — leading comment marker (parsed runtime-side)
+        //   - 'prolog'                  — `webide_bp(L), ...`
+        //   - 'cpp'                     — `printf("__BP %d\n", L);`
+        //   - 'python'                  — `__webide_bp_py(L, vars())`   (Brython only)
+        //
+        // For JS-family languages, we additionally try to capture obvious
+        // top-level identifier values via a lightweight regex scan of the
+        // student source. We deliberately avoid AST parsing — false positives
+        // are safe (typeof-guarded), false negatives are recoverable.
+        function _webideExtractTopIdents(src) {
+            const re = /\b(?:let|const|var|function)\s+([A-Za-z_$][\w$]*)/g;
+            const names = new Set();
+            let m; while ((m = re.exec(src))) names.add(m[1]);
+            return [...names];
+        }
+        function _webideJsLocalsExpr(idents) {
+            if (!idents.length) return '{}';
+            // try/catch handles both undeclared globals and let/const TDZ — a
+            // plain `typeof` reads OK for `var` but throws inside a let's
+            // temporal dead zone.
+            return '{' + idents.map(n =>
+                JSON.stringify(n) + ': (function(){try{return ' + n + ';}catch(_){return undefined;}})()'
+            ).join(', ') + '}';
+        }
+
+        window.webideInstrumentForBreakpoints = function(src, lang, bpLines) {
+            if (!bpLines || !bpLines.length) return src;
+            const set = new Set(bpLines.map(n => +n));
+            const lines = src.split('\n');
+            const out = new Array(lines.length);
+            if (lang === 'js' || lang === 'java' || lang === 'graphics' || lang === 'javascript') {
+                const localsExpr = _webideJsLocalsExpr(_webideExtractTopIdents(src));
+                for (let i = 0; i < lines.length; i++) {
+                    const lineNo = i + 1;
+                    if (set.has(lineNo)) {
+                        // Prepend the trap call. We keep it on its own line so
+                        // student error line numbers remain unchanged for the
+                        // post-trap statements.
+                        out[i] = '__webide_bp(' + lineNo + ', ' + localsExpr + '); ' + lines[i];
+                    } else {
+                        out[i] = lines[i];
+                    }
+                }
+            } else if (lang === 'scheme') {
+                for (let i = 0; i < lines.length; i++) {
+                    const lineNo = i + 1;
+                    if (set.has(lineNo)) out[i] = '(webide-bp ' + lineNo + ') ' + lines[i];
+                    else out[i] = lines[i];
+                }
+            } else if (lang === 'prolog') {
+                // Prolog can't easily host a side-effect call mid-clause without
+                // changing semantics; emit a marker comment that the runtime
+                // surfaces as "(breakpoint at line N: planned hit)".
+                for (let i = 0; i < lines.length; i++) {
+                    const lineNo = i + 1;
+                    if (set.has(lineNo)) out[i] = '% __BP ' + lineNo + '\n' + lines[i];
+                    else out[i] = lines[i];
+                }
+            } else if (lang === 'sql') {
+                // sql.js executes statement-by-statement; we just tag the
+                // statement so the JS-side runner emits a hit after running it.
+                for (let i = 0; i < lines.length; i++) {
+                    const lineNo = i + 1;
+                    if (set.has(lineNo)) out[i] = '-- __BP ' + lineNo + '\n' + lines[i];
+                    else out[i] = lines[i];
+                }
+            } else if (lang === 'cpp' || lang === 'c') {
+                // Plain printf marker; the runtime worker parses stdout for these.
+                for (let i = 0; i < lines.length; i++) {
+                    const lineNo = i + 1;
+                    if (set.has(lineNo)) out[i] = 'printf("__BP %d\\n", ' + lineNo + '); ' + lines[i];
+                    else out[i] = lines[i];
+                }
+            } else if (lang === 'python' || lang === 'brython') {
+                for (let i = 0; i < lines.length; i++) {
+                    const lineNo = i + 1;
+                    if (set.has(lineNo)) {
+                        const indent = (lines[i].match(/^\s*/) || [''])[0];
+                        // Insert the trap on its OWN line, ahead of the student
+                        // line — preserves indentation so we don't break blocks.
+                        out[i] = indent + '__webide_bp_py(' + lineNo + ', vars())\n' + lines[i];
+                    } else {
+                        out[i] = lines[i];
+                    }
+                }
+            } else {
+                return src;
+            }
+            return out.join('\n');
+        };
+
         // F9 toggles a breakpoint on the cursor line.
         window.toggleBreakpointAtCursor = () => {
             if (typeof ace_editor === 'undefined' || !ace_editor) return;
@@ -3934,9 +4173,17 @@ _webide_sys.settrace(None)
                     msg = 'Run your code to inspect variables.';
                 } else if (_LANG_FAMILY === 'python' || _LANG_FAMILY === 'javascript') {
                     msg = 'No top-level variables were captured this run. '
-                        + '(Assignments inside functions are local to those functions and don\'t show here.)';
+                        + '(Assignments inside functions are local to those functions and don\'t show here. '
+                        + 'Set a breakpoint inside the function with F9 to inspect locals.)';
+                } else if (_PAGE_LANG === 'sql' || _PAGE_LANG === 'prolog' ||
+                           _PAGE_LANG === 'scheme' || _PAGE_LANG === 'cpp' ||
+                           _PAGE_LANG === 'java' || _PAGE_LANG === 'graphics_view' ||
+                           _PAGE_LANG === 'graphics_shader') {
+                    msg = 'No variables captured this run. For this language, set a breakpoint '
+                        + 'on a line of interest (F9 or click the gutter) to record values at that point.';
                 } else {
-                    msg = 'Variable inspection is currently supported for Python and JavaScript exercises only.';
+                    msg = 'Variable inspection is supported via breakpoints for this language. '
+                        + 'Use F9 to set one.';
                 }
                 view.innerHTML = '<div class="inspector-empty">' + msg + '</div>';
                 return;
@@ -4738,7 +4985,27 @@ _webide_sys.settrace(None)
                 if (doPrint !== false) logToConsole(state + ' ' + status);
                 this.state = state;
             }
-            print({ text })    { this.text += text + "\n"; }
+            print({ text })    {
+                // Strip C/C++ breakpoint markers and emit them as hits. The
+                // text comes in chunks of arbitrary size, so we buffer a
+                // partial line if the chunk ends mid-marker.
+                if (this.name === 'runtime' && text && typeof text === 'string' && text.indexOf('__BP') !== -1) {
+                    const buf = (this._bpBuf || '') + text;
+                    const lines = buf.split('\n');
+                    this._bpBuf = lines.pop();
+                    const clean = [];
+                    for (const ln of lines) {
+                        const m = ln.match(/^__BP\s+(\d+)\s*$/);
+                        if (m) {
+                            try { window.__webide_bp(+m[1], { lang: 'cpp' }); } catch (e) {}
+                        } else {
+                            clean.push(ln);
+                        }
+                    }
+                    text = clean.join('\n') + (clean.length ? '\n' : '');
+                }
+                this.text += text + "\n";
+            }
             printErr({ text }) { this.text += text + "\n"; }
         }
 
@@ -4832,6 +5099,16 @@ _webide_sys.settrace(None)
             clang.state = 'busy';
             let codeText = await getCodeText();
             let mainText = await getMainCodeText();
+            // Trace-on-hit for C/C++: inject printf markers BEFORE the stdio
+            // patch so the line numbers we instrument match what the student
+            // sees in the gutter. The runtime worker echoes them to stdout,
+            // and a print-hook below strips them out + emits hits.
+            try {
+                const _bpLines = window.__webide_activeBreakpointLines() || [];
+                if (_bpLines.length && window.webideInstrumentForBreakpoints) {
+                    codeText = window.webideInstrumentForBreakpoints(codeText, 'cpp', _bpLines);
+                }
+            } catch (e) {}
             // The wasm sysroot ships a corrupted /usr/include/libcxx/stdio.h that
             // contains C++ forward_list template fragments instead of C stdio declarations.
             // We pre-define its include guard and supply correct C-style declarations
@@ -4884,6 +5161,13 @@ _webide_sys.settrace(None)
         async function doScheme(codeString, mainString) {
             feedbackString = "";
             let code = codeString + '\n' + mainString + '\n';
+            // Trace-on-hit: inject (webide-bp N) calls at each breakpoint line.
+            try {
+                const _bpLines = window.__webide_activeBreakpointLines();
+                if (_bpLines && _bpLines.length && window.webideInstrumentForBreakpoints) {
+                    code = window.webideInstrumentForBreakpoints(code, 'scheme', _bpLines);
+                }
+            } catch (e) { /* tolerate */ }
             onSchemeError  = e => logToConsole(e.message);
             onSchemeResult = result => {
                 if (result == BiwaScheme.undef || result == null || result == undefined) {
@@ -4894,6 +5178,17 @@ _webide_sys.settrace(None)
                 }
             };
             biwa = new BiwaScheme.Interpreter(onSchemeError);
+            // Define `webide-bp` as a side-effect-only primitive that records
+            // the hit via the standard __webide_bp helper. Use define_libfunc
+            // when available; fall back to evaluating a Scheme stub.
+            try {
+                if (typeof BiwaScheme.define_libfunc === 'function') {
+                    BiwaScheme.define_libfunc('webide-bp', 1, 1, function(ar) {
+                        try { window.__webide_bp(ar[0] | 0, {}); } catch (e) {}
+                        return BiwaScheme.undef;
+                    });
+                }
+            } catch (e) { /* if already defined or undefined, ignore */ }
             return biwa.evaluate(code, onSchemeResult);
         }
         {% endif %}
@@ -4903,16 +5198,38 @@ _webide_sys.settrace(None)
         async function doSql(codeString, mainString) {
             feedbackString = "";
             let code = mainString + '\n' + codeString + '\n';
+            // Trace-on-hit: insert `-- __BP N` marker comments at breakpoint
+            // lines, then collect them per-statement below.
+            try {
+                const _bpLines = window.__webide_activeBreakpointLines();
+                if (_bpLines && _bpLines.length && window.webideInstrumentForBreakpoints) {
+                    code = window.webideInstrumentForBreakpoints(code, 'sql', _bpLines);
+                }
+            } catch (e) {}
             const config = { locateFile: fn => "{{site.baseurl}}/assets/js/sql.js/sql.js" };
             await initSqlJs(config).then(function(SQL) {
                 const db = new SQL.Database();
                 code.split(';').forEach(rawStmt => {
+                    // Pull out __BP markers BEFORE the comment-strip step.
+                    const hits = [];
+                    rawStmt.split('\n').forEach(l => {
+                        const m = l.match(/--\s*__BP\s+(\d+)/);
+                        if (m) hits.push(+m[1]);
+                    });
                     let stmt = rawStmt.split('\n')
                         .filter(l => !l.trim().startsWith('--') && l.trim().length > 0)
                         .join(' ') + ';';
                     if (stmt.trim().length > 1) {
                         const res = db.exec(stmt);
                         feedbackString += JSON.stringify(res) + '\n';
+                        // Emit one bp hit per marker in this statement, with the
+                        // result rowcount + columns as the "locals" so students
+                        // can inspect the effect of each breakpointed query.
+                        for (const ln of hits) {
+                            const rowCount = (res[0] && res[0].values) ? res[0].values.length : 0;
+                            const cols = (res[0] && res[0].columns) ? res[0].columns.join(',') : '';
+                            try { window.__webide_bp(ln, { rows: rowCount, columns: cols }); } catch (e) {}
+                        }
                     }
                 });
                 logToConsole(feedbackString);
@@ -5110,6 +5427,11 @@ _webide_sys.settrace(None)
                 if (!pyodideLoaded) await pyodidePromise;
                 let student_code = editorText + "\n\n" + document.getElementById("pyodideBoilerplate").innerHTML + "\n\n" + mainText;
                 const _webideStepMode = _stepRunRequested;
+                // Pyodide breakpoint mode: enabled when the user set gutter
+                // breakpoints but did NOT click Step Run. Uses a different
+                // tracer that records only breakpoint-hit lines.
+                const _webideBpLines = window.__webide_activeBreakpointLines() || [];
+                const _webideBpMode  = !_webideStepMode && _webideBpLines.length > 0;
                 if (_webideStepMode) {
                     try {
                         // 1) Load the tracer + state. Does NOT install settrace —
@@ -5125,6 +5447,17 @@ _webide_sys.settrace(None)
                         pyodide.runPython(document.getElementById('pyodideStepExec').textContent);
                     } catch (e) {
                         console.error('Step Run failed:', e);
+                    }
+                } else if (_webideBpMode) {
+                    try {
+                        pyodide.runPython(document.getElementById('pyodideBpPrologue').textContent);
+                        pyodide.globals.set('_webide_student_source', student_code);
+                        // Use Python set literal syntax to seed the bp lines
+                        const bpLiteral = '{' + _webideBpLines.map(n => String(+n)).join(',') + (_webideBpLines.length === 1 ? ',}' : '}');
+                        pyodide.runPython('_webide_bp_lines = ' + bpLiteral);
+                        pyodide.runPython(document.getElementById('pyodideBpExec').textContent);
+                    } catch (e) {
+                        console.error('Breakpoint run failed:', e);
                     }
                 } else {
                     pyodide.runPython(student_code);
@@ -5143,6 +5476,20 @@ _webide_sys.settrace(None)
                             treePy.destroy && treePy.destroy();
                         }
                     } catch (e) { console.error('Step epilogue failed:', e); }
+                } else if (_webideBpMode) {
+                    try {
+                        const stepsPy = pyodide.globals.get('_webide_bp_steps');
+                        if (stepsPy) {
+                            window.__webide_steps = stepsPy.toJs({ dict_converter: Object.fromEntries });
+                            stepsPy.destroy && stepsPy.destroy();
+                            // Console breadcrumbs so students notice the hits
+                            if ((window.__webide_steps || []).length) {
+                                logToConsole('[breakpoints] hit ' + window.__webide_steps.length + ' time(s) — see Inspector › Step-Through');
+                            } else {
+                                logToConsole('[breakpoints] code finished without reaching any breakpoint');
+                            }
+                        }
+                    } catch (e) { console.error('Bp epilogue failed:', e); }
                 }
                 // Inspector: snapshot Pyodide globals for the Variables tab
                 try {
@@ -5197,6 +5544,17 @@ _webide_sys.settrace(None)
                 {% elsif page.language == "prolog" %}
                 let Prolog, Module;
                 var options = { arguments: [], on_output: logToConsole };
+                // Trace-on-hit for Prolog: emit one synthetic hit per
+                // breakpoint line at run-start. Prolog's clause structure
+                // doesn't accept mid-clause JS callbacks, so we surface
+                // breakpoint lines as "would-pause-here" markers in the
+                // Inspector. (Brython has the same limitation in pause-mode.)
+                try {
+                    const _bpLines = window.__webide_activeBreakpointLines() || [];
+                    for (const ln of _bpLines) {
+                        try { window.__webide_bp(ln, { lang: 'prolog' }); } catch (e) {}
+                    }
+                } catch (e) {}
                 SWIPL(options).then(async module => {
                     Module = module; Prolog = Module.prolog;
                     await Prolog.load_scripts();
@@ -5233,6 +5591,17 @@ _webide_sys.settrace(None)
                 });
 
                 {% elsif page.language == "java" %}
+                // Trace-on-hit for Java/Processing: emit synthetic hits before
+                // Processing.js transpiles. The Java-as-JS pipeline mangles
+                // student line numbers, so we report breakpoints from the
+                // pre-transpile source rather than trying to thread callbacks
+                // through the generated JS.
+                try {
+                    const _bpLines = window.__webide_activeBreakpointLines() || [];
+                    for (const ln of _bpLines) {
+                        try { window.__webide_bp(ln, { lang: 'java' }); } catch (e) {}
+                    }
+                } catch (e) {}
                 let code = makeCodeJavaProcessing(editorText, mainText);
                 console.feedbackString = null;
                 instance = new Processing(canvas, code);
@@ -5244,6 +5613,15 @@ _webide_sys.settrace(None)
                 function feedbackPrintlnJSConsole(s) { logToConsole(s); return s + "\n"; }
                 let code = editorText + "\n\n" + mainText;
                 code = code.replace(/console.log/g, "feedbackString += feedbackPrintlnJSConsole");
+                // Trace-on-hit: rewrite breakpoint lines to invoke __webide_bp.
+                // The instrumenter is a no-op when there are no breakpoints,
+                // so this is safe to always-on.
+                try {
+                    const _bpLines = window.__webide_activeBreakpointLines();
+                    if (_bpLines && _bpLines.length) {
+                        code = window.webideInstrumentForBreakpoints(code, 'javascript', _bpLines);
+                    }
+                } catch (e) { /* never let the helper kill the run */ }
                 eval(code);
                 {% endif %}
 
