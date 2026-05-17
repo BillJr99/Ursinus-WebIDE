@@ -3040,6 +3040,22 @@ del _webide_compiled, _webide_student_source
                       message: 'Remember to close Scanner to avoid resource leaks',
                       suggestion: 'Use try-with-resources: try (Scanner sc = new Scanner(...))',
                       severity: 'info' },
+                    // -- CS173 Style Guide rules ------------------------------------
+                    { re: /==\s*(?:true|false)\b|\b(?:true|false)\s*==/,
+                      message: 'CS173: Do not compare booleans to true or false with ==',
+                      suggestion: 'Use the variable directly: if (isValid) not if (isValid == true)', severity: 'info' },
+                    { re: /\bboolean\s+(?:\w*[Nn]ot[A-Z]\w*|\w+[Cc]heck\b|\w+[Ff]lag\b|[Cc]heck[A-Z]\w*|[Nn]ot[A-Z]\w*)/,
+                      message: 'CS173: Boolean variable names should be positive (isReady, isValid, hasValue)',
+                      suggestion: 'Rename to start with "is", "has", "can", "should", or "will"', severity: 'info' },
+                    { re: /\bgoto\b/,
+                      message: 'CS173: goto is not valid Java and leads to spaghetti code',
+                      suggestion: 'Use loops, break, continue, or return to control flow instead', severity: 'error' },
+                    { re: /\bfinal\s+(?:static\s+)?(?:int|double|float|long|short|byte|char|boolean|String)\s+[a-z]\w*\s*=/,
+                      message: 'CS173: final constants should be named in ALL_CAPS_WITH_UNDERSCORES',
+                      suggestion: 'Rename to SCREAMING_SNAKE_CASE: e.g. static final int MAX_SIZE = 100', severity: 'warning' },
+                    { re: /\b(?:int|double|float|long|short|byte)\s+[a-z]\w*\s*=\s*[2-9]\d{2,}\b/,
+                      message: 'CS173: Magic number — consider naming this constant with a final variable',
+                      suggestion: 'Declare: static final int MY_CONST = value; then use MY_CONST', severity: 'info' },
                 ],
                 wholeProg(lines) {
                     const issues = [];
@@ -3139,6 +3155,91 @@ del _webide_compiled, _webide_student_source
                         }
                     }
 
+                    // -- CS173: Missing braces on single-statement bodies ------
+                    for (let i = 0; i < lines.length - 1; i++) {
+                        const ln = lines[i];
+                        if (/^\s*(?:if|else\s+if|for|while)\s*\(/.test(ln) || /^\s*else\s*$/.test(ln.trimEnd())) {
+                            if (!/\{\s*(?:\/\/.*)?$/.test(ln)) {
+                                const next = (lines[i + 1] || '').trim();
+                                if (next && next !== '{' && !next.startsWith('//') && !next.startsWith('*')) {
+                                    issues.push({ line: i + 1, severity: 'warning',
+                                        message: 'CS173: Always use { } braces even for single-line if/for/while bodies',
+                                        suggestion: 'Wrap the body: if (cond) { stmt; }' });
+                                }
+                            }
+                        }
+                    }
+
+                    // -- CS173: Long boolean conditions ------------------------
+                    for (let i = 0; i < lines.length; i++) {
+                        if (lines[i].trim().startsWith('//')) continue;
+                        const m = lines[i].match(/\b(?:if|while)\s*\((.+)/);
+                        if (m && m[1].replace(/\/\/.*$/, '').length > 80) {
+                            issues.push({ line: i + 1, severity: 'info',
+                                message: 'CS173: Long boolean condition — extract to a named boolean variable',
+                                suggestion: 'boolean isReady = <long condition>; if (isReady) { ... }' });
+                        }
+                    }
+
+                    // -- CS173: break inside a loop but not a switch ----------
+                    {
+                        const blkStack = []; // each entry: 'switch' | 'loop' | 'other'
+                        for (let i = 0; i < lines.length; i++) {
+                            const raw = lines[i];
+                            const stripped = raw.replace(/\/\/.*$/, '');
+                            let pendingType = 'other';
+                            if (/\bswitch\s*\(/.test(stripped)) pendingType = 'switch';
+                            else if (/\b(?:for|while|do)\b/.test(stripped) &&
+                                     !/^\s*(?:public|private|protected|static)\b/.test(stripped)) {
+                                pendingType = 'loop';
+                            }
+                            let firstBrace = true;
+                            for (const ch of stripped) {
+                                if (ch === '{') { blkStack.push(firstBrace ? pendingType : 'other'); firstBrace = false; }
+                                else if (ch === '}') blkStack.pop();
+                            }
+                            if (/^\s*break\s*;/.test(raw)) {
+                                let innermost = null;
+                                for (let k = blkStack.length - 1; k >= 0; k--) {
+                                    if (blkStack[k] === 'switch' || blkStack[k] === 'loop') { innermost = blkStack[k]; break; }
+                                }
+                                if (innermost === 'loop') {
+                                    issues.push({ line: i + 1, severity: 'warning',
+                                        message: 'CS173: break in loop — restructure the loop condition instead',
+                                        suggestion: 'Move the exit condition to the loop header; break should only appear in switch' });
+                                }
+                            }
+                        }
+                    }
+
+                    // -- CS173: Compound method calls (>= 3 on one line) ------
+                    for (let i = 0; i < lines.length; i++) {
+                        const t = lines[i].trim();
+                        if (t.startsWith('//') || t.startsWith('*')) continue;
+                        // Strip flow-control keywords so for/while/if parens don't count
+                        const stripped = lines[i].replace(/\b(?:if|while|for|do|switch|catch|try)\s*\(/g, ' ');
+                        const callCount = (stripped.match(/\w\s*\(/g) || []).length;
+                        if (callCount >= 3) {
+                            issues.push({ line: i + 1, severity: 'info',
+                                message: 'CS173: Avoid deeply-nested compound method calls — hard to read and debug',
+                                suggestion: 'Extract intermediate results into named variables for clarity' });
+                        }
+                    }
+
+                    // -- CS173: System.out.println used as an input prompt -----
+                    for (let i = 0; i < lines.length - 1; i++) {
+                        if (/\bSystem\.out\.println\s*\(/.test(lines[i])) {
+                            for (let j = i + 1; j <= Math.min(i + 2, lines.length - 1); j++) {
+                                if (/\.next(?:Int|Double|Float|Long|Line|Boolean|Byte|Short)?\s*\(/.test(lines[j])) {
+                                    issues.push({ line: i + 1, severity: 'info',
+                                        message: 'CS173: Use System.out.print() for input prompts so input appears on the same line',
+                                        suggestion: 'Replace println with print: System.out.print("Enter value: ")' });
+                                    break;
+                                }
+                            }
+                        }
+                    }
+
                     return issues;
                 }
             },
@@ -3167,6 +3268,18 @@ del _webide_compiled, _webide_student_source
                     { re: /\bl\b\s*=|\bl\b[+\-*/]=|\bO\b\s*=|\bO\b[+\-*/]=/,
                       message: 'Variable named "l" or "O" is easily confused with 1 and 0',
                       suggestion: 'Choose a more descriptive variable name (PEP 8)', severity: 'info' },
+                    { re: /^\s*def\s+[A-Z]/,
+                      message: 'Function names should be lowercase_with_underscores (PEP 8)',
+                      suggestion: 'Use snake_case: def my_function()', severity: 'warning' },
+                    { re: /^\s*class\s+[a-z]/,
+                      message: 'Class names should be CamelCase (PEP 8)',
+                      suggestion: 'Capitalize: class MyClass:', severity: 'info' },
+                    { re: /==\s*(?:True|False)\b|\b(?:True|False)\s*==/,
+                      message: 'CS173: Do not compare booleans to True/False with ==',
+                      suggestion: 'Use the expression directly: if is_valid: not if is_valid == True:', severity: 'info' },
+                    { re: /\bgoto\b/,
+                      message: 'CS173: goto is not valid Python',
+                      suggestion: 'Use loops, break, continue, or return instead', severity: 'error' },
                 ],
                 wholeProg(lines) {
                     const issues = [];
@@ -3193,6 +3306,40 @@ del _webide_compiled, _webide_student_source
                                         suggestion: 'Remove or restructure' });
                                 }
                             }
+                        }
+                    }
+                    // CS173: missing docstring on function definitions
+                    for (let i = 0; i < lines.length - 1; i++) {
+                        if (/^\s*def\s+\w+/.test(lines[i])) {
+                            // Find the first non-empty line after the def (may skip multi-line signature)
+                            let j = i + 1;
+                            while (j < lines.length && (lines[j].trim() === '' || /^\s*\)/.test(lines[j]))) j++;
+                            if (j < lines.length && !/^\s*"""/.test(lines[j]) && !/^\s*'''/.test(lines[j])) {
+                                issues.push({ line: i+1, severity: 'info',
+                                    message: 'CS173: Function is missing a docstring — document parameters and return value',
+                                    suggestion: 'Add a docstring: """Summary. Args: ... Returns: ..."""' });
+                            }
+                        }
+                    }
+                    // CS173: long boolean conditions
+                    for (let i = 0; i < lines.length; i++) {
+                        if (lines[i].trim().startsWith('#')) continue;
+                        const m = lines[i].match(/\b(?:if|while)\s+(.+?):/);
+                        if (m && m[1].length > 80) {
+                            issues.push({ line: i+1, severity: 'info',
+                                message: 'CS173: Long boolean condition — extract to a named boolean variable',
+                                suggestion: 'is_ready = <long condition>\nif is_ready:' });
+                        }
+                    }
+                    // CS173: compound function calls (>= 3 call sites on one line)
+                    for (let i = 0; i < lines.length; i++) {
+                        const t = lines[i].trim();
+                        if (t.startsWith('#')) continue;
+                        const callCount = (lines[i].match(/\w\s*\(/g) || []).length;
+                        if (callCount >= 3) {
+                            issues.push({ line: i+1, severity: 'info',
+                                message: 'CS173: Avoid deeply-nested compound function calls',
+                                suggestion: 'Extract intermediate results into named variables' });
                         }
                     }
                     return issues;
@@ -3226,6 +3373,12 @@ del _webide_compiled, _webide_student_source
                     { re: /delete\s+\w+;(?!.*\[\])/,
                       message: 'Using delete — ensure this was allocated with new (not new[])',
                       suggestion: 'Use delete[] for arrays', severity: 'info' },
+                    { re: /\bgoto\b/,
+                      message: 'CS173: goto creates spaghetti code and is banned by the style guide',
+                      suggestion: 'Use loops, break, continue, or return instead', severity: 'warning' },
+                    { re: /==\s*(?:true|false)\b|\b(?:true|false)\s*==/,
+                      message: 'CS173: Do not compare booleans to true/false with ==',
+                      suggestion: 'Use the variable directly: if (isValid) not if (isValid == true)', severity: 'info' },
                 ],
                 wholeProg(lines) {
                     const issues = [];
@@ -3252,6 +3405,58 @@ del _webide_compiled, _webide_student_source
                         }
                         if (opens > closes) seenJump = false;
                     }
+                    // CS173: Missing braces on single-statement bodies
+                    for (let i = 0; i < lines.length - 1; i++) {
+                        const ln = lines[i];
+                        if (/^\s*(?:if|else\s+if|for|while)\s*\(/.test(ln) || /^\s*else\s*$/.test(ln.trimEnd())) {
+                            if (!/\{\s*(?:\/\/.*)?$/.test(ln)) {
+                                const next = (lines[i + 1] || '').trim();
+                                if (next && next !== '{' && !next.startsWith('//') && !next.startsWith('*')) {
+                                    issues.push({ line: i+1, severity: 'warning',
+                                        message: 'CS173: Always use { } braces even for single-line if/for/while bodies',
+                                        suggestion: 'Wrap the body: if (cond) { stmt; }' });
+                                }
+                            }
+                        }
+                    }
+                    // CS173: break in loop but not switch
+                    {
+                        const blkStack = [];
+                        for (let i = 0; i < lines.length; i++) {
+                            const stripped = lines[i].replace(/\/\/.*$/, '');
+                            let pendingType = 'other';
+                            if (/\bswitch\s*\(/.test(stripped)) pendingType = 'switch';
+                            else if (/\b(?:for|while|do)\b/.test(stripped)) pendingType = 'loop';
+                            let firstBrace = true;
+                            for (const ch of stripped) {
+                                if (ch === '{') { blkStack.push(firstBrace ? pendingType : 'other'); firstBrace = false; }
+                                else if (ch === '}') blkStack.pop();
+                            }
+                            if (/^\s*break\s*;/.test(lines[i])) {
+                                let innermost = null;
+                                for (let k = blkStack.length - 1; k >= 0; k--) {
+                                    if (blkStack[k] === 'switch' || blkStack[k] === 'loop') { innermost = blkStack[k]; break; }
+                                }
+                                if (innermost === 'loop') {
+                                    issues.push({ line: i+1, severity: 'warning',
+                                        message: 'CS173: break in loop — prefer restructuring the loop condition',
+                                        suggestion: 'break should only appear in switch; restructure as while(condition)' });
+                                }
+                            }
+                        }
+                    }
+                    // CS173: compound function calls (>= 3 call sites on one line)
+                    for (let i = 0; i < lines.length; i++) {
+                        const t = lines[i].trim();
+                        if (t.startsWith('//') || t.startsWith('*')) continue;
+                        const stripped = lines[i].replace(/\b(?:if|while|for|do|switch|catch|try)\s*\(/g, ' ');
+                        const callCount = (stripped.match(/\w\s*\(/g) || []).length;
+                        if (callCount >= 3) {
+                            issues.push({ line: i+1, severity: 'info',
+                                message: 'CS173: Avoid deeply-nested compound method calls',
+                                suggestion: 'Extract intermediate results into named variables' });
+                        }
+                    }
                     return issues;
                 }
             },
@@ -3277,6 +3482,12 @@ del _webide_compiled, _webide_student_source
                     { re: /==[^=].*null|null.*==[^=]/,
                       message: 'Loose null check — also matches undefined due to type coercion',
                       suggestion: 'Use === null for strict null check', severity: 'info' },
+                    { re: /===\s*(?:true|false)\b|\b(?:true|false)\s*===/,
+                      message: 'CS173: Do not compare booleans to true/false with ===',
+                      suggestion: 'Use the expression directly or negate with !', severity: 'info' },
+                    { re: /\bgoto\b/,
+                      message: 'CS173: goto is not valid JavaScript (label:goto syntax aside)',
+                      suggestion: 'Use break <label>, continue, or return instead', severity: 'error' },
                 ],
                 wholeProg(lines) {
                     const issues = [];
@@ -3297,6 +3508,58 @@ del _webide_compiled, _webide_student_source
                         braceDepth += opens - closes;
                         if (/^\s*return\b/.test(trim)) { seenReturn = true; returnDepth = braceDepth; }
                         if (opens > closes) seenReturn = false;
+                    }
+                    // CS173: Missing braces on single-statement bodies
+                    for (let i = 0; i < lines.length - 1; i++) {
+                        const ln = lines[i];
+                        if (/^\s*(?:if|else\s+if|for|while)\s*\(/.test(ln) || /^\s*else\s*$/.test(ln.trimEnd())) {
+                            if (!/\{\s*(?:\/\/.*)?$/.test(ln)) {
+                                const next = (lines[i + 1] || '').trim();
+                                if (next && next !== '{' && !next.startsWith('//')) {
+                                    issues.push({ line: i+1, severity: 'warning',
+                                        message: 'CS173: Always use { } braces even for single-line if/for/while bodies',
+                                        suggestion: 'Wrap the body: if (cond) { stmt; }' });
+                                }
+                            }
+                        }
+                    }
+                    // CS173: break in loop but not switch
+                    {
+                        const blkStack = [];
+                        for (let i = 0; i < lines.length; i++) {
+                            const stripped = lines[i].replace(/\/\/.*$/, '');
+                            let pendingType = 'other';
+                            if (/\bswitch\s*\(/.test(stripped)) pendingType = 'switch';
+                            else if (/\b(?:for|while|do)\b/.test(stripped)) pendingType = 'loop';
+                            let firstBrace = true;
+                            for (const ch of stripped) {
+                                if (ch === '{') { blkStack.push(firstBrace ? pendingType : 'other'); firstBrace = false; }
+                                else if (ch === '}') blkStack.pop();
+                            }
+                            if (/^\s*break\s*;/.test(lines[i])) {
+                                let innermost = null;
+                                for (let k = blkStack.length - 1; k >= 0; k--) {
+                                    if (blkStack[k] === 'switch' || blkStack[k] === 'loop') { innermost = blkStack[k]; break; }
+                                }
+                                if (innermost === 'loop') {
+                                    issues.push({ line: i+1, severity: 'warning',
+                                        message: 'CS173: break in loop — prefer restructuring the loop condition',
+                                        suggestion: 'break should only appear in switch; restructure as while(condition)' });
+                                }
+                            }
+                        }
+                    }
+                    // CS173: compound function calls (>= 3 call sites on one line)
+                    for (let i = 0; i < lines.length; i++) {
+                        const t = lines[i].trim();
+                        if (t.startsWith('//')) continue;
+                        const stripped = lines[i].replace(/\b(?:if|while|for|do|switch|catch)\s*\(/g, ' ');
+                        const callCount = (stripped.match(/\w\s*\(/g) || []).length;
+                        if (callCount >= 3) {
+                            issues.push({ line: i+1, severity: 'info',
+                                message: 'CS173: Avoid deeply-nested compound function calls',
+                                suggestion: 'Extract intermediate results into named variables' });
+                        }
                     }
                     return issues;
                 }
@@ -3320,8 +3583,25 @@ del _webide_compiled, _webide_student_source
                     { re: /DROP\s+(TABLE|DATABASE)\b/i,
                       message: 'DROP statement is irreversible',
                       suggestion: 'Ensure this is intentional', severity: 'warning' },
+                    { re: /\bHAVING\b/i,
+                      message: 'HAVING filters aggregated groups — ensure GROUP BY is also present',
+                      suggestion: 'Add GROUP BY before HAVING', severity: 'info' },
+                    { re: /\bSELECT\b(?![^;]*\bFROM\b)/i,
+                      message: 'SELECT without FROM — did you mean to select from a table?',
+                      suggestion: 'Add a FROM clause: SELECT col FROM table', severity: 'warning' },
                 ],
-                wholeProg(lines) { return []; }
+                wholeProg(lines) {
+                    const issues = [];
+                    // HAVING without GROUP BY (whole-program check)
+                    const src = lines.join('\n').toUpperCase();
+                    if (/\bHAVING\b/.test(src) && !/\bGROUP\s+BY\b/.test(src)) {
+                        const havingLine = lines.findIndex(l => /\bHAVING\b/i.test(l));
+                        issues.push({ line: havingLine + 1, severity: 'warning',
+                            message: 'HAVING clause requires GROUP BY — without it, HAVING filters all rows as one group',
+                            suggestion: 'Add GROUP BY <column> before the HAVING clause' });
+                    }
+                    return issues;
+                }
             },
 
             // -- Scheme --------------------------------------------------------
@@ -3333,6 +3613,12 @@ del _webide_compiled, _webide_student_source
                     { re: /\(eq\?\s+[^)]*"[^"]*"/,
                       message: '"eq?" compares identity, not string content',
                       suggestion: 'Use (equal? ...) or (string=? ...) for string comparison', severity: 'warning' },
+                    { re: /\(define\s+\([^)]+\)/,
+                      message: 'CS173: Document this function with a comment describing its purpose and arguments',
+                      suggestion: 'Add a comment above: ; name: summary of what it does', severity: 'info' },
+                    { re: /c[ad]{4,}r\s*\(/,
+                      message: 'Deep car/cdr composition (caar/cadr etc.) can be hard to read',
+                      suggestion: 'Use named let or intermediate bindings for clarity', severity: 'info' },
                 ],
                 wholeProg(lines) {
                     const issues = [];
@@ -3358,6 +3644,43 @@ del _webide_compiled, _webide_student_source
                     }
                     return issues;
                 }
+            },
+
+            // -- Prolog --------------------------------------------------------
+            prolog: {
+                perLinePat: [
+                    { re: /^\s*[a-z][a-zA-Z_]*\s*:-/,
+                      message: 'Prolog rule head looks correct — ensure clause variables start with uppercase',
+                      suggestion: 'Variables in Prolog must start with uppercase or _: X, MyVar, _Unused', severity: 'info' },
+                    { re: /\basserta\s*\(|assertz\s*\(/,
+                      message: 'Dynamic assert modifies the knowledge base at runtime — use with care',
+                      suggestion: 'Prefer static facts/rules where possible; use assert only when state must change', severity: 'info' },
+                    { re: /!\s*(?:,|\.)/, // cut followed by comma or period
+                      message: 'Cut (!) restricts backtracking — ensure this is intentional',
+                      suggestion: 'Document why the cut is needed; it prevents alternative solutions', severity: 'info' },
+                ],
+                wholeProg(lines) {
+                    const issues = [];
+                    // Check for singleton variables (Prolog convention: prefix with _ if intentionally unused)
+                    const varPat = /\b([A-Z][a-zA-Z0-9_]*)\b/g;
+                    const counts = {};
+                    for (const line of lines) {
+                        const stripped = line.replace(/%.*$/, ''); // strip comments
+                        let m;
+                        while ((m = varPat.exec(stripped)) !== null) {
+                            const v = m[1];
+                            if (v !== '_') counts[v] = (counts[v] || 0) + 1;
+                        }
+                    }
+                    // Warn on variables that appear exactly once (singleton)
+                    const singletons = Object.entries(counts).filter(([,n]) => n === 1).map(([v]) => v);
+                    if (singletons.length > 0) {
+                        issues.push({ line: 1, severity: 'info',
+                            message: `Possible singleton variable(s): ${singletons.slice(0,5).join(', ')} — if unused, prefix with _`,
+                            suggestion: 'Use _VarName to indicate intentionally unused variables in Prolog' });
+                    }
+                    return issues;
+                }
             }
         };
 
@@ -3366,6 +3689,8 @@ del _webide_compiled, _webide_student_source
         // Alias graphics languages to javascript
         _analysisRules.graphics_view    = _analysisRules.javascript;
         _analysisRules.graphics_shader  = _analysisRules.javascript;
+        // Alias processing/java to java
+        _analysisRules.processing       = _analysisRules.java;
 
         function analyzeCode(language, code) {
             const ruleset = _analysisRules[language];

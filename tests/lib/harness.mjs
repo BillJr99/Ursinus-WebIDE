@@ -173,7 +173,9 @@ export async function snap(page, label) {
 /** Tiny assertion helpers — keep them dependency-free. */
 export const expect = {
     truthy(v, msg) { if (!v) throw new Error(msg || `expected truthy, got ${v}`); },
+    falsy(v, msg)  { if (v)  throw new Error(msg || `expected falsy, got ${JSON.stringify(v)}`); },
     equal(a, b, msg) { if (a !== b) throw new Error(msg || `expected ${JSON.stringify(b)}, got ${JSON.stringify(a)}`); },
+    notEqual(a, b, msg) { if (a === b) throw new Error(msg || `expected not ${JSON.stringify(b)}`); },
     contains(haystack, needle, msg) {
         if (!String(haystack).includes(needle)) throw new Error(msg || `expected to contain "${needle}", got "${String(haystack).slice(0, 200)}"`);
     },
