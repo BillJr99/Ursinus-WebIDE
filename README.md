@@ -412,7 +412,9 @@ since that module is in `/Modules/Graphics/OrthographicView`
 
 ## Creating Your Own Exercises 
 
-To create an exercise, create a Markdown page in your `_pages` directory using the following template.  Items you fill in are denoted with the `<<` and `>>` characters (which you should remove when filling in your desired data!).  Replace the other items to your preferences.
+If you'd rather not hand-edit YAML, visit `/Educator/` on your deployed site (or http://localhost:4000/Educator/ when running `bundle exec jekyll serve` locally). The Educator authoring tool gives you a form-driven UI for every field documented below, an ACE editor with starter recipes for the JavaScript correctness checks, a rich-text editor for the instructions HTML, and optional GitHub sync (paste a fine-grained Personal Access Token, edit `.md` files in place, commit or open a pull request) — all without touching the raw markdown.
+
+To create an exercise by hand, create a Markdown page in your `_pages` directory using the following template.  Items you fill in are denoted with the `<<` and `>>` characters (which you should remove when filling in your desired data!).  Replace the other items to your preferences.
 
 ```
 ---

@@ -1,0 +1,127 @@
+---
+layout: default-blank
+---
+<!-- Ursinus WebIDE — Exercise Authoring Tool -->
+
+<script>
+  // Site-derived globals consumed by the educator JS modules.
+  window.WEBIDE_EDUCATOR = {
+    baseUrl: '{{ site.baseurl }}',
+    title:   '{{ page.title | default: "Exercise Authoring Tool" | escape }}'
+  };
+  if (!document.documentElement.lang) document.documentElement.lang = 'en';
+  if (!document.title || document.title.trim() === '') {
+    document.title = window.WEBIDE_EDUCATOR.title + ' — Ursinus WebIDE';
+  }
+</script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<link rel="stylesheet" href="{{ site.baseurl }}/assets/css/jstree/style.min.css">
+<link rel="stylesheet" href="{{ site.baseurl }}/assets/js/educator/styles.css">
+
+<style>
+  /* Reset the default-blank wrapper so the educator UI can go full-bleed. */
+  html, body {
+    margin: 0; padding: 0; height: 100%; overflow: hidden;
+    background: #1e1e1e; color: #cccccc;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    font-size: 13px;
+  }
+  #main_content_wrap, #main_content_wrap.outer {
+    padding: 0 !important; margin: 0 !important;
+    max-width: none !important; width: 100% !important;
+    background: #1e1e1e !important;
+  }
+</style>
+
+<div id="educator-app" role="application" aria-label="Exercise Authoring Tool">
+  <!-- Title bar -->
+  <div id="ed-titlebar">
+    <div id="ed-title">{{ page.title | default: "Exercise Authoring Tool" }}</div>
+    <div id="ed-title-actions">
+      <span id="ed-dirty-indicator" hidden aria-live="polite">Unsaved changes</span>
+      <button type="button" class="ed-btn" id="ed-btn-new">New</button>
+      <button type="button" class="ed-btn" id="ed-btn-upload">Upload .md</button>
+      <input type="file" id="ed-file-input" accept=".md,.markdown" hidden>
+      <button type="button" class="ed-btn ed-btn-primary" id="ed-btn-download">Download .md</button>
+    </div>
+  </div>
+
+  <!-- Workbench: left rail + main panel -->
+  <div id="ed-workbench">
+    <nav id="ed-rail" aria-label="Sections">
+      <button type="button" class="ed-rail-item active" data-section="metadata">Metadata</button>
+      <button type="button" class="ed-rail-item" data-section="info">Info</button>
+      <button type="button" class="ed-rail-item" data-section="files">Files</button>
+      <button type="button" class="ed-rail-item" data-section="correctness">Correctness</button>
+      <button type="button" class="ed-rail-item" data-section="hints">Hints</button>
+      <button type="button" class="ed-rail-item" data-section="tests">Tests</button>
+      <button type="button" class="ed-rail-item" data-section="preview">Preview</button>
+      <button type="button" class="ed-rail-item" data-section="sync">GitHub Sync</button>
+    </nav>
+
+    <main id="ed-main">
+      <div id="ed-banner" hidden aria-live="polite"></div>
+
+      <section class="ed-section active" id="ed-section-metadata" aria-labelledby="ed-h-metadata">
+        <h2 id="ed-h-metadata">Metadata</h2>
+        <div class="ed-form" id="ed-form-metadata"></div>
+      </section>
+
+      <section class="ed-section" id="ed-section-info" hidden aria-labelledby="ed-h-info">
+        <h2 id="ed-h-info">Information</h2>
+        <div class="ed-form" id="ed-form-info"></div>
+      </section>
+
+      <section class="ed-section" id="ed-section-files" hidden aria-labelledby="ed-h-files">
+        <h2 id="ed-h-files">Files</h2>
+        <div class="ed-form" id="ed-form-files"></div>
+      </section>
+
+      <section class="ed-section" id="ed-section-correctness" hidden aria-labelledby="ed-h-correctness">
+        <h2 id="ed-h-correctness">Correctness checks</h2>
+        <div class="ed-form" id="ed-form-correctness"></div>
+      </section>
+
+      <section class="ed-section" id="ed-section-hints" hidden aria-labelledby="ed-h-hints">
+        <h2 id="ed-h-hints">Hint ladder</h2>
+        <div class="ed-form" id="ed-form-hints"></div>
+      </section>
+
+      <section class="ed-section" id="ed-section-tests" hidden aria-labelledby="ed-h-tests">
+        <h2 id="ed-h-tests">Unit tests</h2>
+        <div class="ed-form" id="ed-form-tests"></div>
+      </section>
+
+      <section class="ed-section" id="ed-section-preview" hidden aria-labelledby="ed-h-preview">
+        <h2 id="ed-h-preview">Preview</h2>
+        <div class="ed-form" id="ed-form-preview"></div>
+      </section>
+
+      <section class="ed-section" id="ed-section-sync" hidden aria-labelledby="ed-h-sync">
+        <h2 id="ed-h-sync">GitHub sync</h2>
+        <div class="ed-form" id="ed-form-sync"></div>
+      </section>
+    </main>
+  </div>
+</div>
+
+<!-- Vendored runtime deps -->
+<script src="{{ site.baseurl }}/assets/js/jquery.min.js"></script>
+<script src="{{ site.baseurl }}/assets/js/jstree.min.js"></script>
+<script src="{{ site.baseurl }}/assets/js/ace.js"></script>
+<script src="{{ site.baseurl }}/assets/js/mode-javascript.js"></script>
+<script src="{{ site.baseurl }}/assets/js/mode-java.js"></script>
+<script src="{{ site.baseurl }}/assets/js/mode-c_cpp.js"></script>
+<script src="{{ site.baseurl }}/assets/js/mode-python.js"></script>
+<script src="{{ site.baseurl }}/assets/js/mode-sql.js"></script>
+<script src="{{ site.baseurl }}/assets/js/mode-prolog.js"></script>
+<script src="{{ site.baseurl }}/assets/js/mode-scheme.js"></script>
+<script src="{{ site.baseurl }}/assets/js/mode-glsl.js"></script>
+<script src="{{ site.baseurl }}/assets/js/theme-monokai.js"></script>
+<script src="{{ site.baseurl }}/assets/js/vendor/js-yaml.min.js"></script>
+
+<!-- Educator app (ES modules) -->
+<script type="module" src="{{ site.baseurl }}/assets/js/educator/app.js"></script>
