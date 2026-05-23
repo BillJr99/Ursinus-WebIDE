@@ -53,6 +53,11 @@ function walkDir(dir, results = []) {
 // Build a lookup set from solutions.mjs URLs for O(1) cross-reference.
 const coveredUrls = new Set(EXERCISES.map(e => e.url));
 
+// Layouts our exercise harness can drive (i.e., ace_editor + autograder).
+// Pages using other layouts (assignment, exercise_horstmann, exercise_r) are
+// intentionally out of scope and should NOT be flagged as missing solutions.
+const TESTABLE_LAYOUTS = new Set(['exercise']);
+
 export function discoverExercises() {
     const files = walkDir(EXERCISES_DIR);
     const discovered = [];
@@ -67,7 +72,11 @@ export function discoverExercises() {
         const layout = fm.layout || '';
         const title = fm.title || path.basename(filePath, '.md');
 
-        const status = coveredUrls.has(url) ? 'covered' : 'missing-solution';
+        let status;
+        if (coveredUrls.has(url))             status = 'covered';
+        else if (!TESTABLE_LAYOUTS.has(layout)) status = 'out-of-scope';
+        else                                   status = 'missing-solution';
+
         discovered.push({ path: filePath, url, layout, title, status });
     }
 

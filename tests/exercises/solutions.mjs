@@ -619,32 +619,6 @@ public class TicTacToe {
         },
     },
 
-    // ===================== Java assignment (no autograder) =====================
-    {
-        label: 'Java Problets',
-        url: '/Modules/Problets/Exercise.html',
-        skip: 'layout: assignment — no auto-grader, external Problets/Epplets links',
-    },
-
-    // ===================== Horstmann (different layout) =====================
-    {
-        label: 'Horstmann Swap',
-        url: '/Modules/Horstmann/Swap/Exercise.html',
-        skip: 'uses exercise_horstmann layout (Parsons puzzle); not driven by ace_editor',
-    },
-
-    // ===================== R (different layout) =====================
-    {
-        label: 'R Tutorial',
-        url: '/Modules/R/TutorialExercise.html',
-        skip: 'uses exercise_r layout; harness targets exercise.html',
-    },
-    {
-        label: 'R Quadratic',
-        url: '/Modules/R/QuadraticExercise.html',
-        skip: 'uses exercise_r layout; harness targets exercise.html',
-    },
-
     // ===================== C++ =====================
     {
         label: 'C++ Intro DivisibleBy6',
