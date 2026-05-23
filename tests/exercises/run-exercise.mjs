@@ -34,6 +34,7 @@ export async function runExercise(browser, opts) {
         url, solutions = {}, label = url,
         runTimeoutMs = 60000, postRunWaitMs = 2500,
         warmupMs = 0,             // extra wait for Pyodide/CDN downloads
+        injectMainText = null,    // workaround for exercise defs missing an ismain: true file
     } = opts;
     const ctx = await browser.newContext({ viewport: { width: 1280, height: 800 } });
     await ctx.addInitScript(() => {
@@ -81,6 +82,35 @@ export async function runExercise(browser, opts) {
             await new Promise(r => setTimeout(r, 200));
             return out;
         }, solutions);
+
+        // Workaround for exercise defs that are missing an `ismain: true`
+        // file (e.g., Java/exercise-drill-arraymean.md): write a synthetic
+        // ismain entry directly into IndexedDB so getMainCodeText() can find
+        // something to invoke (e.g., `Tester.main(null);`).
+        if (injectMainText) {
+            await page.evaluate(async (mainCode) => {
+                // Derive the directory prefix from any already-open file.
+                const sample = Object.keys(window.openFiles || {})[0];
+                if (!sample) return;
+                const dir = sample.substring(0, sample.lastIndexOf('/'));
+                const path = dir + '/__injected_main__.java';
+                await new Promise((resolve, reject) => {
+                    const req = indexedDB.open('CodeIDB');
+                    req.onsuccess = (e) => {
+                        const db = e.target.result;
+                        const tx = db.transaction('Files', 'readwrite');
+                        tx.objectStore('Files').put({
+                            path, content: mainCode,
+                            readOnly: true, excludeFromExport: true, ismain: true,
+                        });
+                        tx.oncomplete = resolve;
+                        tx.onerror = (ev) => reject(ev.target.error);
+                    };
+                    req.onerror = (ev) => reject(ev.target.error);
+                });
+                await new Promise(r => setTimeout(r, 100));
+            }, injectMainText);
+        }
 
         // For Pyodide pages, wait for pyodide to load before clicking Run.
         const pageLang = await page.evaluate(() => window._PAGE_LANG || '');

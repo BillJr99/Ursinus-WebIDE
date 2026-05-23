@@ -89,7 +89,10 @@ public class ArrayUtils {
     {
         label: 'Java drill ArrayMean',
         url: '/ArrayDrills/ArrayMean.html',
-        skip: 'broken exercise definition in Ursinus-Exercises submodule: missing ismain "Excerpt from Main.java" file (see tests/exercises/REPORT.md)',
+        // The submodule's exercise definition is missing the `ismain: true`
+        // "Excerpt from Main.java" file that the other drill exercises have
+        // (see tests/exercises/REPORT.md). Inject one so Tester.main() runs.
+        opts: { injectMainText: 'Tester.main(null);' },
         files: {
             'ArrayUtils.java': `
 public class ArrayUtils {

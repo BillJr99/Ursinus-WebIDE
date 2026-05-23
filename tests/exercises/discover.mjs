@@ -50,8 +50,18 @@ function walkDir(dir, results = []) {
     return results;
 }
 
+// Normalise a URL for comparison: strip trailing ".html" and trailing "/"
+// so that "/Foo/Bar", "/Foo/Bar.html", and "/Foo/Bar/" all match. Exercise
+// front-matter uses bare permalinks without .html; solutions.mjs typically
+// includes .html since that's what the dev server serves.
+function normalizeUrl(u) {
+    return String(u || '')
+        .replace(/\.html$/, '')
+        .replace(/\/$/, '');
+}
+
 // Build a lookup set from solutions.mjs URLs for O(1) cross-reference.
-const coveredUrls = new Set(EXERCISES.map(e => e.url));
+const coveredUrls = new Set(EXERCISES.map(e => normalizeUrl(e.url)));
 
 // Layouts our exercise harness can drive (i.e., ace_editor + autograder).
 // Pages using other layouts (assignment, exercise_horstmann, exercise_r) are
@@ -73,9 +83,9 @@ export function discoverExercises() {
         const title = fm.title || path.basename(filePath, '.md');
 
         let status;
-        if (coveredUrls.has(url))             status = 'covered';
-        else if (!TESTABLE_LAYOUTS.has(layout)) status = 'out-of-scope';
-        else                                   status = 'missing-solution';
+        if (coveredUrls.has(normalizeUrl(url)))  status = 'covered';
+        else if (!TESTABLE_LAYOUTS.has(layout))  status = 'out-of-scope';
+        else                                     status = 'missing-solution';
 
         discovered.push({ path: filePath, url, layout, title, status });
     }
