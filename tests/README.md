@@ -92,8 +92,6 @@ tests/
     12_learning_aids.mjs      # profiler, visualizer, hints, show-me-where
     13_recovery_offline.mjs   # run history, submission preflight, service worker
     14_linter_suggestions.mjs
-    15_horstmann.mjs          # exercise_horstmann.html layout (Parsons puzzles)
-    16_r_layout.mjs           # exercise_r.html layout (R terminal exercises)
   exercises/
     solutions.mjs       # canonical map of exercise URL → worked solution code
     run-exercise.mjs    # drives one exercise end-to-end via Playwright
@@ -151,22 +149,9 @@ and verifies the autograder reports correct.
 | SQL | ✓ |
 | Scheme | ✓ |
 | Prolog | ✓ |
-| Horstmann (Parsons puzzles) | page-load smoke only (external CDN UI) |
-| R terminal exercises | page-load smoke only (VPN backend required) |
+| Horstmann (Parsons puzzles) | not covered — drag-and-drop driven by external `horstmann.com/codecheck` CDN scripts; no programmatic API to inject a Parsons solution |
+| R terminal exercises | not covered — code execution requires the VPN-only backend at `mathcs.ursinus.edu` |
 | Problets / assignment layout | not testable in-browser (external links) |
-
-### Layout specs — `tests/specs/15_horstmann.mjs` / `tests/specs/16_r_layout.mjs`
-
-These specs verify that pages using `exercise_horstmann.html` and
-`exercise_r.html` layouts **load without crashing** and render their
-expected UI containers. Full interaction tests are out of scope:
-
-- Horstmann: drag-and-drop driven by `horstmann.com/codecheck` CDN scripts —
-  no programmatic API to inject a Parsons solution.
-- R: code execution requires the VPN-only backend at `mathcs.ursinus.edu`.
-
-Both specs gracefully skip when the `Ursinus-Exercises` submodule is not
-checked out.
 
 ## Per-language feature support notes
 

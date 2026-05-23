@@ -89,6 +89,7 @@ public class ArrayUtils {
     {
         label: 'Java drill ArrayMean',
         url: '/ArrayDrills/ArrayMean.html',
+        skip: 'broken exercise definition in Ursinus-Exercises submodule: missing ismain "Excerpt from Main.java" file (see tests/exercises/REPORT.md)',
         files: {
             'ArrayUtils.java': `
 public class ArrayUtils {
@@ -955,6 +956,7 @@ def get_quadratic_roots(a, b, c):
     {
         label: 'Pyodide SquareWave',
         url: '/Modules/Pyodide/AudioSquareWave.html',
+        skip: 'broken exercise definition in Ursinus-Exercises submodule: correctcheck references undefined audioRef (see tests/exercises/REPORT.md)',
         opts: { runTimeoutMs: 180000, warmupMs: 12000 },
         files: {
             'student.py': `import numpy as np
@@ -967,6 +969,7 @@ save_audio_js(y.tolist(), 44100)
     {
         label: 'Pyodide PlotTenHeads',
         url: '/Modules/Pyodide/PlotTenHeads.html',
+        skip: 'broken exercise definition in Ursinus-Exercises submodule: correctcheck references undefined imageRef (see tests/exercises/REPORT.md)',
         opts: { runTimeoutMs: 180000, warmupMs: 12000 },
         files: {
             'student.py': `import random
