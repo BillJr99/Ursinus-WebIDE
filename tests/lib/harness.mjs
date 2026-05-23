@@ -56,6 +56,8 @@ export async function closeBrowser() {
     if (_browser) { await _browser.close(); _browser = null; }
 }
 
+export function getBrowser() { return _browser; }
+
 /**
  * Run a callback in a fresh browser context.
  * @param {string} url — relative or absolute. Relative → BASE_URL prepended.
