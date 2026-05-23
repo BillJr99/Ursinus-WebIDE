@@ -89,6 +89,10 @@ public class ArrayUtils {
     {
         label: 'Java drill ArrayMean',
         url: '/ArrayDrills/ArrayMean.html',
+        // The submodule's exercise definition is missing the `ismain: true`
+        // "Excerpt from Main.java" file that the other drill exercises have
+        // (see tests/exercises/REPORT.md). Inject one so Tester.main() runs.
+        opts: { injectMainText: 'Tester.main(null);' },
         files: {
             'ArrayUtils.java': `
 public class ArrayUtils {
@@ -618,32 +622,6 @@ public class TicTacToe {
         },
     },
 
-    // ===================== Java assignment (no autograder) =====================
-    {
-        label: 'Java Problets',
-        url: '/Modules/Problets/Exercise.html',
-        skip: 'layout: assignment — no auto-grader, external Problets/Epplets links',
-    },
-
-    // ===================== Horstmann (different layout) =====================
-    {
-        label: 'Horstmann Swap',
-        url: '/Modules/Horstmann/Swap/Exercise.html',
-        skip: 'uses exercise_horstmann layout (Parsons puzzle); not driven by ace_editor',
-    },
-
-    // ===================== R (different layout) =====================
-    {
-        label: 'R Tutorial',
-        url: '/Modules/R/TutorialExercise.html',
-        skip: 'uses exercise_r layout; harness targets exercise.html',
-    },
-    {
-        label: 'R Quadratic',
-        url: '/Modules/R/QuadraticExercise.html',
-        skip: 'uses exercise_r layout; harness targets exercise.html',
-    },
-
     // ===================== C++ =====================
     {
         label: 'C++ Intro DivisibleBy6',
@@ -955,6 +933,7 @@ def get_quadratic_roots(a, b, c):
     {
         label: 'Pyodide SquareWave',
         url: '/Modules/Pyodide/AudioSquareWave.html',
+        skip: 'broken exercise definition in Ursinus-Exercises submodule: correctcheck references undefined audioRef (see tests/exercises/REPORT.md)',
         opts: { runTimeoutMs: 180000, warmupMs: 12000 },
         files: {
             'student.py': `import numpy as np
@@ -967,6 +946,7 @@ save_audio_js(y.tolist(), 44100)
     {
         label: 'Pyodide PlotTenHeads',
         url: '/Modules/Pyodide/PlotTenHeads.html',
+        skip: 'broken exercise definition in Ursinus-Exercises submodule: correctcheck references undefined imageRef (see tests/exercises/REPORT.md)',
         opts: { runTimeoutMs: 180000, warmupMs: 12000 },
         files: {
             'student.py': `import random

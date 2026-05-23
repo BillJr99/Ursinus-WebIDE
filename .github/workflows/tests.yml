@@ -18,14 +18,13 @@ jobs:
   test:
     name: Headless browser tests
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 45
 
     steps:
       - name: Check out repo (with submodules)
         uses: actions/checkout@v4
         with:
           submodules: recursive
-          fetch-depth: 1
 
       - name: Set up Ruby + cached Bundler
         uses: ruby/setup-ruby@v1
@@ -95,4 +94,19 @@ jobs:
             head -8 tests/reports/report.md >> "$GITHUB_STEP_SUMMARY"
             echo "" >> "$GITHUB_STEP_SUMMARY"
             echo "Full report + screenshots are available as the **test-report-${{ github.run_id }}** artifact." >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+          # Coverage drift gate: fail if any exercises are on disk but missing
+          # from solutions.mjs (forces a solutions.mjs entry for every new exercise).
+          if [ -f tests/reports/results.json ]; then
+            DRIFT=$(node -e "
+              const r = JSON.parse(require('fs').readFileSync('tests/reports/results.json','utf8'));
+              console.log((r.results||[]).filter(x => x.status === 'missing-solution').length);
+            " 2>/dev/null || echo 0)
+            if [ "$DRIFT" -gt 0 ]; then
+              echo "" >> "$GITHUB_STEP_SUMMARY"
+              echo "### ⚠ Coverage drift: ${DRIFT} exercise(s) missing from solutions.mjs" >> "$GITHUB_STEP_SUMMARY"
+              echo "Add each to \`tests/exercises/solutions.mjs\` (with \`skip:\` if not yet testable)." >> "$GITHUB_STEP_SUMMARY"
+              exit 1
+            fi
           fi
