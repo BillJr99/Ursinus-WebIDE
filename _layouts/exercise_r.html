@@ -252,7 +252,7 @@ body {
      */
     function postCode(vpnwarn, halfcredit, submitcode) {
         <!-- Setting a layout.formprocessor will send a POST request to a form processor -->
-        {% if layout.formprocessor and layout.formprocessor != false %}   
+        {% if layout.formprocessor and layout.formprocessor != false and site.formlinkenabled != false %}
         var postbody = {
                 'facultyemail': '{{ layout.facultyemail | strip }}', // required
                 'magic': 'ursinus', // required
