@@ -6784,6 +6784,12 @@ del _webide_compiled, _webide_student_source
         }
 
         async function postCode(halfcredit, downloadblob, points) {
+            // Runtime CI detection: prevent form submissions during automated testing
+            if (localStorage.getItem('webide_ci_mode') === 'true' || window.WEBIDE_CI_MODE === true) {
+                console.log("Form submission disabled (CI mode detected).");
+                if (typeof ideNotify === 'function') ideNotify('Submission is currently disabled in CI environment.', 'info');
+                return;
+            }
             {% if site.formlinkenabled == false %}
             console.log("Form submission disabled (formlinkenabled: false in _config.yml).");
             if (typeof ideNotify === 'function') ideNotify('Submission is currently disabled by your instructor.', 'info');

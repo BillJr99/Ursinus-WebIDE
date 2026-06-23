@@ -37,9 +37,16 @@ export async function runExercise(browser, opts) {
         injectMainText = null,    // workaround for exercise defs missing an ismain: true file
     } = opts;
     const ctx = await browser.newContext({ viewport: { width: 1280, height: 800 } });
-    await ctx.addInitScript(() => {
-        try { localStorage.setItem('userId', 'testuser'); } catch (e) {}
-    });
+    const isCI = process.env.CI || process.env.GITHUB_ACTIONS;
+    await ctx.addInitScript((ciMode) => {
+        try {
+            localStorage.setItem('userId', 'testuser');
+            // Set CI mode flag to prevent form submissions to external services during tests
+            if (ciMode) {
+                localStorage.setItem('webide_ci_mode', 'true');
+            }
+        } catch (e) {}
+    }, isCI);
     const page = await ctx.newPage();
     const consoleMsgs = [];
     const pageErrors = [];
