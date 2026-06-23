@@ -16,10 +16,10 @@ baseurl                  : "/Ursinus-WebIDE" # the subpath of your site, e.g. "/
 
 formlink: https://docs.google.com/forms/d/e/1FAIpQLSc3ZmIn4BbwUIfl5ernYZJb9-TFku14H7VT_Ex8rlKVc4yP7A/formResponse?submit=Submit&usp=pp_url&entry.1829751362=magic&entry.1803296527=
 
-# Master switch for posting student submissions to the Google Form/Sheet (and the
+# Gate for posting student submissions to the Google Form/Sheet (and the
 # custom formprocessor). Defaults to enabled; set to false to pause submissions
 # (e.g. during the summer) without removing formlink/formprocessor elsewhere.
-formlinkenabled: true
+formlinkenabled: false
 
 publickey: |
     -----BEGIN PUBLIC KEY-----
