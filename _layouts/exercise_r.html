@@ -252,7 +252,11 @@ body {
      */
     function postCode(vpnwarn, halfcredit, submitcode) {
         <!-- Setting a layout.formprocessor will send a POST request to a form processor -->
-        {% if layout.formprocessor and layout.formprocessor != false %}   
+        {% if layout.formprocessor and layout.formprocessor != false %}
+        {% if site.formlinkenabled == false %}
+        alert("Submission is currently disabled by your instructor.");
+        return;
+        {% else %}
         var postbody = {
                 'facultyemail': '{{ layout.facultyemail | strip }}', // required
                 'magic': 'ursinus', // required
@@ -285,8 +289,9 @@ body {
             }                     
         });
         {% endif %}
+        {% endif %}
     }
-    
+
     function checkCode() {
         try {        
             // get code and output from the terminal, and separate them.

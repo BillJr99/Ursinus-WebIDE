@@ -267,6 +267,8 @@ publickey: |
 
 `formlink: LINK TO GOOGLE SHEET FOR FORM PROCESSING HERE`  
 
+`formlinkenabled: true` (default) — master switch for posting student submissions to the Google Form/Sheet (`formlink`) and to the custom form processor (`formprocessor`). Set to `false` to pause submissions site-wide (e.g. during the summer) without removing `formlink`/`formprocessor` elsewhere.
+
 If desired, these variables can be overrided on a per-assignment or per-page basis from the global values configured here:
 
 * `publickey` can be overridden in the layout 

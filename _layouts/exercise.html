@@ -6784,6 +6784,11 @@ del _webide_compiled, _webide_student_source
         }
 
         async function postCode(halfcredit, downloadblob, points) {
+            {% if site.formlinkenabled == false %}
+            console.log("Form submission disabled (formlinkenabled: false in _config.yml).");
+            if (typeof ideNotify === 'function') ideNotify('Submission is currently disabled by your instructor.', 'info');
+            return;
+            {% endif %}
             const allFiles = await getAllFilesRecursively(rootBasePath);
             const filteredFiles = allFiles.filter(f => !f.excludeFromExport);
             const encryptedContent = await encryptFiles(filteredFiles, halfcredit, points);
